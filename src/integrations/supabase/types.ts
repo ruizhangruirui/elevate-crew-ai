@@ -142,6 +142,95 @@ export type Database = {
           },
         ]
       }
+      org_activities: {
+        Row: {
+          capability_tags: string[]
+          created_at: string
+          direction_id: string | null
+          duration_minutes: number | null
+          happened_on: string
+          host: string | null
+          id: string
+          kind: string
+          link: string | null
+          note: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          capability_tags?: string[]
+          created_at?: string
+          direction_id?: string | null
+          duration_minutes?: number | null
+          happened_on?: string
+          host?: string | null
+          id?: string
+          kind?: string
+          link?: string | null
+          note?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          capability_tags?: string[]
+          created_at?: string
+          direction_id?: string | null
+          duration_minutes?: number | null
+          happened_on?: string
+          host?: string | null
+          id?: string
+          kind?: string
+          link?: string | null
+          note?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_activities_direction_id_fkey"
+            columns: ["direction_id"]
+            isOneToOne: false
+            referencedRelation: "directions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_activity_participants: {
+        Row: {
+          activity_id: string
+          created_at: string
+          id: string
+          person_id: string
+        }
+        Insert: {
+          activity_id: string
+          created_at?: string
+          id?: string
+          person_id: string
+        }
+        Update: {
+          activity_id?: string
+          created_at?: string
+          id?: string
+          person_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_activity_participants_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "org_activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_activity_participants_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_nodes: {
         Row: {
           archived: boolean
