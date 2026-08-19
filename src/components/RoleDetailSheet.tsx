@@ -193,20 +193,26 @@ export function RoleDetailSheet({
                 >
                   {criticalityLabel[role.criticality] ?? role.criticality}
                 </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5"
-                  disabled={aiProfile.isPending}
-                  onClick={() => aiProfile.mutate()}
+                <ConfirmAction
+                  title="确认用 AI 重新生成岗位画像？"
+                  description={
+                    <>
+                      <p>生成结果会覆盖当前的专业领域、关键知识、Leadership、经验要求、技能要求、KPA 与建议行动。</p>
+                      <p>覆盖后原内容无法恢复，请确认已保存需要保留的内容。</p>
+                    </>
+                  }
+                  confirmLabel="覆盖并生成"
+                  onConfirm={() => aiProfile.mutate()}
                 >
-                  {aiProfile.isPending ? (
-                    <Loader2 className="size-3.5 animate-spin" />
-                  ) : (
-                    <Sparkles className="size-3.5" />
-                  )}
-                  AI 生成画像
-                </Button>
+                  <Button variant="outline" size="sm" className="gap-1.5" disabled={aiProfile.isPending}>
+                    {aiProfile.isPending ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="size-3.5" />
+                    )}
+                    AI 生成画像
+                  </Button>
+                </ConfirmAction>
                 <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setEditing((v) => !v)}>
                   <Pencil className="size-3.5" /> {editing ? "取消" : "编辑岗位画像"}
                 </Button>
