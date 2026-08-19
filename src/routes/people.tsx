@@ -4,6 +4,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { PersonDetailSheet } from "@/components/PersonDetailSheet";
+import { RoleDetailSheet } from "@/components/RoleDetailSheet";
 import { StatTile } from "@/components/StatTile";
 import { fetchWorkspace } from "@/lib/talent";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,6 +57,8 @@ function PeopleBody() {
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
   const [open, setOpen] = useState(false);
+  const [activePersonId, setActivePersonId] = useState<string | null>(null);
+  const [activeRoleId, setActiveRoleId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", level: "15", role_id: "none", status: "onboard" });
 
   const addPerson = useMutation({
@@ -189,7 +193,16 @@ function PeopleBody() {
           {data.people.map((p) => (
             <div
               key={p.id}
-              className="flex flex-wrap items-center gap-4 px-6 py-4 transition-colors hover:bg-surface-raised/50"
+              role="button"
+              tabIndex={0}
+              onClick={() => setActivePersonId(p.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setActivePersonId(p.id);
+                }
+              }}
+              className="flex cursor-pointer flex-wrap items-center gap-4 px-6 py-4 transition-colors hover:bg-surface-raised/50"
             >
               <div
                 className="grid size-10 shrink-0 place-items-center rounded-full border border-border/70 bg-surface-raised font-display text-sm font-semibold"
@@ -220,7 +233,10 @@ function PeopleBody() {
                 variant="ghost"
                 size="icon"
                 className="text-muted-foreground hover:text-danger"
-                onClick={() => removePerson.mutate(p.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removePerson.mutate(p.id);
+                }}
                 aria-label={`移除 ${p.name}`}
               >
                 <Trash2 className="size-4" />
@@ -232,6 +248,33 @@ function PeopleBody() {
           )}
         </div>
       </div>
+
+      <PersonDetailSheet
+        person={data.people.find((p) => p.id === activePersonId) ?? null}
+        people={data.people}
+        roles={data.roles}
+        directions={data.directions}
+        open={!!activePersonId}
+        onOpenChange={(v) => !v && setActivePersonId(null)}
+        onDone={() => qc.invalidateQueries({ queryKey: ["workspace"] })}
+        onOpenRole={(roleId) => {
+          setActivePersonId(null);
+          setActiveRoleId(roleId);
+        }}
+      />
+
+      <RoleDetailSheet
+        role={data.roles.find((r) => r.id === activeRoleId) ?? null}
+        people={data.people}
+        directionTitle={
+          data.directions.find(
+            (d) => d.id === data.roles.find((r) => r.id === activeRoleId)?.direction_id,
+          )?.title ?? ""
+        }
+        open={!!activeRoleId}
+        onOpenChange={(v) => !v && setActiveRoleId(null)}
+        onDone={() => qc.invalidateQueries({ queryKey: ["workspace"] })}
+      />
     </div>
   );
 }
