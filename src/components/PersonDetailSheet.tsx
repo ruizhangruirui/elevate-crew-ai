@@ -95,6 +95,7 @@ export function PersonDetailSheet({
   onOpenRole?: (roleId: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const orgNodes = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
 
   const role = person?.role_id ? roles.find((r) => r.id === person.role_id) ?? null : null;
   const direction = role ? directions.find((d) => d.id === role.direction_id) ?? null : null;
