@@ -2,9 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Archive, Users } from "lucide-react";
+import { Plus, Archive, Users, ArrowUpRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { StatTile } from "@/components/StatTile";
+import { RoleDetailSheet } from "@/components/RoleDetailSheet";
 import { coverageOf, criticalityLabel, fetchWorkspace, type Role } from "@/lib/talent";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -63,6 +64,7 @@ function StrategyBoard() {
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [openRoleId, setOpenRoleId] = useState<string | null>(null);
 
   useEffect(() => {
     if (data && !activeId && data.directions[0]) setActiveId(data.directions[0].id);
@@ -202,6 +204,7 @@ function StrategyBoard() {
                 gap={coverageOf(role, people).gap}
                 members={people.filter((p) => p.role_id === role.id).map((p) => p.name)}
                 onArchive={() => archiveRole.mutate(role.id)}
+                onOpen={() => setOpenRoleId(role.id)}
               />
             ))}
             {activeRoles.length === 0 && (
@@ -210,6 +213,17 @@ function StrategyBoard() {
           </div>
         </section>
       )}
+
+      <RoleDetailSheet
+        role={roles.find((r) => r.id === openRoleId) ?? null}
+        people={people}
+        directionTitle={
+          directions.find((d) => d.id === roles.find((r) => r.id === openRoleId)?.direction_id)?.title ?? ""
+        }
+        open={!!openRoleId}
+        onOpenChange={(v) => !v && setOpenRoleId(null)}
+        onDone={invalidate}
+      />
     </div>
   );
 }
@@ -220,12 +234,14 @@ function RoleCard({
   gap,
   members,
   onArchive,
+  onOpen,
 }: {
   role: Role;
   filled: number;
   gap: number;
   members: string[];
   onArchive: () => void;
+  onOpen: () => void;
 }) {
   const pct = Math.min(100, Math.round((filled / Math.max(1, role.target_count)) * 100));
   const state = gap === 0 ? "full" : filled === 0 ? "empty" : "partial";
@@ -269,7 +285,10 @@ function RoleCard({
         </p>
       )}
 
-      <div className="mt-auto pt-5">
+      <div className="mt-auto flex items-center justify-between gap-2 pt-5">
+        <Button size="sm" variant="outline" className="gap-1.5" onClick={onOpen}>
+          查看岗位画像 <ArrowUpRight className="size-3.5" />
+        </Button>
         <Button
           variant="ghost"
           size="sm"
