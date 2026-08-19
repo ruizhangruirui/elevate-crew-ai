@@ -112,6 +112,8 @@ function PeopleBody() {
         <StatTile label="未分配岗位" value={unassigned.length} tone="danger" />
       </div>
 
+      <CompletenessPanel people={data.people} onOpen={(id) => setDetailId(id)} />
+
       <div className="panel overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-6 py-4">
           <h2 className="font-display text-lg font-semibold">人员名单</h2>
