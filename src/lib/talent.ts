@@ -19,6 +19,8 @@ export type Direction = {
   archived: boolean;
 };
 
+export type Skill = { skill: string; level: string };
+
 export type Role = {
   id: string;
   direction_id: string;
@@ -30,6 +32,13 @@ export type Role = {
   criticality: string;
   sort_order: number;
   archived: boolean;
+  domains: string[];
+  knowledge: string[];
+  leadership: string[];
+  experience: string[];
+  skills: Skill[];
+  kpa: string | null;
+  recommended_action: string[];
 };
 
 export type Person = {
@@ -62,7 +71,10 @@ export async function fetchWorkspace() {
   return {
     org: (orgs.data?.[0] ?? null) as Org | null,
     directions: (directions.data ?? []) as Direction[],
-    roles: (roles.data ?? []) as Role[],
+    roles: ((roles.data ?? []) as unknown[]).map((r) => {
+      const row = r as Record<string, unknown>;
+      return { ...row, skills: Array.isArray(row["skills"]) ? row["skills"] : [] } as Role;
+    }),
     people: (people.data ?? []) as Person[],
   };
 }
