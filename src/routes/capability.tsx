@@ -25,6 +25,15 @@ import {
 } from "@/lib/org-building";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { fetchOrgNodes, peopleInSubtree } from "@/lib/org-tree";
+import { fetchSnapshots, recordSnapshot, type Snapshot } from "@/lib/snapshots";
 
 export const Route = createFileRoute("/capability")({
   head: () => ({
@@ -60,20 +69,60 @@ function CapabilityPage() {
 function CapabilityBody() {
   const { data } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
   const { data: building } = useQuery({ queryKey: ["org-building"], queryFn: fetchOrgBuilding });
+  const { data: nodes } = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
+  const [scope, setScope] = useState("__all__");
 
   if (!data) return <div className="text-sm text-muted-foreground">加载中…</div>;
 
+  const allNodes = nodes ?? [];
+  const scopedPeople =
+    scope === "__all__" ? data.people : peopleInSubtree(data.people, allNodes, scope);
+  const scopedRoleIds = new Set(scopedPeople.map((p) => p.role_id).filter(Boolean) as string[]);
+  const scoped =
+    scope === "__all__"
+      ? data
+      : {
+          ...data,
+          people: scopedPeople,
+          roles: data.roles.filter((r) => scopedRoleIds.has(r.id)),
+        };
+  const scopeName = allNodes.find((n) => n.id === scope)?.name ?? "全组织";
+
   return (
     <Tabs defaultValue="health" className="space-y-8">
-      <TabsList>
-        <TabsTrigger value="health">能力体检</TabsTrigger>
-        <TabsTrigger value="building">组织建设</TabsTrigger>
-      </TabsList>
+      <div className="flex flex-wrap items-center gap-3">
+        <TabsList>
+          <TabsTrigger value="health">能力体检</TabsTrigger>
+          <TabsTrigger value="building">组织建设</TabsTrigger>
+          <TabsTrigger value="trend">趋势</TabsTrigger>
+        </TabsList>
+        <Select value={scope} onValueChange={setScope}>
+          <SelectTrigger className="w-56">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">全组织</SelectItem>
+            {allNodes.map((n) => (
+              <SelectItem key={n.id} value={n.id}>
+                {n.name}（{n.type}）
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {scope !== "__all__" && (
+          <span className="text-xs text-muted-foreground">
+            仅统计 {scopeName} 及其下级团队在岗人员所承担的岗位
+          </span>
+        )}
+      </div>
       <TabsContent value="health">
-        <HealthPanel data={data} activities={building?.activities ?? []} />
+        <HealthPanel data={scoped} activities={building?.activities ?? []} />
       </TabsContent>
       <TabsContent value="building">
-        <BuildingPanel data={data} building={building ?? null} />
+        <BuildingPanel data={scoped} building={building ?? null} />
+      </TabsContent>
+      <TabsContent value="trend">
+        <TrendPanel data={scoped} activities={building?.activities ?? []} />
       </TabsContent>
     </Tabs>
   );
