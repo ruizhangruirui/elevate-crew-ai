@@ -1,24 +1,482 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Plus, Archive, Users } from "lucide-react";
+import { AppShell } from "@/components/AppShell";
+import { StatTile } from "@/components/StatTile";
+import { coverageOf, criticalityLabel, fetchWorkspace, type Role } from "@/lib/talent";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "战略岗位视图 · 战略岗位与人才管理系统" },
+      {
+        name: "description",
+        content: "从未来战略出发，定义关键研究方向与目标岗位架构，识别人才覆盖、Gap 与风险。",
+      },
+      { property: "og:title", content: "战略岗位视图 · 战略岗位与人才管理系统" },
+      {
+        property: "og:description",
+        content: "从未来战略出发，定义关键研究方向与目标岗位架构，识别人才覆盖、Gap 与风险。",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
+    <AppShell
+      title="战略岗位视图"
+      subtitle="从未来战略出发，定义关键研究 / 工作方向和目标岗位架构，并识别现实人才覆盖、Gap 与风险。"
     >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+      <StrategyBoard />
+    </AppShell>
+  );
+}
+
+function StrategyBoard() {
+  const qc = useQueryClient();
+  const { data } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (data && !activeId && data.directions[0]) setActiveId(data.directions[0].id);
+  }, [data, activeId]);
+
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["workspace"] });
+
+  const archiveRole = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("roles").update({ archived: true }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("岗位已归档");
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (!data) return <div className="text-sm text-muted-foreground">加载中…</div>;
+
+  const { org, directions, roles, people } = data;
+  const active = directions.find((d) => d.id === activeId) ?? directions[0] ?? null;
+  const activeRoles = active ? roles.filter((r) => r.direction_id === active.id) : [];
+
+  const totalSeats = roles.reduce((n, r) => n + r.target_count, 0);
+  const totalGap = roles.reduce((n, r) => n + coverageOf(r, people).gap, 0);
+
+  const dirStats = (dirId: string) => {
+    const rs = roles.filter((r) => r.direction_id === dirId);
+    const gap = rs.reduce((n, r) => n + coverageOf(r, people).gap, 0);
+    return { count: rs.length, gap };
+  };
+
+  return (
+    <div className="space-y-10">
+      {/* Org overview */}
+      <section className="panel relative overflow-hidden p-8">
+        <div
+          className="pointer-events-none absolute -right-24 -top-24 size-64 rounded-full opacity-25 blur-3xl"
+          style={{ backgroundImage: "var(--gradient-brand)" }}
+        />
+        <div className="relative grid gap-8 lg:grid-cols-[1.4fr_1fr]">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+              {org?.tagline ?? "战略组织"}
+            </p>
+            <h2 className="mt-2 font-display text-4xl font-bold">
+              <span className="brand-gradient-text">{org?.name}</span>
+            </h2>
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
+              {org?.description}
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {org?.tags.map((t) => (
+                <span
+                  key={t}
+                  className="rounded-full border border-brand/40 bg-brand/10 px-3 py-1 text-xs font-medium text-foreground"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 self-start">
+            <StatTile label="关键方向" value={directions.length} />
+            <StatTile label="目标岗位类型" value={roles.length} />
+            <StatTile label="目标 Seat" value={totalSeats} />
+            <StatTile label="当前 Gap" value={totalGap} tone={totalGap ? "danger" : "ok"} />
+          </div>
+        </div>
+      </section>
+
+      {/* Directions */}
+      <section>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="font-display text-xl font-semibold">关键研究 / 工作方向</h2>
+            <p className="mt-1 text-sm text-muted-foreground">点击方向进入对应目标岗位架构。</p>
+          </div>
+          {org && <NewDirectionDialog orgId={org.id} onDone={invalidate} />}
+        </div>
+
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {directions.map((d) => {
+            const s = dirStats(d.id);
+            const selected = d.id === active?.id;
+            return (
+              <button
+                key={d.id}
+                onClick={() => setActiveId(d.id)}
+                className={`panel group h-full p-5 text-left transition-all duration-200 hover:-translate-y-0.5 ${
+                  selected ? "border-brand/70 shadow-[var(--glow-brand)]" : "hover:border-brand/40"
+                }`}
+              >
+                <div className="flex items-center gap-2 text-[11px]">
+                  <span className="rounded-md bg-surface-raised px-2 py-1 text-muted-foreground">
+                    {s.count} 岗位类型
+                  </span>
+                  <span
+                    className={`rounded-md px-2 py-1 font-medium ${
+                      s.gap ? "bg-danger/12 text-danger" : "bg-ok/12 text-ok"
+                    }`}
+                  >
+                    {s.gap ? `${s.gap} Critical Gap` : "全覆盖"}
+                  </span>
+                </div>
+                <h3 className="mt-3 font-display text-base font-semibold">{d.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {d.description}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Roles */}
+      {active && (
+        <section>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="font-display text-xl font-semibold">目标岗位架构</h2>
+              <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+                {active.title} · {active.description}
+              </p>
+            </div>
+            <NewRoleDialog directionId={active.id} onDone={invalidate} />
+          </div>
+
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {activeRoles.map((role) => (
+              <RoleCard
+                key={role.id}
+                role={role}
+                filled={coverageOf(role, people).filled}
+                gap={coverageOf(role, people).gap}
+                members={people.filter((p) => p.role_id === role.id).map((p) => p.name)}
+                onArchive={() => archiveRole.mutate(role.id)}
+              />
+            ))}
+            {activeRoles.length === 0 && (
+              <p className="text-sm text-muted-foreground">该方向下还没有目标岗位。</p>
+            )}
+          </div>
+        </section>
+      )}
     </div>
+  );
+}
+
+function RoleCard({
+  role,
+  filled,
+  gap,
+  members,
+  onArchive,
+}: {
+  role: Role;
+  filled: number;
+  gap: number;
+  members: string[];
+  onArchive: () => void;
+}) {
+  const pct = Math.min(100, Math.round((filled / Math.max(1, role.target_count)) * 100));
+  const state = gap === 0 ? "full" : filled === 0 ? "empty" : "partial";
+  const stateStyle =
+    state === "full"
+      ? "bg-ok/12 text-ok"
+      : state === "partial"
+        ? "bg-warn/12 text-warn"
+        : "bg-danger/12 text-danger";
+  const stateLabel = state === "full" ? "Fully Covered" : state === "partial" ? "Partially Covered" : "Not Covered";
+
+  return (
+    <article className="panel flex h-full flex-col p-5">
+      <div className="flex items-start justify-between gap-3">
+        <span className={`rounded-md px-2 py-1 text-[11px] font-medium ${stateStyle}`}>
+          {stateLabel}
+        </span>
+        <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+          {criticalityLabel[role.criticality] ?? role.criticality}
+        </span>
+      </div>
+
+      <h3 className="mt-4 font-display text-lg font-semibold">{role.title}</h3>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{role.description}</p>
+
+      <div className="mt-5 grid grid-cols-2 gap-2 text-xs">
+        <Cell label="目标级别" value={`${role.level_min}–${role.level_max}`} />
+        <Cell label="目标人数" value={role.target_count} />
+        <Cell label="当前覆盖" value={`${filled}/${role.target_count}`} />
+        <Cell label="Gap" value={gap} danger={gap > 0} />
+      </div>
+
+      <div className="mt-4">
+        <Progress value={pct} className="h-1.5" />
+      </div>
+
+      {members.length > 0 && (
+        <p className="mt-4 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Users className="size-3.5" />
+          {members.join("、")}
+        </p>
+      )}
+
+      <div className="mt-auto pt-5">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="gap-1.5 text-muted-foreground hover:text-foreground"
+          onClick={onArchive}
+        >
+          <Archive className="size-3.5" /> 归档
+        </Button>
+      </div>
+    </article>
+  );
+}
+
+function Cell({
+  label,
+  value,
+  danger,
+}: {
+  label: string;
+  value: string | number;
+  danger?: boolean;
+}) {
+  return (
+    <div className="rounded-lg border border-border/60 bg-surface-raised/50 px-3 py-2">
+      <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
+      <p
+        className={`mt-0.5 font-display text-base font-semibold tabular-nums ${danger ? "text-danger" : ""}`}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function NewDirectionDialog({ orgId, onDone }: { orgId: string; onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+
+  const create = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("directions")
+        .insert({ org_id: orgId, title, description });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("已新增研究方向");
+      setOpen(false);
+      setTitle("");
+      setDescription("");
+      onDone();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-1.5">
+          <Plus className="size-4" /> 新增研究方向
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>新增研究 / 工作方向</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>方向名称</Label>
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>方向描述</Label>
+            <Textarea
+              rows={3}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button onClick={() => create.mutate()} disabled={!title.trim() || create.isPending}>
+            保存
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    level_min: "14",
+    level_max: "16",
+    target_count: "1",
+    criticality: "important",
+  });
+
+  const create = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("roles").insert({
+        direction_id: directionId,
+        title: form.title,
+        description: form.description,
+        level_min: Number(form.level_min),
+        level_max: Number(form.level_max),
+        target_count: Number(form.target_count),
+        criticality: form.criticality,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("已新增战略岗位");
+      setOpen(false);
+      setForm({
+        title: "",
+        description: "",
+        level_min: "14",
+        level_max: "16",
+        target_count: "1",
+        criticality: "important",
+      });
+      onDone();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" className="gap-1.5">
+          <Plus className="size-4" /> 新增战略岗位
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>新增战略岗位</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>岗位名称</Label>
+            <Input
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>岗位描述</Label>
+            <Textarea
+              rows={3}
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-2">
+              <Label>最低级别</Label>
+              <Input
+                type="number"
+                value={form.level_min}
+                onChange={(e) => setForm({ ...form, level_min: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>最高级别</Label>
+              <Input
+                type="number"
+                value={form.level_max}
+                onChange={(e) => setForm({ ...form, level_max: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>目标人数</Label>
+              <Input
+                type="number"
+                value={form.target_count}
+                onChange={(e) => setForm({ ...form, target_count: e.target.value })}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>关键度</Label>
+            <Select
+              value={form.criticality}
+              onValueChange={(v) => setForm({ ...form, criticality: v })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="strategic_critical">Strategic Critical</SelectItem>
+                <SelectItem value="critical">Critical</SelectItem>
+                <SelectItem value="important">Important</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button onClick={() => create.mutate()} disabled={!form.title.trim() || create.isPending}>
+            保存
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
