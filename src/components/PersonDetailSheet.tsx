@@ -13,6 +13,7 @@ import {
   type Skill,
 } from "@/lib/talent";
 import { buildCapabilities, normalizeKey, levelRank } from "@/lib/capability";
+import { fetchOrgNodes } from "@/lib/org-tree";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -154,6 +155,7 @@ export function PersonDetailSheet({
     assessed_skills: "",
     note: "",
     role_id: "none",
+    org_node_id: "none",
     level: "",
     status: "onboard",
   });
@@ -171,6 +173,7 @@ export function PersonDetailSheet({
         .join("\n"),
       note: person.note ?? "",
       role_id: person.role_id ?? "none",
+      org_node_id: person.org_node_id ?? "none",
       level: person.level != null ? String(person.level) : "",
       status: person.status ?? "onboard",
     });
@@ -199,12 +202,24 @@ export function PersonDetailSheet({
           assessed_skills: skills as unknown as never,
           note: form.note || null,
           role_id: form.role_id === "none" ? null : form.role_id,
+          org_node_id: form.org_node_id === "none" ? null : form.org_node_id,
           level: form.level ? Number(form.level) : null,
           status: form.status,
           assessed_at: new Date().toISOString(),
         })
         .eq("id", person!.id);
       if (error) throw error;
+
+      const nextNode = form.org_node_id === "none" ? null : form.org_node_id;
+      if (nextNode !== (person!.org_node_id ?? null)) {
+        const nameOf = (id: string | null) =>
+          id ? (orgNodes.data ?? []).find((n) => n.id === id)?.name ?? id : "未归属";
+        await supabase.from("audit_log").insert({
+          action: "组织调动",
+          entity: `人员 / ${person!.name}`,
+          detail: `${nameOf(person!.org_node_id ?? null)} → ${nameOf(nextNode)}`,
+        });
+      }
     },
     onSuccess: () => {
       toast.success("已保存评估信息");
