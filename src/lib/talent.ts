@@ -73,7 +73,7 @@ export async function fetchWorkspace() {
     directions: (directions.data ?? []) as Direction[],
     roles: ((roles.data ?? []) as unknown[]).map((r) => {
       const row = r as Record<string, unknown>;
-      return { ...row, skills: Array.isArray(row.skills) ? row.skills : [] } as Role;
+      return { ...row, skills: Array.isArray(row["skills"]) ? row["skills"] : [] } as Role;
     }),
     people: (people.data ?? []) as Person[],
   };
