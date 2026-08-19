@@ -65,6 +65,7 @@ function Index() {
 function StrategyBoard() {
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
+  const orgNodes = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
   const [activeId, setActiveId] = useState<string | null>(null);
   const [openRoleId, setOpenRoleId] = useState<string | null>(null);
 
