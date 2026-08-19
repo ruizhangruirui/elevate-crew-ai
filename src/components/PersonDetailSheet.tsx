@@ -322,6 +322,25 @@ export function PersonDetailSheet({
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label>所属团队（组织调动会记入审计日志）</Label>
+                  <Select
+                    value={form.org_node_id}
+                    onValueChange={(v) => setForm({ ...form, org_node_id: v })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">未归属</SelectItem>
+                      {(orgNodes.data ?? [])
+                        .filter((n) => n.type !== "VNRC")
+                        .map((n) => (
+                          <SelectItem key={n.id} value={n.id}>
+                            {n.name}（{n.type}）
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className="space-y-2">
                     <Label>绩效</Label>
