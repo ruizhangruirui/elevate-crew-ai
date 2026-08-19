@@ -184,3 +184,123 @@ export const analyzeRoleFit = createServerFn({ method: "POST" })
 
     return valid.sort((a, b) => b.fit_score - a.fit_score);
   });
+
+export type TeamDiagnosis = {
+  headline: string;
+  strengths: string[];
+  missing_roles: { title: string; why: string; urgency: string }[];
+  missing_capabilities: { capability: string; action: string }[];
+  hire_vs_grow: string;
+  next_90_days: string[];
+};
+
+export const diagnoseTeam = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { nodeId: string }) => {
+    if (!input?.nodeId) throw new Error("缺少组织节点");
+    return input;
+  })
+  .handler(async ({ data, context }): Promise<TeamDiagnosis> => {
+    const { generateStructured } = await import("./ai-gateway.server");
+
+    const { data: node, error } = await context.supabase
+      .from("org_nodes")
+      .select("id, name, type, mission")
+      .eq("id", data.nodeId)
+      .single();
+    if (error || !node) throw new Error("组织节点不存在");
+
+    const { data: allNodes } = await context.supabase.from("org_nodes").select("id, parent_id");
+    const ids = new Set<string>([node.id]);
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (const n of allNodes ?? []) {
+        if (n.parent_id && ids.has(n.parent_id) && !ids.has(n.id)) {
+          ids.add(n.id);
+          grew = true;
+        }
+      }
+    }
+
+    const { data: people } = await context.supabase
+      .from("people")
+      .select(
+        "id, name, level, status, role_id, org_node_id, assessed_skills, performance, readiness, attrition_risk, tenure_months",
+      );
+    const members = (people ?? []).filter((p) => p.org_node_id && ids.has(p.org_node_id));
+
+    const { data: roles } = await context.supabase
+      .from("roles")
+      .select("id, title, direction_id, target_count, criticality, domains, knowledge, skills, kpa")
+      .eq("archived", false);
+    const { data: directions } = await context.supabase
+      .from("directions")
+      .select("id, title, description")
+      .eq("archived", false);
+
+    const roleIds = new Set(members.map((m) => m.role_id).filter(Boolean));
+    const teamRoles = (roles ?? []).filter((r) => roleIds.has(r.id));
+
+    const { data: activities } = await context.supabase
+      .from("org_activities")
+      .select("kind, title, happened_on, capability_tags")
+      .order("happened_on", { ascending: false })
+      .limit(20);
+
+    return generateStructured<TeamDiagnosis>({
+      schemaName: "team_diagnosis",
+      system:
+        "你是技术研究组织的组织能力顾问。关注点不是个人绩效，而是「为达成战略方向，这个团队还缺什么岗位、什么能力，应该先招人还是先培养」。所有人员数据由 HR / 主管录入。中文输出，具体、可执行，不要空话套话。",
+      input: JSON.stringify({
+        node,
+        strategy_directions: directions ?? [],
+        team_roles: teamRoles,
+        members,
+        recent_activities: activities ?? [],
+      }),
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "headline",
+          "strengths",
+          "missing_roles",
+          "missing_capabilities",
+          "hire_vs_grow",
+          "next_90_days",
+        ],
+        properties: {
+          headline: { type: "string" },
+          strengths: strArray,
+          missing_roles: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["title", "why", "urgency"],
+              properties: {
+                title: { type: "string" },
+                why: { type: "string" },
+                urgency: { type: "string", enum: ["高", "中", "低"] },
+              },
+            },
+          },
+          missing_capabilities: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["capability", "action"],
+              properties: {
+                capability: { type: "string" },
+                action: { type: "string" },
+              },
+            },
+          },
+          hire_vs_grow: { type: "string" },
+          next_90_days: strArray,
+        },
+      },
+    });
+  });
