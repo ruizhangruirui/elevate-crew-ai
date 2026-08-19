@@ -115,14 +115,16 @@ function OrgTreeBody() {
     const isOpen = expanded[node.id] ?? depth < 1;
     const total = countIn(node.id);
     const Icon = node.type === "Team" ? Users : Building2;
+    const st = nodeStats(node.id, nodes, people, roles, directions);
 
     return (
       <div key={node.id} className="rounded-xl border border-border/60 bg-surface-raised/40">
-        <button
-          type="button"
-          onClick={() => setExpanded((s) => ({ ...s, [node.id]: !isOpen }))}
-          className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-raised/70"
-        >
+        <div className="flex items-center gap-3 px-4 py-3">
+          <button
+            type="button"
+            onClick={() => setExpanded((s) => ({ ...s, [node.id]: !isOpen }))}
+            className="flex min-w-0 flex-1 items-center gap-3 text-left"
+          >
           <ChevronRight
             className={`size-4 shrink-0 text-muted-foreground transition-transform ${isOpen ? "rotate-90" : ""}`}
           />
@@ -137,7 +139,41 @@ function OrgTreeBody() {
             {node.type}
           </Badge>
           <span className="shrink-0 text-xs text-muted-foreground">{total} 人</span>
-        </button>
+          </button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="shrink-0 gap-1.5 text-xs text-muted-foreground"
+            onClick={() => setDiagNode(node)}
+          >
+            <Sparkles className="size-3.5" /> AI 诊断
+          </Button>
+        </div>
+
+        {total > 0 && (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border/40 px-4 py-2 text-[11px] text-muted-foreground">
+            <span>
+              在岗 <b className="text-foreground tabular-nums">{st.onboard}</b> / 编制{" "}
+              <b className="tabular-nums">{st.targetSeats}</b>
+            </span>
+            <span>
+              平均职级{" "}
+              <b className="text-foreground tabular-nums">{st.avgLevel ?? "—"}</b>
+            </span>
+            <span>
+              能力覆盖率 <b className="text-foreground tabular-nums">{st.coverageRate}%</b>
+            </span>
+            {st.soleCarriers > 0 && (
+              <span className="text-warn">单点风险 {st.soleCarriers} 项</span>
+            )}
+            {st.unassessed > 0 && <span className="text-warn">{st.unassessed} 人资料待补全</span>}
+            {st.directions.length > 0 && (
+              <span className="truncate">
+                承担方向：{st.directions.map((d) => d.title).join(" / ")}
+              </span>
+            )}
+          </div>
+        )}
 
         {isOpen && (
           <div className="space-y-2 border-t border-border/50 px-3 py-3 pl-6">
