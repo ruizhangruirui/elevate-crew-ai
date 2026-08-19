@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { UserPlus, UserMinus, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { coverageOf, criticalityLabel, type Person, type Role } from "@/lib/talent";
+import { coverageOf, criticalityLabel, type Person, type Role, type Skill } from "@/lib/talent";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +29,33 @@ function Fact({ label, value }: { label: string; value: string | number }) {
     <div className="rounded-lg border border-border/60 bg-surface-raised/50 px-3 py-2">
       <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
       <p className="mt-0.5 font-display text-base font-semibold tabular-nums">{value}</p>
+    </div>
+  );
+}
+
+function TagList({ items, empty = "待补充" }: { items: string[]; empty?: string }) {
+  if (!items.length) return <p className="text-xs text-muted-foreground">{empty}</p>;
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {items.map((t) => (
+        <span
+          key={t}
+          className="rounded-full border border-brand/40 bg-brand/10 px-2.5 py-1 text-xs text-foreground"
+        >
+          {t}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function ProfileBlock({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div className="rounded-xl border border-border/60 bg-surface-raised/40 p-4">
+      <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{title}</p>
+      <div className="mt-2">
+        <TagList items={items} />
+      </div>
     </div>
   );
 }
@@ -152,6 +179,32 @@ export function RoleDetailSheet({
                   <Fact label="目标人数" value={role.target_count} />
                   <Fact label="当前覆盖" value={`${cov.filled}/${role.target_count}`} />
                 </div>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <ProfileBlock title="专业领域" items={role.domains} />
+                  <ProfileBlock title="关键知识" items={role.knowledge} />
+                  <ProfileBlock title="Leadership" items={role.leadership} />
+                  <ProfileBlock title="经验要求" items={role.experience} />
+                </div>
+
+                <div className="mt-4">
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">技能要求</p>
+                  {role.skills.length ? (
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                      {role.skills.map((s) => (
+                        <div
+                          key={s.skill}
+                          className="flex items-center justify-between rounded-lg border border-border/60 bg-surface-raised/40 px-3 py-2 text-sm"
+                        >
+                          <span className="text-muted-foreground">{s.skill}</span>
+                          <strong className="font-display">{s.level}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-xs text-muted-foreground">待补充</p>
+                  )}
+                </div>
               </>
             )}
           </Module>
@@ -236,14 +289,18 @@ export function RoleDetailSheet({
             </div>
           </Module>
 
-          <Module title="Gap / Risk / Action">
-            <div className="grid gap-2 sm:grid-cols-3">
+          <Module title="Gap / Risk / KPA / Action">
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               <Fact
                 label="Gap"
                 value={cov.gap ? `缺口 ${cov.gap} 个 Seat` : "无关键缺口"}
               />
               <Fact label="Risk" value={risk} />
-              <Fact label="覆盖率" value={`${pct}%`} />
+              <Fact label="KPA" value={role.kpa || "待补充"} />
+              <Fact
+                label="Action"
+                value={role.recommended_action.length ? role.recommended_action.join(" / ") : "待补充"}
+              />
             </div>
           </Module>
 
@@ -267,7 +324,7 @@ export function RoleDetailSheet({
                 },
                 {
                   t: "建议行动",
-                  s: cov.gap ? "启动 KPA / 内部培养" : "保持季度复核",
+                  s: role.recommended_action[0] ?? (cov.gap ? "启动 KPA / 内部培养" : "保持季度复核"),
                   d: cov.gap
                     ? "优先识别内部 backup，同步启动外部 mapping。"
                     : "关注继任梯队与关键技能演进。",
