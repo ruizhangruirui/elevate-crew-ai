@@ -192,6 +192,20 @@ export function RoleDetailSheet({
                 >
                   {criticalityLabel[role.criticality] ?? role.criticality}
                 </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  disabled={aiProfile.isPending}
+                  onClick={() => aiProfile.mutate()}
+                >
+                  {aiProfile.isPending ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="size-3.5" />
+                  )}
+                  AI 生成画像
+                </Button>
                 <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setEditing((v) => !v)}>
                   <Pencil className="size-3.5" /> {editing ? "取消" : "编辑岗位画像"}
                 </Button>
