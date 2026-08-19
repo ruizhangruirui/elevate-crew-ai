@@ -345,6 +345,13 @@ export function RoleDetailSheet({
   );
 }
 
+const toLines = (items: string[]) => items.join("\n");
+const fromLines = (v: string) =>
+  v
+    .split(/[\n,、]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
 function EditRoleForm({ role, onDone }: { role: Role; onDone: () => void }) {
   const [form, setForm] = useState({
     title: role.title,
@@ -353,10 +360,21 @@ function EditRoleForm({ role, onDone }: { role: Role; onDone: () => void }) {
     level_max: String(role.level_max),
     target_count: String(role.target_count),
     criticality: role.criticality,
+    domains: toLines(role.domains),
+    knowledge: toLines(role.knowledge),
+    leadership: toLines(role.leadership),
+    experience: toLines(role.experience),
+    skills: role.skills.map((s) => `${s.skill}: ${s.level}`).join("\n"),
+    kpa: role.kpa ?? "",
+    recommended_action: toLines(role.recommended_action),
   });
 
   const save = useMutation({
     mutationFn: async () => {
+      const skills: Skill[] = fromLines(form.skills.replace(/,/g, "\n")).map((line) => {
+        const [skill, level] = line.split(/[:：]/);
+        return { skill: (skill ?? "").trim(), level: (level ?? "Advanced").trim() };
+      });
       const { error } = await supabase
         .from("roles")
         .update({
@@ -366,6 +384,13 @@ function EditRoleForm({ role, onDone }: { role: Role; onDone: () => void }) {
           level_max: Number(form.level_max),
           target_count: Number(form.target_count),
           criticality: form.criticality,
+          domains: fromLines(form.domains),
+          knowledge: fromLines(form.knowledge),
+          leadership: fromLines(form.leadership),
+          experience: fromLines(form.experience),
+          skills: skills as unknown as never,
+          kpa: form.kpa || null,
+          recommended_action: fromLines(form.recommended_action),
         })
         .eq("id", role.id);
       if (error) throw error;
@@ -429,6 +454,41 @@ function EditRoleForm({ role, onDone }: { role: Role; onDone: () => void }) {
             <SelectItem value="important">Important</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+      {(
+        [
+          ["domains", "专业领域"],
+          ["knowledge", "关键知识"],
+          ["leadership", "Leadership"],
+          ["experience", "经验要求"],
+          ["recommended_action", "建议行动"],
+        ] as const
+      ).map(([key, label]) => (
+        <div key={key} className="space-y-2">
+          <Label>
+            {label} <span className="text-xs text-muted-foreground">（每行一条，或用逗号分隔）</span>
+          </Label>
+          <Textarea
+            rows={2}
+            value={form[key]}
+            onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+          />
+        </div>
+      ))}
+      <div className="space-y-2">
+        <Label>
+          技能要求 <span className="text-xs text-muted-foreground">（每行「技能: 等级」）</span>
+        </Label>
+        <Textarea
+          rows={3}
+          placeholder={"NPU Dataflow: Expert\nCompiler: Advanced"}
+          value={form.skills}
+          onChange={(e) => setForm({ ...form, skills: e.target.value })}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>KPA</Label>
+        <Input value={form.kpa} onChange={(e) => setForm({ ...form, kpa: e.target.value })} />
       </div>
       <Button onClick={() => save.mutate()} disabled={!form.title.trim() || save.isPending}>
         保存
