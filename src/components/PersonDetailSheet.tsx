@@ -252,6 +252,13 @@ export function PersonDetailSheet({
             />
             <Fact label="绩效" value={perfLabel[person.performance ?? ""] ?? "未评估"} />
             <Fact
+              label="所属团队"
+              value={
+                (orgNodes.data ?? []).find((n) => n.id === person.org_node_id)?.name ?? "未归属"
+              }
+              tone={person.org_node_id ? undefined : "warn"}
+            />
+            <Fact
               label="司龄"
               value={person.tenure_months != null ? `${person.tenure_months} 个月` : "—"}
             />
