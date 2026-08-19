@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as CapabilityRouteImport } from './routes/capability'
 import { Route as PeopleRouteImport } from './routes/people'
 import { Route as SettingsRouteImport } from './routes/settings'
 
@@ -22,6 +23,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CapabilityRoute = CapabilityRouteImport.update({
+  id: '/capability',
+  path: '/capability',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PeopleRoute = PeopleRouteImport.update({
@@ -38,12 +44,14 @@ const SettingsRoute = SettingsRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/capability': typeof CapabilityRoute
   '/people': typeof PeopleRoute
   '/settings': typeof SettingsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/capability': typeof CapabilityRoute
   '/people': typeof PeopleRoute
   '/settings': typeof SettingsRoute
 }
@@ -51,20 +59,22 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/capability': typeof CapabilityRoute
   '/people': typeof PeopleRoute
   '/settings': typeof SettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/people' | '/settings'
+  fullPaths: '/' | '/auth' | '/capability' | '/people' | '/settings'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/people' | '/settings'
-  id: '__root__' | '/' | '/auth' | '/people' | '/settings'
+  to: '/' | '/auth' | '/capability' | '/people' | '/settings'
+  id: '__root__' | '/' | '/auth' | '/capability' | '/people' | '/settings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
+  CapabilityRoute: typeof CapabilityRoute
   PeopleRoute: typeof PeopleRoute
   SettingsRoute: typeof SettingsRoute
 }
@@ -83,6 +93,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/capability': {
+      id: '/capability'
+      path: '/capability'
+      fullPath: '/capability'
+      preLoaderRoute: typeof CapabilityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/people': {
@@ -105,6 +122,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
+  CapabilityRoute: CapabilityRoute,
   PeopleRoute: PeopleRoute,
   SettingsRoute: SettingsRoute,
 }
