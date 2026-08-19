@@ -21,6 +21,7 @@ import {
   buildingStats,
   fetchOrgBuilding,
   type Activity,
+  type Participant,
 } from "@/lib/org-building";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -371,7 +372,7 @@ function BuildingPanel({
   building,
 }: {
   data: Workspace;
-  building: { activities: Activity[]; participants: { activity_id: string; person_id: string }[] } | null;
+  building: { activities: Activity[]; participants: Participant[] } | null;
 }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -380,7 +381,7 @@ function BuildingPanel({
   const activities = building?.activities ?? [];
   const participants = building?.participants ?? [];
   const stats = useMemo(
-    () => buildingStats(activities, participants as never, data.people),
+    () => buildingStats(activities, participants, data.people),
     [activities, participants, data.people],
   );
 
