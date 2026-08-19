@@ -199,12 +199,11 @@ function OrgTreeBody() {
   return (
     <div className="space-y-6">
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatTile label="组织节点" value={String(nodes.length)} hint="来自系统设置的组织树" />
-        <StatTile label="已归属成员" value={String(people.length - unassigned.length)} hint={`共 ${people.length} 人`} />
+        <StatTile label="组织节点" value={nodes.length} />
+        <StatTile label="已归属成员" value={`${people.length - unassigned.length} / ${people.length}`} />
         <StatTile
           label="未归属成员"
-          value={String(unassigned.length)}
-          hint="尚未指定 Lab / Team"
+          value={unassigned.length}
           tone={unassigned.length > 0 ? "warn" : "ok"}
         />
       </div>
@@ -292,7 +291,9 @@ function OrgTreeBody() {
       <RoleDetailSheet
         role={roles.find((r) => r.id === roleId) ?? null}
         people={people}
-        directions={directions}
+        directionTitle={
+          directions.find((d) => d.id === roles.find((r) => r.id === roleId)?.direction_id)?.title ?? ""
+        }
         open={!!roleId}
         onOpenChange={(v) => !v && setRoleId(null)}
         onDone={() => qc.invalidateQueries({ queryKey: ["workspace"] })}
