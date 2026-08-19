@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Plus, Pencil, Archive, Download } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { ConfirmAction } from "@/components/ConfirmAction";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -283,9 +284,20 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
                 <Pencil className="size-3.5" /> 编辑
               </Button>
               {node.id !== "vnrc" && (
-                <Button size="sm" variant="ghost" onClick={() => archive.mutate(node)}>
-                  <Archive className="size-3.5" /> 归档
-                </Button>
+                <ConfirmAction
+                  title={`确认归档「${node.name}」？`}
+                  description={
+                    <>
+                      <p>归档后该节点及其下级将不再出现在组织结构中，此操作会写入操作记录。</p>
+                    </>
+                  }
+                  confirmLabel="确认归档"
+                  onConfirm={() => archive.mutate(node)}
+                >
+                  <Button size="sm" variant="ghost">
+                    <Archive className="size-3.5" /> 归档
+                  </Button>
+                </ConfirmAction>
               )}
             </div>
           </div>
@@ -474,9 +486,22 @@ function AccessSection({ users }: { users: AccessUser[] }) {
                 <Badge variant={u.status === "Active" ? "default" : "secondary"}>{u.status}</Badge>
               </TableCell>
               <TableCell className="text-right">
-                <Button size="sm" variant="ghost" onClick={() => toggle.mutate(u)}>
-                  {u.status === "Active" ? "停用" : "启用"}
-                </Button>
+                <ConfirmAction
+                  title={`确认${u.status === "Active" ? "停用" : "启用"}「${u.name}」的访问权限？`}
+                  description={
+                    <p>
+                      {u.status === "Active"
+                        ? "停用后该用户将无法再访问系统数据，此操作会写入操作记录。"
+                        : "启用后该用户将按其 Role 与 Scope 恢复访问权限，此操作会写入操作记录。"}
+                    </p>
+                  }
+                  confirmLabel="确认变更"
+                  onConfirm={() => toggle.mutate(u)}
+                >
+                  <Button size="sm" variant="ghost">
+                    {u.status === "Active" ? "停用" : "启用"}
+                  </Button>
+                </ConfirmAction>
               </TableCell>
             </TableRow>
           ))}
@@ -576,19 +601,40 @@ function ConfigSection({ items }: { items: ConfigItem[] }) {
                       {item.name}
                     </span>
                     <span className="flex shrink-0 gap-1">
-                      <button
-                        className="text-xs text-muted-foreground hover:text-foreground"
-                        onClick={() => mutate.mutate({ type: "toggle", item })}
-                      >
-                        {item.active ? "Deactivate" : "Activate"}
-                      </button>
-                      {!item.active && (
-                        <button
-                          className="text-xs text-destructive hover:opacity-80"
-                          onClick={() => mutate.mutate({ type: "delete", item })}
+                      {item.active ? (
+                        <ConfirmAction
+                          title={`确认停用配置项「${item.name}」？`}
+                          description={<p>停用后新的记录将无法再选择该项，已有数据保持不变。</p>}
+                          confirmLabel="确认停用"
+                          onConfirm={() => mutate.mutate({ type: "toggle", item })}
                         >
-                          Delete
+                          <button className="text-xs text-muted-foreground hover:text-foreground">
+                            Deactivate
+                          </button>
+                        </ConfirmAction>
+                      ) : (
+                        <button
+                          className="text-xs text-muted-foreground hover:text-foreground"
+                          onClick={() => mutate.mutate({ type: "toggle", item })}
+                        >
+                          Activate
                         </button>
+                      )}
+                      {!item.active && (
+                        <ConfirmAction
+                          title={`确认删除配置项「${item.name}」？`}
+                          description={
+                            <>
+                              <p>删除后不可恢复，已经引用该项的历史记录会保留原始文本。</p>
+                            </>
+                          }
+                          confirmLabel="仍要删除"
+                          onConfirm={() => mutate.mutate({ type: "delete", item })}
+                        >
+                          <button className="text-xs text-destructive hover:opacity-80">
+                            Delete
+                          </button>
+                        </ConfirmAction>
                       )}
                     </span>
                   </li>
