@@ -1,0 +1,186 @@
+import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+export type RoleProfileDraft = {
+  domains: string[];
+  knowledge: string[];
+  leadership: string[];
+  experience: string[];
+  skills: { skill: string; level: string }[];
+  kpa: string;
+  recommended_action: string[];
+};
+
+export type FitResult = {
+  person_id: string;
+  person_name: string;
+  fit_score: number;
+  summary: string;
+  strengths: string[];
+  gaps: string[];
+  recommendation: string;
+};
+
+const strArray = { type: "array", items: { type: "string" } };
+
+export const generateRoleProfile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { roleId: string }) => {
+    if (!input?.roleId) throw new Error("缺少岗位");
+    return input;
+  })
+  .handler(async ({ data, context }): Promise<RoleProfileDraft> => {
+    const { generateStructured } = await import("./ai-gateway.server");
+
+    const { data: role, error } = await context.supabase
+      .from("roles")
+      .select("title, description, level_min, level_max, criticality, direction_id")
+      .eq("id", data.roleId)
+      .single();
+    if (error || !role) throw new Error("岗位不存在");
+
+    const { data: direction } = await context.supabase
+      .from("directions")
+      .select("title, description")
+      .eq("id", role.direction_id)
+      .single();
+
+    return generateStructured<RoleProfileDraft>({
+      schemaName: "role_profile",
+      system:
+        "你是资深的技术组织人才架构顾问，服务于一个前沿网络/芯片研究实验室。基于研究方向与岗位信息，输出严谨、具体、可落地的岗位画像。使用中文，专有技术名词保留英文。每个数组 3-6 项，简短成短语，不要整句。",
+      input: [
+        `研究方向：${direction?.title ?? "未知"}`,
+        `方向描述：${direction?.description ?? "无"}`,
+        `岗位名称：${role.title}`,
+        `岗位描述：${role.description ?? "无"}`,
+        `目标级别：${role.level_min}-${role.level_max}`,
+        `关键度：${role.criticality}`,
+        "请生成：专业领域(domains)、关键知识(knowledge)、领导力要求(leadership)、经验要求(experience)、技能要求(skills，level 取 Expert/Advanced/Proficient 之一)、关键绩效领域(kpa，一句话)、建议行动(recommended_action)。",
+      ].join("\n"),
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "domains",
+          "knowledge",
+          "leadership",
+          "experience",
+          "skills",
+          "kpa",
+          "recommended_action",
+        ],
+        properties: {
+          domains: strArray,
+          knowledge: strArray,
+          leadership: strArray,
+          experience: strArray,
+          skills: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["skill", "level"],
+              properties: {
+                skill: { type: "string" },
+                level: { type: "string", enum: ["Expert", "Advanced", "Proficient"] },
+              },
+            },
+          },
+          kpa: { type: "string" },
+          recommended_action: strArray,
+        },
+      },
+    });
+  });
+
+export const analyzeRoleFit = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { roleId: string }) => {
+    if (!input?.roleId) throw new Error("缺少岗位");
+    return input;
+  })
+  .handler(async ({ data, context }): Promise<FitResult[]> => {
+    const { generateStructured } = await import("./ai-gateway.server");
+
+    const { data: role, error } = await context.supabase
+      .from("roles")
+      .select(
+        "id, title, description, level_min, level_max, criticality, domains, knowledge, leadership, experience, skills",
+      )
+      .eq("id", data.roleId)
+      .single();
+    if (error || !role) throw new Error("岗位不存在");
+
+    const { data: people } = await context.supabase
+      .from("people")
+      .select(
+        "id, name, level, status, note, assessed_skills, performance, tenure_months, prior_experience, readiness, attrition_risk",
+      )
+      .order("created_at");
+
+    const candidates = (people ?? []).filter((p) => p.status !== "left");
+    if (!candidates.length) throw new Error("暂无可分析的人员数据");
+
+    const result = await generateStructured<{ results: FitResult[] }>({
+      schemaName: "role_fit",
+      system:
+        "你是资深人才盘点顾问。所有人员数据均由 HR / 主管评估录入，没有员工自评，请据此判断可信度。为每位候选人给出对目标岗位的匹配度评分（0-100）、优势、缺口与培养建议。中文输出，简洁具体，不要空话。person_id 必须原样返回。",
+      input: JSON.stringify({ role, candidates }),
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        required: ["results"],
+        properties: {
+          results: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: [
+                "person_id",
+                "person_name",
+                "fit_score",
+                "summary",
+                "strengths",
+                "gaps",
+                "recommendation",
+              ],
+              properties: {
+                person_id: { type: "string" },
+                person_name: { type: "string" },
+                fit_score: { type: "integer" },
+                summary: { type: "string" },
+                strengths: strArray,
+                gaps: strArray,
+                recommendation: { type: "string" },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const valid = result.results.filter((r) => candidates.some((c) => c.id === r.person_id));
+
+    if (valid.length) {
+      const { error: upsertError } = await context.supabase.from("person_role_fit").upsert(
+        valid.map((r) => ({
+          person_id: r.person_id,
+          role_id: role.id,
+          fit_score: Math.max(0, Math.min(100, Math.round(r.fit_score))),
+          summary: r.summary,
+          strengths: r.strengths,
+          gaps: r.gaps,
+          recommendation: r.recommendation,
+          source: "ai",
+          model: "openai/gpt-5.6-sol",
+          updated_at: new Date().toISOString(),
+        })),
+        { onConflict: "person_id,role_id" },
+      );
+      if (upsertError) throw upsertError;
+    }
+
+    return valid.sort((a, b) => b.fit_score - a.fit_score);
+  });
