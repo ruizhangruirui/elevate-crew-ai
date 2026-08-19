@@ -49,6 +49,12 @@ export type Person = {
   level: number | null;
   status: string;
   note: string | null;
+  assessed_skills?: Skill[];
+  performance?: string | null;
+  tenure_months?: number | null;
+  prior_experience?: string[];
+  readiness?: string;
+  attrition_risk?: string;
 };
 
 export const criticalityLabel: Record<string, string> = {
