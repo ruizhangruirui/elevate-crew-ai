@@ -330,7 +330,11 @@ function StatusBadge({ cap }: { cap: Capability }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className={`rounded-full border px-2.5 py-1 text-[11px] ${cls}`}>{meta.label}</span>
+      <span
+        className={`inline-block whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] ${cls}`}
+      >
+        {meta.label}
+      </span>
       </TooltipTrigger>
       <TooltipContent>{meta.hint}</TooltipContent>
     </Tooltip>
