@@ -299,6 +299,7 @@ function OrgTreeBody() {
       )}
 
       <TeamDiagnosisDialog
+        key={diagNode?.id ?? "none"}
         nodeId={diagNode?.id ?? null}
         nodeName={diagNode?.name ?? ""}
         open={!!diagNode}
