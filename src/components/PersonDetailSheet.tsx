@@ -51,7 +51,7 @@ const perfLabel: Record<string, string> = {
   below: "低于预期",
 };
 
-function Fact({ label, value, tone }: { label: string; value: string; tone?: "ok" | "warn" | "danger" }) {
+function Fact({ label, value, tone }: { label: string; value: string; tone?: "ok" | "warn" | "danger" | undefined }) {
   const toneCls =
     tone === "ok" ? "text-ok" : tone === "warn" ? "text-warn" : tone === "danger" ? "text-danger" : "";
   return (
