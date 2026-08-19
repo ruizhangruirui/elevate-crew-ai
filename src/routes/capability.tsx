@@ -690,3 +690,166 @@ function Legend({ className, label }: { className: string; label: string }) {
     </span>
   );
 }
+
+/* ----------------------------------- 趋势 ---------------------------------- */
+
+function TrendPanel({ data, activities }: { data: Workspace; activities: Activity[] }) {
+  const qc = useQueryClient();
+  const { data: snaps } = useQuery({ queryKey: ["snapshots"], queryFn: fetchSnapshots });
+
+  const caps = useMemo(() => buildCapabilities(data.roles, data.people), [data]);
+  const health = capabilityHealth(caps);
+  const onboard = data.people.filter((p) => p.status === "onboard").length;
+  const targetSeats = data.roles.reduce((n, r) => n + r.target_count, 0);
+  const since = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
+  const acts90 = activities.filter((a) => a.happened_on >= since).length;
+
+  const save = useMutation({
+    mutationFn: () =>
+      recordSnapshot({
+        scope_node_id: null,
+        total_caps: health.total,
+        covered_caps: health.covered,
+        blank_caps: health.blank,
+        single_caps: health.single,
+        coverage_rate: health.coverageRate,
+        onboard_people: onboard,
+        target_seats: targetSeats,
+        activities_90d: acts90,
+      }),
+    onSuccess: () => {
+      toast.success("已记录本期快照");
+      qc.invalidateQueries({ queryKey: ["snapshots"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const list = snaps ?? [];
+  const first = list[0];
+  const last = list[list.length - 1];
+
+  return (
+    <div className="space-y-6">
+      <section className="panel p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h3 className="font-display text-base font-semibold">组织能力趋势</h3>
+            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+              系统里的数据都是「当前快照」。每周（或每次盘点后）记一次，就能看到覆盖率、在岗人数与建设
+              活动的变化曲线。
+            </p>
+          </div>
+          <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending}>
+            <Plus className="size-4" /> 记录本期快照
+          </Button>
+        </div>
+
+        <div className="mt-6 grid gap-3 sm:grid-cols-4">
+          <TrendTile label="能力覆盖率" value={`${health.coverageRate}%`} delta={first ? health.coverageRate - first.coverage_rate : null} unit="%" />
+          <TrendTile label="在岗人数" value={String(onboard)} delta={first ? onboard - first.onboard_people : null} />
+          <TrendTile label="无人承载" value={String(health.blank)} delta={first ? health.blank - first.blank_caps : null} invert />
+          <TrendTile label="90 天活动" value={String(acts90)} delta={first ? acts90 - first.activities_90d : null} />
+        </div>
+      </section>
+
+      {list.length >= 2 ? (
+        <section className="panel p-6">
+          <h3 className="font-display text-base font-semibold">覆盖率曲线</h3>
+          <Sparkline snaps={list} />
+          <p className="mt-2 text-xs text-muted-foreground">
+            {first?.taken_on} → {last?.taken_on}，共 {list.length} 期
+          </p>
+        </section>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          至少记录 2 期快照后，这里会显示趋势曲线。
+        </p>
+      )}
+
+      {list.length > 0 && (
+        <section className="panel overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="border-b border-border/50 text-left text-xs text-muted-foreground">
+              <tr>
+                <th className="px-4 py-2.5 font-normal">日期</th>
+                <th className="px-4 py-2.5 font-normal">覆盖率</th>
+                <th className="px-4 py-2.5 font-normal">无人承载</th>
+                <th className="px-4 py-2.5 font-normal">只靠 1 人</th>
+                <th className="px-4 py-2.5 font-normal">在岗 / 编制</th>
+                <th className="px-4 py-2.5 font-normal">90 天活动</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/40">
+              {[...list].reverse().map((s) => (
+                <tr key={s.id}>
+                  <td className="px-4 py-2.5 tabular-nums">{s.taken_on}</td>
+                  <td className="px-4 py-2.5 tabular-nums">{s.coverage_rate}%</td>
+                  <td className="px-4 py-2.5 tabular-nums">{s.blank_caps}</td>
+                  <td className="px-4 py-2.5 tabular-nums">{s.single_caps}</td>
+                  <td className="px-4 py-2.5 tabular-nums">
+                    {s.onboard_people} / {s.target_seats}
+                  </td>
+                  <td className="px-4 py-2.5 tabular-nums">{s.activities_90d}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function TrendTile({
+  label,
+  value,
+  delta,
+  unit = "",
+  invert = false,
+}: {
+  label: string;
+  value: string;
+  delta: number | null;
+  unit?: string;
+  invert?: boolean;
+}) {
+  const good = delta == null ? null : invert ? delta <= 0 : delta >= 0;
+  return (
+    <div className="rounded-lg border border-border/70 bg-surface-raised/60 px-4 py-3">
+      <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
+      <p className="mt-1.5 font-display text-2xl font-bold tabular-nums">{value}</p>
+      {delta != null && delta !== 0 && (
+        <p className={`mt-0.5 text-xs tabular-nums ${good ? "text-ok" : "text-warn"}`}>
+          {delta > 0 ? "+" : ""}
+          {delta}
+          {unit} 自首期
+        </p>
+      )}
+    </div>
+  );
+}
+
+function Sparkline({ snaps }: { snaps: Snapshot[] }) {
+  const w = 600;
+  const h = 120;
+  const pts = snaps.map((s, i) => {
+    const x = (i / Math.max(1, snaps.length - 1)) * (w - 20) + 10;
+    const y = h - 10 - (s.coverage_rate / 100) * (h - 20);
+    return `${x},${y}`;
+  });
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="mt-4 w-full" role="img" aria-label="能力覆盖率趋势">
+      <polyline
+        points={pts.join(" ")}
+        fill="none"
+        stroke="var(--color-brand)"
+        strokeWidth="2.5"
+        strokeLinejoin="round"
+      />
+      {pts.map((p, i) => {
+        const [x, y] = p.split(",");
+        return <circle key={i} cx={x} cy={y} r="3" fill="var(--color-brand)" />;
+      })}
+    </svg>
+  );
+}
