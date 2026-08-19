@@ -49,6 +49,12 @@ export type Person = {
   level: number | null;
   status: string;
   note: string | null;
+  assessed_skills?: Skill[];
+  performance?: string | null;
+  tenure_months?: number | null;
+  prior_experience?: string[];
+  readiness?: string;
+  attrition_risk?: string;
 };
 
 export const criticalityLabel: Record<string, string> = {
@@ -75,7 +81,13 @@ export async function fetchWorkspace() {
       const row = r as Record<string, unknown>;
       return { ...row, skills: Array.isArray(row["skills"]) ? row["skills"] : [] } as Role;
     }),
-    people: (people.data ?? []) as Person[],
+    people: ((people.data ?? []) as unknown[]).map((p) => {
+      const row = p as Record<string, unknown>;
+      return {
+        ...row,
+        assessed_skills: Array.isArray(row["assessed_skills"]) ? row["assessed_skills"] : [],
+      } as Person;
+    }),
   };
 }
 
