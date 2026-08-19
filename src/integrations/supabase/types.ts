@@ -317,6 +317,7 @@ export type Database = {
           name: string
           note: string | null
           org_id: string
+          org_node_id: string | null
           performance: string | null
           prior_experience: string[]
           readiness: string
@@ -336,6 +337,7 @@ export type Database = {
           name: string
           note?: string | null
           org_id: string
+          org_node_id?: string | null
           performance?: string | null
           prior_experience?: string[]
           readiness?: string
@@ -355,6 +357,7 @@ export type Database = {
           name?: string
           note?: string | null
           org_id?: string
+          org_node_id?: string | null
           performance?: string | null
           prior_experience?: string[]
           readiness?: string
@@ -369,6 +372,13 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "people_org_node_id_fkey"
+            columns: ["org_node_id"]
+            isOneToOne: false
+            referencedRelation: "org_nodes"
             referencedColumns: ["id"]
           },
           {
