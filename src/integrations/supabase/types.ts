@@ -218,36 +218,60 @@ export type Database = {
       }
       people: {
         Row: {
+          assessed_at: string | null
+          assessed_by: string | null
+          assessed_skills: Json
+          attrition_risk: string
           created_at: string
           id: string
           level: number | null
           name: string
           note: string | null
           org_id: string
+          performance: string | null
+          prior_experience: string[]
+          readiness: string
           role_id: string | null
           status: string
+          tenure_months: number | null
           updated_at: string
         }
         Insert: {
+          assessed_at?: string | null
+          assessed_by?: string | null
+          assessed_skills?: Json
+          attrition_risk?: string
           created_at?: string
           id?: string
           level?: number | null
           name: string
           note?: string | null
           org_id: string
+          performance?: string | null
+          prior_experience?: string[]
+          readiness?: string
           role_id?: string | null
           status?: string
+          tenure_months?: number | null
           updated_at?: string
         }
         Update: {
+          assessed_at?: string | null
+          assessed_by?: string | null
+          assessed_skills?: Json
+          attrition_risk?: string
           created_at?: string
           id?: string
           level?: number | null
           name?: string
           note?: string | null
           org_id?: string
+          performance?: string | null
+          prior_experience?: string[]
+          readiness?: string
           role_id?: string | null
           status?: string
+          tenure_months?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -260,6 +284,66 @@ export type Database = {
           },
           {
             foreignKeyName: "people_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      person_role_fit: {
+        Row: {
+          created_at: string
+          fit_score: number
+          gaps: string[]
+          id: string
+          model: string | null
+          person_id: string
+          recommendation: string | null
+          role_id: string
+          source: string
+          strengths: string[]
+          summary: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          fit_score?: number
+          gaps?: string[]
+          id?: string
+          model?: string | null
+          person_id: string
+          recommendation?: string | null
+          role_id: string
+          source?: string
+          strengths?: string[]
+          summary?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          fit_score?: number
+          gaps?: string[]
+          id?: string
+          model?: string | null
+          person_id?: string
+          recommendation?: string | null
+          role_id?: string
+          source?: string
+          strengths?: string[]
+          summary?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "person_role_fit_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_role_fit_role_id_fkey"
             columns: ["role_id"]
             isOneToOne: false
             referencedRelation: "roles"
