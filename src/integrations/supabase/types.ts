@@ -274,9 +274,16 @@ export type Database = {
           criticality: string
           description: string | null
           direction_id: string
+          domains: string[]
+          experience: string[]
           id: string
+          knowledge: string[]
+          kpa: string | null
+          leadership: string[]
           level_max: number
           level_min: number
+          recommended_action: string[]
+          skills: Json
           sort_order: number
           target_count: number
           title: string
@@ -288,9 +295,16 @@ export type Database = {
           criticality?: string
           description?: string | null
           direction_id: string
+          domains?: string[]
+          experience?: string[]
           id?: string
+          knowledge?: string[]
+          kpa?: string | null
+          leadership?: string[]
           level_max?: number
           level_min?: number
+          recommended_action?: string[]
+          skills?: Json
           sort_order?: number
           target_count?: number
           title: string
@@ -302,9 +316,16 @@ export type Database = {
           criticality?: string
           description?: string | null
           direction_id?: string
+          domains?: string[]
+          experience?: string[]
           id?: string
+          knowledge?: string[]
+          kpa?: string | null
+          leadership?: string[]
           level_max?: number
           level_min?: number
+          recommended_action?: string[]
+          skills?: Json
           sort_order?: number
           target_count?: number
           title?: string
