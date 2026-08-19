@@ -18,6 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { fetchWorkspace, criticalityLabel, type Person } from "@/lib/talent";
+import { fetchOrgNodes, nodeStats, type OrgNode } from "@/lib/org-tree";
+import { TeamDiagnosisDialog } from "@/components/TeamDiagnosisDialog";
 
 export const Route = createFileRoute("/org")({
   head: () => ({
@@ -39,21 +41,6 @@ export const Route = createFileRoute("/org")({
   component: OrgPage,
 });
 
-type OrgNode = {
-  id: string;
-  parent_id: string | null;
-  name: string;
-  type: string;
-  mission: string | null;
-  archived: boolean;
-  sort_order: number;
-};
-
-async function fetchOrgTree() {
-  const { data, error } = await supabase.from("org_nodes").select("*").order("sort_order");
-  if (error) throw error;
-  return (data ?? []) as OrgNode[];
-}
 
 function OrgPage() {
   return (
@@ -69,7 +56,8 @@ function OrgPage() {
 function OrgTreeBody() {
   const qc = useQueryClient();
   const ws = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
-  const tree = useQuery({ queryKey: ["org-tree"], queryFn: fetchOrgTree });
+  const tree = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
+  const [diagNode, setDiagNode] = useState<OrgNode | null>(null);
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [personId, setPersonId] = useState<string | null>(null);
