@@ -14,6 +14,93 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_users: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          role_label: string
+          scope: string[]
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          role_label: string
+          scope?: string[]
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          role_label?: string
+          scope?: string[]
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      audit_log: {
+        Row: {
+          action: string
+          actor: string
+          created_at: string
+          detail: string | null
+          entity: string | null
+          id: string
+        }
+        Insert: {
+          action: string
+          actor?: string
+          created_at?: string
+          detail?: string | null
+          entity?: string | null
+          id?: string
+        }
+        Update: {
+          action?: string
+          actor?: string
+          created_at?: string
+          detail?: string | null
+          entity?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      config_items: {
+        Row: {
+          active: boolean
+          category: string
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category: string
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       directions: {
         Row: {
           archived: boolean
@@ -51,6 +138,50 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_nodes: {
+        Row: {
+          archived: boolean
+          created_at: string
+          id: string
+          mission: string | null
+          name: string
+          parent_id: string | null
+          sort_order: number
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          archived?: boolean
+          created_at?: string
+          id: string
+          mission?: string | null
+          name: string
+          parent_id?: string | null
+          sort_order?: number
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          archived?: boolean
+          created_at?: string
+          id?: string
+          mission?: string | null
+          name?: string
+          parent_id?: string | null
+          sort_order?: number
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_nodes_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "org_nodes"
             referencedColumns: ["id"]
           },
         ]
