@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { ConfirmAction } from "@/components/ConfirmAction";
 import { PersonDetailSheet } from "@/components/PersonDetailSheet";
 import { RoleDetailSheet } from "@/components/RoleDetailSheet";
 import { StatTile } from "@/components/StatTile";
@@ -229,18 +230,26 @@ function PeopleBody() {
               <p className="hidden max-w-56 truncate text-xs text-muted-foreground lg:block">
                 {p.note}
               </p>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-muted-foreground hover:text-danger"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  removePerson.mutate(p.id);
-                }}
-                aria-label={`移除 ${p.name}`}
+              <ConfirmAction
+                title={`确认删除「${p.name}」？`}
+                description={
+                  <>
+                    <p>该人员的所有评估信息、岗位归属与 AI 匹配记录都会一并删除，且无法恢复。</p>
+                    <p>如果只是离岗，建议改为在详情里把状态改为「候选人」或移除岗位归属。</p>
+                  </>
+                }
+                confirmLabel="仍要删除"
+                onConfirm={() => removePerson.mutate(p.id)}
               >
-                <Trash2 className="size-4" />
-              </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-danger"
+                  aria-label={`移除 ${p.name}`}
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </ConfirmAction>
             </div>
           ))}
           {data.people.length === 0 && (

@@ -6,6 +6,7 @@ import { UserPlus, UserMinus, Pencil, Sparkles, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { coverageOf, criticalityLabel, type Person, type Role, type Skill } from "@/lib/talent";
 import { analyzeRoleFit, generateRoleProfile, type FitResult } from "@/lib/ai.functions";
+import { ConfirmAction } from "@/components/ConfirmAction";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -192,20 +193,26 @@ export function RoleDetailSheet({
                 >
                   {criticalityLabel[role.criticality] ?? role.criticality}
                 </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5"
-                  disabled={aiProfile.isPending}
-                  onClick={() => aiProfile.mutate()}
+                <ConfirmAction
+                  title="确认用 AI 重新生成岗位画像？"
+                  description={
+                    <>
+                      <p>生成结果会覆盖当前的专业领域、关键知识、Leadership、经验要求、技能要求、KPA 与建议行动。</p>
+                      <p>覆盖后原内容无法恢复，请确认已保存需要保留的内容。</p>
+                    </>
+                  }
+                  confirmLabel="覆盖并生成"
+                  onConfirm={() => aiProfile.mutate()}
                 >
-                  {aiProfile.isPending ? (
-                    <Loader2 className="size-3.5 animate-spin" />
-                  ) : (
-                    <Sparkles className="size-3.5" />
-                  )}
-                  AI 生成画像
-                </Button>
+                  <Button variant="outline" size="sm" className="gap-1.5" disabled={aiProfile.isPending}>
+                    {aiProfile.isPending ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="size-3.5" />
+                    )}
+                    AI 生成画像
+                  </Button>
+                </ConfirmAction>
                 <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setEditing((v) => !v)}>
                   <Pencil className="size-3.5" /> {editing ? "取消" : "编辑岗位画像"}
                 </Button>
@@ -299,14 +306,25 @@ export function RoleDetailSheet({
                       <p className="text-sm text-muted-foreground">
                         {owner.name} · Level {owner.level ?? "-"}
                       </p>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="gap-1.5 text-muted-foreground hover:text-danger"
-                        onClick={() => unassign.mutate(owner.id)}
+                      <ConfirmAction
+                        title={`确认把「${owner.name}」从该岗位移除？`}
+                        description={
+                          <>
+                            <p>移除后该 Seat 变为空缺，岗位覆盖率与组织能力承载会立即重算。</p>
+                            <p>人员本身不会被删除，只是不再归属此岗位。</p>
+                          </>
+                        }
+                        confirmLabel="确认移除"
+                        onConfirm={() => unassign.mutate(owner.id)}
                       >
-                        <UserMinus className="size-3.5" /> 移除 Owner
-                      </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1.5 text-muted-foreground hover:text-danger"
+                        >
+                          <UserMinus className="size-3.5" /> 移除 Owner
+                        </Button>
+                      </ConfirmAction>
                     </div>
                   ) : assignSeat === i ? (
                     <div className="mt-3 flex gap-2">
