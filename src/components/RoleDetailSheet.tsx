@@ -91,6 +91,42 @@ export function RoleDetailSheet({
 }) {
   const [editing, setEditing] = useState(false);
   const [assignSeat, setAssignSeat] = useState<number | null>(null);
+  const [fits, setFits] = useState<FitResult[]>([]);
+  const runProfile = useServerFn(generateRoleProfile);
+  const runFit = useServerFn(analyzeRoleFit);
+
+  const aiProfile = useMutation({
+    mutationFn: async () => {
+      const draft = await runProfile({ data: { roleId: role!.id } });
+      const { error } = await supabase
+        .from("roles")
+        .update({
+          domains: draft.domains,
+          knowledge: draft.knowledge,
+          leadership: draft.leadership,
+          experience: draft.experience,
+          skills: draft.skills as unknown as never,
+          kpa: draft.kpa,
+          recommended_action: draft.recommended_action,
+        })
+        .eq("id", role!.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("AI 已生成岗位画像草稿，请复核后调整");
+      onDone();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const aiFit = useMutation({
+    mutationFn: () => runFit({ data: { roleId: role!.id } }),
+    onSuccess: (rows) => {
+      setFits(rows);
+      toast.success(`已完成 ${rows.length} 位人员的匹配分析`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const owners = role ? people.filter((p) => p.role_id === role.id && p.status === "onboard") : [];
   const unassigned = role ? people.filter((p) => p.role_id !== role.id) : [];
