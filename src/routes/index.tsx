@@ -204,6 +204,17 @@ function StrategyBoard() {
                 filled={coverageOf(role, people).filled}
                 gap={coverageOf(role, people).gap}
                 members={people.filter((p) => p.role_id === role.id).map((p) => p.name)}
+                teams={Array.from(
+                  new Set(
+                    people
+                      .filter((p) => p.role_id === role.id && p.org_node_id)
+                      .map(
+                        (p) =>
+                          (orgNodes.data ?? []).find((n) => n.id === p.org_node_id)?.name ?? "",
+                      )
+                      .filter(Boolean),
+                  ),
+                )}
                 onArchive={() => archiveRole.mutate(role.id)}
                 onOpen={() => setOpenRoleId(role.id)}
               />
@@ -234,6 +245,7 @@ function RoleCard({
   filled,
   gap,
   members,
+  teams,
   onArchive,
   onOpen,
 }: {
@@ -241,6 +253,7 @@ function RoleCard({
   filled: number;
   gap: number;
   members: string[];
+  teams: string[];
   onArchive: () => void;
   onOpen: () => void;
 }) {
@@ -278,6 +291,13 @@ function RoleCard({
       <div className="mt-4">
         <Progress value={pct} className="h-1.5" />
       </div>
+
+      {teams.length > 0 && (
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Building2 className="size-3.5" />
+          承载团队：{teams.join("、")}
+        </p>
+      )}
 
       {members.length > 0 && (
         <p className="mt-4 flex items-center gap-1.5 text-xs text-muted-foreground">
