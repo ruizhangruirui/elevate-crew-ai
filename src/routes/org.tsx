@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ChevronRight, Building2, Users, UserRound, FolderTree } from "lucide-react";
+import { ChevronRight, Building2, Users, UserRound, FolderTree, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { PersonDetailSheet } from "@/components/PersonDetailSheet";
@@ -18,6 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { fetchWorkspace, criticalityLabel, type Person } from "@/lib/talent";
+import { fetchOrgNodes, nodeStats, type OrgNode } from "@/lib/org-tree";
+import { TeamDiagnosisDialog } from "@/components/TeamDiagnosisDialog";
 
 export const Route = createFileRoute("/org")({
   head: () => ({
@@ -39,21 +41,6 @@ export const Route = createFileRoute("/org")({
   component: OrgPage,
 });
 
-type OrgNode = {
-  id: string;
-  parent_id: string | null;
-  name: string;
-  type: string;
-  mission: string | null;
-  archived: boolean;
-  sort_order: number;
-};
-
-async function fetchOrgTree() {
-  const { data, error } = await supabase.from("org_nodes").select("*").order("sort_order");
-  if (error) throw error;
-  return (data ?? []) as OrgNode[];
-}
 
 function OrgPage() {
   return (
@@ -69,7 +56,8 @@ function OrgPage() {
 function OrgTreeBody() {
   const qc = useQueryClient();
   const ws = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
-  const tree = useQuery({ queryKey: ["org-tree"], queryFn: fetchOrgTree });
+  const tree = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
+  const [diagNode, setDiagNode] = useState<OrgNode | null>(null);
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [personId, setPersonId] = useState<string | null>(null);
@@ -127,14 +115,16 @@ function OrgTreeBody() {
     const isOpen = expanded[node.id] ?? depth < 1;
     const total = countIn(node.id);
     const Icon = node.type === "Team" ? Users : Building2;
+    const st = nodeStats(node.id, nodes, people, roles, directions);
 
     return (
       <div key={node.id} className="rounded-xl border border-border/60 bg-surface-raised/40">
-        <button
-          type="button"
-          onClick={() => setExpanded((s) => ({ ...s, [node.id]: !isOpen }))}
-          className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-raised/70"
-        >
+        <div className="flex items-center gap-3 px-4 py-3">
+          <button
+            type="button"
+            onClick={() => setExpanded((s) => ({ ...s, [node.id]: !isOpen }))}
+            className="flex min-w-0 flex-1 items-center gap-3 text-left"
+          >
           <ChevronRight
             className={`size-4 shrink-0 text-muted-foreground transition-transform ${isOpen ? "rotate-90" : ""}`}
           />
@@ -149,7 +139,41 @@ function OrgTreeBody() {
             {node.type}
           </Badge>
           <span className="shrink-0 text-xs text-muted-foreground">{total} 人</span>
-        </button>
+          </button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="shrink-0 gap-1.5 text-xs text-muted-foreground"
+            onClick={() => setDiagNode(node)}
+          >
+            <Sparkles className="size-3.5" /> AI 诊断
+          </Button>
+        </div>
+
+        {total > 0 && (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border/40 px-4 py-2 text-[11px] text-muted-foreground">
+            <span>
+              在岗 <b className="text-foreground tabular-nums">{st.onboard}</b> / 编制{" "}
+              <b className="tabular-nums">{st.targetSeats}</b>
+            </span>
+            <span>
+              平均职级{" "}
+              <b className="text-foreground tabular-nums">{st.avgLevel ?? "—"}</b>
+            </span>
+            <span>
+              能力覆盖率 <b className="text-foreground tabular-nums">{st.coverageRate}%</b>
+            </span>
+            {st.soleCarriers > 0 && (
+              <span className="text-warn">单点风险 {st.soleCarriers} 项</span>
+            )}
+            {st.unassessed > 0 && <span className="text-warn">{st.unassessed} 人资料待补全</span>}
+            {st.directions.length > 0 && (
+              <span className="truncate">
+                承担方向：{st.directions.map((d) => d.title).join(" / ")}
+              </span>
+            )}
+          </div>
+        )}
 
         {isOpen && (
           <div className="space-y-2 border-t border-border/50 px-3 py-3 pl-6">
@@ -273,6 +297,14 @@ function OrgTreeBody() {
           </Button>
         </div>
       )}
+
+      <TeamDiagnosisDialog
+        key={diagNode?.id ?? "none"}
+        nodeId={diagNode?.id ?? null}
+        nodeName={diagNode?.name ?? ""}
+        open={!!diagNode}
+        onOpenChange={(v) => !v && setDiagNode(null)}
+      />
 
       <PersonDetailSheet
         person={people.find((p) => p.id === personId) ?? null}

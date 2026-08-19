@@ -2,13 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Archive, Users, ArrowUpRight } from "lucide-react";
+import { Plus, Archive, Users, ArrowUpRight, Building2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { StatTile } from "@/components/StatTile";
 import { RoleDetailSheet } from "@/components/RoleDetailSheet";
 import { coverageOf, criticalityLabel, fetchWorkspace, type Role } from "@/lib/talent";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchOrgNodes } from "@/lib/org-tree";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,6 +65,7 @@ function Index() {
 function StrategyBoard() {
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
+  const orgNodes = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
   const [activeId, setActiveId] = useState<string | null>(null);
   const [openRoleId, setOpenRoleId] = useState<string | null>(null);
 
@@ -204,6 +206,17 @@ function StrategyBoard() {
                 filled={coverageOf(role, people).filled}
                 gap={coverageOf(role, people).gap}
                 members={people.filter((p) => p.role_id === role.id).map((p) => p.name)}
+                teams={Array.from(
+                  new Set(
+                    people
+                      .filter((p) => p.role_id === role.id && p.org_node_id)
+                      .map(
+                        (p) =>
+                          (orgNodes.data ?? []).find((n) => n.id === p.org_node_id)?.name ?? "",
+                      )
+                      .filter(Boolean),
+                  ),
+                )}
                 onArchive={() => archiveRole.mutate(role.id)}
                 onOpen={() => setOpenRoleId(role.id)}
               />
@@ -234,6 +247,7 @@ function RoleCard({
   filled,
   gap,
   members,
+  teams,
   onArchive,
   onOpen,
 }: {
@@ -241,6 +255,7 @@ function RoleCard({
   filled: number;
   gap: number;
   members: string[];
+  teams: string[];
   onArchive: () => void;
   onOpen: () => void;
 }) {
@@ -278,6 +293,13 @@ function RoleCard({
       <div className="mt-4">
         <Progress value={pct} className="h-1.5" />
       </div>
+
+      {teams.length > 0 && (
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Building2 className="size-3.5" />
+          承载团队：{teams.join("、")}
+        </p>
+      )}
 
       {members.length > 0 && (
         <p className="mt-4 flex items-center gap-1.5 text-xs text-muted-foreground">

@@ -71,6 +71,59 @@ export type Database = {
         }
         Relationships: []
       }
+      capability_snapshots: {
+        Row: {
+          activities_90d: number
+          blank_caps: number
+          coverage_rate: number
+          covered_caps: number
+          created_at: string
+          id: string
+          onboard_people: number
+          scope_node_id: string | null
+          single_caps: number
+          taken_on: string
+          target_seats: number
+          total_caps: number
+        }
+        Insert: {
+          activities_90d?: number
+          blank_caps?: number
+          coverage_rate?: number
+          covered_caps?: number
+          created_at?: string
+          id?: string
+          onboard_people?: number
+          scope_node_id?: string | null
+          single_caps?: number
+          taken_on?: string
+          target_seats?: number
+          total_caps?: number
+        }
+        Update: {
+          activities_90d?: number
+          blank_caps?: number
+          coverage_rate?: number
+          covered_caps?: number
+          created_at?: string
+          id?: string
+          onboard_people?: number
+          scope_node_id?: string | null
+          single_caps?: number
+          taken_on?: string
+          target_seats?: number
+          total_caps?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capability_snapshots_scope_node_id_fkey"
+            columns: ["scope_node_id"]
+            isOneToOne: false
+            referencedRelation: "org_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       config_items: {
         Row: {
           active: boolean

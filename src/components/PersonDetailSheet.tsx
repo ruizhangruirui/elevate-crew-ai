@@ -13,6 +13,7 @@ import {
   type Skill,
 } from "@/lib/talent";
 import { buildCapabilities, normalizeKey, levelRank } from "@/lib/capability";
+import { fetchOrgNodes } from "@/lib/org-tree";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -94,6 +95,7 @@ export function PersonDetailSheet({
   onOpenRole?: (roleId: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const orgNodes = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
 
   const role = person?.role_id ? roles.find((r) => r.id === person.role_id) ?? null : null;
   const direction = role ? directions.find((d) => d.id === role.direction_id) ?? null : null;
@@ -154,6 +156,7 @@ export function PersonDetailSheet({
     assessed_skills: "",
     note: "",
     role_id: "none",
+    org_node_id: "none",
     level: "",
     status: "onboard",
   });
@@ -171,6 +174,7 @@ export function PersonDetailSheet({
         .join("\n"),
       note: person.note ?? "",
       role_id: person.role_id ?? "none",
+      org_node_id: person.org_node_id ?? "none",
       level: person.level != null ? String(person.level) : "",
       status: person.status ?? "onboard",
     });
@@ -199,12 +203,24 @@ export function PersonDetailSheet({
           assessed_skills: skills as unknown as never,
           note: form.note || null,
           role_id: form.role_id === "none" ? null : form.role_id,
+          org_node_id: form.org_node_id === "none" ? null : form.org_node_id,
           level: form.level ? Number(form.level) : null,
           status: form.status,
           assessed_at: new Date().toISOString(),
         })
         .eq("id", person!.id);
       if (error) throw error;
+
+      const nextNode = form.org_node_id === "none" ? null : form.org_node_id;
+      if (nextNode !== (person!.org_node_id ?? null)) {
+        const nameOf = (id: string | null) =>
+          id ? (orgNodes.data ?? []).find((n) => n.id === id)?.name ?? id : "未归属";
+        await supabase.from("audit_log").insert({
+          action: "组织调动",
+          entity: `人员 / ${person!.name}`,
+          detail: `${nameOf(person!.org_node_id ?? null)} → ${nameOf(nextNode)}`,
+        });
+      }
     },
     onSuccess: () => {
       toast.success("已保存评估信息");
@@ -235,6 +251,13 @@ export function PersonDetailSheet({
               tone={person.status === "onboard" ? "ok" : "warn"}
             />
             <Fact label="绩效" value={perfLabel[person.performance ?? ""] ?? "未评估"} />
+            <Fact
+              label="所属团队"
+              value={
+                (orgNodes.data ?? []).find((n) => n.id === person.org_node_id)?.name ?? "未归属"
+              }
+              tone={person.org_node_id ? undefined : "warn"}
+            />
             <Fact
               label="司龄"
               value={person.tenure_months != null ? `${person.tenure_months} 个月` : "—"}
@@ -303,6 +326,25 @@ export function PersonDetailSheet({
                       {roles.map((r) => (
                         <SelectItem key={r.id} value={r.id}>{r.title}</SelectItem>
                       ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>所属团队（组织调动会记入审计日志）</Label>
+                  <Select
+                    value={form.org_node_id}
+                    onValueChange={(v) => setForm({ ...form, org_node_id: v })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">未归属</SelectItem>
+                      {(orgNodes.data ?? [])
+                        .filter((n) => n.type !== "VNRC")
+                        .map((n) => (
+                          <SelectItem key={n.id} value={n.id}>
+                            {n.name}（{n.type}）
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
