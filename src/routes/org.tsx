@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ChevronRight, Building2, Users, UserRound, FolderTree } from "lucide-react";
+import { ChevronRight, Building2, Users, UserRound, FolderTree, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { PersonDetailSheet } from "@/components/PersonDetailSheet";
@@ -297,6 +297,13 @@ function OrgTreeBody() {
           </Button>
         </div>
       )}
+
+      <TeamDiagnosisDialog
+        nodeId={diagNode?.id ?? null}
+        nodeName={diagNode?.name ?? ""}
+        open={!!diagNode}
+        onOpenChange={(v) => !v && setDiagNode(null)}
+      />
 
       <PersonDetailSheet
         person={people.find((p) => p.id === personId) ?? null}
