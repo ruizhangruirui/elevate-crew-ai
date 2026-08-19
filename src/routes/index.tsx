@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Archive, Users, ArrowUpRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { ConfirmAction } from "@/components/ConfirmAction";
 import { StatTile } from "@/components/StatTile";
 import { RoleDetailSheet } from "@/components/RoleDetailSheet";
 import { coverageOf, criticalityLabel, fetchWorkspace, type Role } from "@/lib/talent";
@@ -289,14 +290,25 @@ function RoleCard({
         <Button size="sm" variant="outline" className="gap-1.5" onClick={onOpen}>
           查看岗位画像 <ArrowUpRight className="size-3.5" />
         </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="gap-1.5 text-muted-foreground hover:text-foreground"
-          onClick={onArchive}
+        <ConfirmAction
+          title={`确认归档岗位「${role.title}」？`}
+          description={
+            <>
+              <p>归档后该岗位会从战略岗位视图和组织能力视图中移除，其画像所承载的能力将不再计入覆盖统计。</p>
+              <p>已归属该岗位的人员不会被删除，但会显示为未分配岗位。</p>
+            </>
+          }
+          confirmLabel="确认归档"
+          onConfirm={onArchive}
         >
-          <Archive className="size-3.5" /> 归档
-        </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-muted-foreground hover:text-foreground"
+          >
+            <Archive className="size-3.5" /> 归档
+          </Button>
+        </ConfirmAction>
       </div>
     </article>
   );
