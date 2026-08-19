@@ -45,6 +45,7 @@ export type Person = {
   id: string;
   org_id: string;
   role_id: string | null;
+  org_node_id?: string | null;
   name: string;
   level: number | null;
   status: string;
