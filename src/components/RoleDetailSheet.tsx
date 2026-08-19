@@ -357,6 +357,62 @@ export function RoleDetailSheet({
           </Module>
 
           <Module title="AI 辅助判断">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-brand/30 bg-brand/5 p-4">
+              <p className="text-xs text-muted-foreground">
+                基于 HR / 主管录入的能力评估数据，计算全员对本岗位的匹配度。
+              </p>
+              <Button size="sm" className="gap-1.5" disabled={aiFit.isPending} onClick={() => aiFit.mutate()}>
+                {aiFit.isPending ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="size-3.5" />
+                )}
+                {aiFit.isPending ? "分析中…" : "AI 人岗匹配分析"}
+              </Button>
+            </div>
+
+            {fits.length > 0 && (
+              <div className="mb-4 space-y-3">
+                {fits.map((f) => (
+                  <div key={f.person_id} className="rounded-xl border border-border/60 bg-surface-raised/40 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <strong className="text-sm">{f.person_name}</strong>
+                      <span
+                        className={`rounded-md px-2 py-1 text-[11px] font-medium tabular-nums ${
+                          f.fit_score >= 75
+                            ? "bg-ok/12 text-ok"
+                            : f.fit_score >= 50
+                              ? "bg-warn/12 text-warn"
+                              : "bg-danger/12 text-danger"
+                        }`}
+                      >
+                        匹配度 {f.fit_score}%
+                      </span>
+                    </div>
+                    <Progress value={f.fit_score} className="mt-3 h-1.5" />
+                    <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{f.summary}</p>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.12em] text-ok">优势</p>
+                        <div className="mt-1.5">
+                          <TagList items={f.strengths} empty="—" />
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.12em] text-danger">缺口</p>
+                        <div className="mt-1.5">
+                          <TagList items={f.gaps} empty="—" />
+                        </div>
+                      </div>
+                    </div>
+                    <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                      培养建议：{f.recommendation}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="grid gap-3 sm:grid-cols-3">
               {[
                 {
