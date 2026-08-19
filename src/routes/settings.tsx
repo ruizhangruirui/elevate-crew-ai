@@ -270,12 +270,12 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
             style={{ marginLeft: depth * 20 }}
           >
             <div className="min-w-0">
-              <p className="font-medium">
+              <div className="font-medium">
                 {node.name}{" "}
                 <Badge variant="secondary" className="ml-1 align-middle text-[10px]">
                   {node.type}
                 </Badge>
-              </p>
+              </div>
               <p className="mt-1 text-xs text-muted-foreground">{node.mission || "No mission"}</p>
             </div>
             <div className="flex gap-1">
