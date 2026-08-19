@@ -1,27 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { AlertTriangle, Layers, ShieldAlert, Sparkles, UserX } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Info } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { StatTile } from "@/components/StatTile";
 import { fetchWorkspace } from "@/lib/talent";
 import {
   buildCapabilities,
   capabilityHealth,
-  directionStats,
   kindLabel,
-  statusMeta,
   type Capability,
-  type CapabilityKind,
+  type CapabilityStatus,
 } from "@/lib/capability";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 export const Route = createFileRoute("/capability")({
   head: () => ({
@@ -29,14 +18,12 @@ export const Route = createFileRoute("/capability")({
       { title: "组织能力视图 · 战略岗位与人才管理系统" },
       {
         name: "description",
-        content:
-          "从现有岗位画像自动推导组织能力地图，识别结构性空白、单点风险、能力断层与配置重叠。",
+        content: "从现有岗位画像自动推导组织能力清单，看清哪些能力无人承载、哪些只靠一个人。",
       },
       { property: "og:title", content: "组织能力视图 · 战略岗位与人才管理系统" },
       {
         property: "og:description",
-        content:
-          "从现有岗位画像自动推导组织能力地图，识别结构性空白、单点风险、能力断层与配置重叠。",
+        content: "从现有岗位画像自动推导组织能力清单，看清哪些能力无人承载、哪些只靠一个人。",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -49,332 +36,194 @@ function CapabilityPage() {
   return (
     <AppShell
       title="组织能力视图"
-      subtitle="不看单个人，而看组织能力：为实现战略方向所需的能力是否被岗位覆盖、是否有人承载、是否存在单点风险与配置重叠。"
+      subtitle="不看单个人，而看组织能力：我们的岗位一共要求了哪些能力，其中哪些真正有人扛得起来。"
     >
       <CapabilityBody />
     </AppShell>
   );
 }
 
-const KINDS: (CapabilityKind | "all")[] = ["all", "domain", "knowledge", "skill", "leadership"];
+const GROUPS: { status: CapabilityStatus; title: string; desc: string; tone: string }[] = [
+  {
+    status: "blank",
+    title: "无人承载",
+    desc: "岗位画像里写了这项要求，但现在一个在岗的人都没有",
+    tone: "danger",
+  },
+  {
+    status: "single",
+    title: "只靠 1 人",
+    desc: "整个方向只有一个人扛这项能力，他一走就断了",
+    tone: "warn",
+  },
+  {
+    status: "thin",
+    title: "人手偏少",
+    desc: "有人承载，但少于岗位编制的需求",
+    tone: "warn",
+  },
+  { status: "covered", title: "已覆盖", desc: "有足够的人承载这项能力", tone: "ok" },
+];
 
 function CapabilityBody() {
   const { data } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
-  const [kind, setKind] = useState<CapabilityKind | "all">("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "risk">("all");
+  const [dirId, setDirId] = useState<string | null>(null);
 
-  const caps = useMemo(
-    () => (data ? buildCapabilities(data.roles, data.people) : []),
-    [data],
-  );
-  const health = useMemo(() => capabilityHealth(caps), [caps]);
-  const dirStats = useMemo(
-    () => (data ? directionStats(data.directions, caps) : []),
-    [data, caps],
-  );
+  const caps = useMemo(() => (data ? buildCapabilities(data.roles, data.people) : []), [data]);
+
+  useEffect(() => {
+    if (data && !dirId && data.directions[0]) setDirId(data.directions[0].id);
+  }, [data, dirId]);
 
   if (!data) return <div className="text-sm text-muted-foreground">加载中…</div>;
 
   const { directions } = data;
-
-  const visible = caps.filter(
-    (c) =>
-      (kind === "all" || c.kind === kind) &&
-      (statusFilter === "all" || c.status === "blank" || c.status === "single" || c.depthGap),
-  );
-
-  const blanks = caps.filter((c) => c.status === "blank");
-  const singles = caps.filter((c) => c.status === "single");
-  const overlaps = caps.filter((c) => c.overlap);
+  const health = capabilityHealth(caps);
+  const active = directions.find((d) => d.id === dirId) ?? directions[0] ?? null;
+  const dirCaps = active ? caps.filter((c) => c.directionIds.includes(active.id)) : [];
 
   return (
-    <TooltipProvider delayDuration={150}>
-      <div className="space-y-10">
-        {/* Derivation notice */}
-        <div className="flex items-start gap-3 rounded-lg border border-brand/25 bg-brand/5 px-4 py-3">
-          <Sparkles className="mt-0.5 size-4 shrink-0 text-brand" />
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            本页所有能力项均由现有<strong className="text-foreground">岗位画像</strong>
-            （专业领域 / 关键知识 / 技能 / 领导力）与人员任岗关系
-            <strong className="text-foreground">自动推导</strong>
-            ，不需要 HR 或业务部门额外维护任何数据。岗位画像更新后，本页即时同步。
-          </p>
+    <div className="space-y-10">
+      {/* Plain-language conclusion */}
+      <section className="panel p-6 md:p-8">
+        <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">体检结论</p>
+        <p className="mt-3 max-w-3xl font-display text-xl leading-relaxed md:text-2xl">
+          现有岗位一共要求 <Num n={health.total} tone="brand" /> 项能力，其中{" "}
+          <Num n={health.blank} tone="danger" /> 项<strong className="text-danger">无人承载</strong>
+          ，<Num n={health.single} tone="warn" /> 项<strong className="text-warn">只靠 1 个人</strong>
+          ，真正站稳的只有 <Num n={health.covered} tone="ok" /> 项。
+        </p>
+
+        <div className="mt-6 h-3 w-full overflow-hidden rounded-full bg-muted/30">
+          <div className="flex h-full">
+            <Bar value={health.blank} total={health.total} className="bg-danger" />
+            <Bar value={health.single + health.thin} total={health.total} className="bg-warn" />
+            <Bar value={health.covered} total={health.total} className="bg-ok" />
+          </div>
         </div>
+        <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground">
+          <Legend className="bg-danger" label={`无人承载 ${health.blank}`} />
+          <Legend className="bg-warn" label={`人手不足 ${health.single + health.thin}`} />
+          <Legend className="bg-ok" label={`已覆盖 ${health.covered}`} />
+        </div>
+      </section>
 
-        {/* Health tiles */}
-        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          <StatTile label="能力项总数" value={health.total} />
-          <StatTile
-            label="覆盖率"
-            value={`${health.coverageRate}%`}
-            tone={health.coverageRate >= 70 ? "ok" : health.coverageRate >= 40 ? "warn" : "danger"}
-          />
-          <StatTile label="结构性空白" value={health.blank} tone={health.blank ? "danger" : "ok"} />
-          <StatTile label="单点风险" value={health.single} tone={health.single ? "warn" : "ok"} />
-          <StatTile label="跨方向共享能力" value={health.shared} />
-        </section>
-
-        {/* Risk panels */}
-        <section className="grid gap-4 lg:grid-cols-3">
-          <RiskPanel
-            icon={UserX}
-            tone="danger"
-            title="结构性空白"
-            desc="岗位要求，但当前无人承载"
-            items={blanks.map((c) => ({ label: c.label, meta: c.roleTitles.join(" / ") }))}
-          />
-          <RiskPanel
-            icon={ShieldAlert}
-            tone="warn"
-            title="单点风险 (Bus factor = 1)"
-            desc="仅 1 人承载，离职即失守"
-            items={singles.map((c) => ({
-              label: c.label,
-              meta: c.carriers.map((x) => x.person.name).join("、"),
-            }))}
-          />
-          <RiskPanel
-            icon={Layers}
-            tone="muted"
-            title="配置重叠"
-            desc="3 个及以上岗位重复要求同一能力"
-            items={overlaps.map((c) => ({
-              label: c.label,
-              meta: `${c.roleTitles.length} 个岗位`,
-            }))}
-          />
-        </section>
-
-        {/* Direction × capability heatmap */}
-        <section className="panel p-6">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <h2 className="font-display text-xl font-semibold">能力 × 方向 热力图</h2>
-              <p className="mt-1 text-xs text-muted-foreground">
-                颜色表示承载状态：红 = 无人承载，橙 = 单点/偏薄，绿 = 已覆盖。格子内为承载人数。
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {KINDS.map((k) => (
-                <button
-                  key={k}
-                  onClick={() => setKind(k)}
-                  className={`rounded-full border px-3 py-1 text-xs transition-colors ${
-                    kind === k
-                      ? "border-brand/60 bg-brand/15 text-foreground"
-                      : "border-border/70 text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {k === "all" ? "全部" : kindLabel[k]}
-                </button>
-              ))}
+      {/* Direction picker */}
+      <section>
+        <div className="flex flex-wrap gap-2">
+          {directions.map((d) => {
+            const list = caps.filter((c) => c.directionIds.includes(d.id));
+            const risky = list.filter((c) => c.status === "blank" || c.status === "single").length;
+            const on = d.id === active?.id;
+            return (
               <button
-                onClick={() => setStatusFilter(statusFilter === "all" ? "risk" : "all")}
-                className={`rounded-full border px-3 py-1 text-xs transition-colors ${
-                  statusFilter === "risk"
-                    ? "border-danger/60 bg-danger/15 text-foreground"
+                key={d.id}
+                onClick={() => setDirId(d.id)}
+                className={`rounded-lg border px-4 py-2.5 text-left text-sm transition-colors ${
+                  on
+                    ? "border-brand/60 bg-brand/10 text-foreground"
                     : "border-border/70 text-muted-foreground hover:text-foreground"
                 }`}
               >
-                只看风险项
+                <span className="block font-medium">{d.title}</span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  {list.length} 项能力 · {risky} 项待补
+                </span>
               </button>
-            </div>
-          </div>
+            );
+          })}
+        </div>
 
-          <div className="mt-5 overflow-x-auto">
-            <table className="w-full min-w-[720px] border-separate border-spacing-0 text-sm">
-              <thead>
-                <tr>
-                  <th className="sticky left-0 z-10 bg-surface-raised/80 px-3 py-2 text-left text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground backdrop-blur">
-                    能力项
-                  </th>
-                  {directions.map((d) => (
-                    <th
-                      key={d.id}
-                      className="px-2 py-2 text-center text-[11px] font-medium text-muted-foreground"
-                    >
-                      <span className="line-clamp-2 block max-w-[120px]">{d.title}</span>
-                    </th>
-                  ))}
-                  <th className="px-3 py-2 text-right text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                    状态
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {visible.map((c) => (
-                  <tr key={c.key} className="group">
-                    <td className="sticky left-0 z-10 border-t border-border/50 bg-surface-raised/80 px-3 py-2 backdrop-blur">
-                      <div className="flex items-center gap-2">
-                        <span className="truncate">{c.label}</span>
-                        <span className="shrink-0 rounded bg-muted/40 px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                          {kindLabel[c.kind]}
-                        </span>
-                        {c.requiredLevel && (
-                          <span className="shrink-0 text-[10px] text-brand">{c.requiredLevel}</span>
-                        )}
-                        {c.depthGap && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <AlertTriangle className="size-3.5 shrink-0 text-warn" />
-                            </TooltipTrigger>
-                            <TooltipContent>要求 Expert，但无人被评估到该等级（深度不足）</TooltipContent>
-                          </Tooltip>
-                        )}
-                      </div>
-                    </td>
-                    {directions.map((d) => {
-                      const inDir = c.directionIds.includes(d.id);
-                      return (
-                        <td key={d.id} className="border-t border-border/50 px-2 py-2 text-center">
-                          {inDir ? <Cell cap={c} /> : <span className="text-muted/40">·</span>}
-                        </td>
-                      );
-                    })}
-                    <td className="border-t border-border/50 px-3 py-2 text-right">
-                      <StatusBadge cap={c} />
-                    </td>
-                  </tr>
-                ))}
-                {visible.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={directions.length + 2}
-                      className="px-3 py-10 text-center text-sm text-muted-foreground"
-                    >
-                      没有符合条件的能力项。
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        {/* Direction rollup */}
-        <section>
-          <h2 className="font-display text-xl font-semibold">方向能力体检</h2>
-          <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {dirStats.map((s) => (
-              <div key={s.direction.id} className="panel p-5">
-                <p className="font-display text-base font-semibold">{s.direction.title}</p>
-                <div className="mt-3 flex items-baseline gap-2">
-                  <span className="font-display text-3xl font-bold tabular-nums">
-                    {s.coverageRate}%
+        {/* Grouped capability list */}
+        <div className="mt-6 space-y-6">
+          {GROUPS.map((g) => {
+            const list = dirCaps.filter((c) => c.status === g.status);
+            if (!list.length) return null;
+            const toneCls =
+              g.tone === "danger"
+                ? "text-danger"
+                : g.tone === "warn"
+                  ? "text-warn"
+                  : "text-ok";
+            return (
+              <div key={g.status} className="panel overflow-hidden">
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-border/50 px-5 py-4">
+                  <span className={`size-2 rounded-full ${toneCls.replace("text-", "bg-")}`} />
+                  <h3 className={`font-display text-base font-semibold ${toneCls}`}>{g.title}</h3>
+                  <span className="font-display text-sm tabular-nums text-muted-foreground">
+                    {list.length} 项
                   </span>
-                  <span className="text-xs text-muted-foreground">能力覆盖率</span>
+                  <p className="w-full text-xs text-muted-foreground sm:w-auto">{g.desc}</p>
                 </div>
-                <Progress value={s.coverageRate} className="mt-3 h-1.5" />
-                <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                  <Badge variant="outline">{s.total} 项能力</Badge>
-                  {s.blank > 0 && (
-                    <Badge className="border-danger/40 bg-danger/15 text-danger" variant="outline">
-                      {s.blank} 项空白
-                    </Badge>
-                  )}
-                  {s.single > 0 && (
-                    <Badge className="border-warn/40 bg-warn/15 text-warn" variant="outline">
-                      {s.single} 项单点
-                    </Badge>
-                  )}
-                </div>
+                <ul className="divide-y divide-border/40">
+                  {list.map((c) => (
+                    <CapRow key={c.key} cap={c} />
+                  ))}
+                </ul>
               </div>
-            ))}
-          </div>
-        </section>
-      </div>
-    </TooltipProvider>
-  );
-}
+            );
+          })}
+          {dirCaps.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              这个方向的岗位还没有填写画像信息，先去「战略岗位视图」补齐或用 AI 生成。
+            </p>
+          )}
+        </div>
+      </section>
 
-function Cell({ cap }: { cap: Capability }) {
-  const n = cap.carriers.length;
-  const cls =
-    cap.status === "blank"
-      ? "bg-danger/20 text-danger border-danger/30"
-      : cap.status === "covered"
-        ? "bg-ok/20 text-ok border-ok/30"
-        : "bg-warn/20 text-warn border-warn/30";
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span
-          className={`inline-grid h-7 w-10 place-items-center rounded border text-xs font-semibold tabular-nums ${cls}`}
-        >
-          {n}
-        </span>
-      </TooltipTrigger>
-      <TooltipContent className="max-w-xs">
-        <p className="font-medium">{cap.label}</p>
-        <p className="mt-1 text-xs">承载岗位：{cap.roleTitles.join(" / ")}</p>
-        <p className="text-xs">
-          承载人：{cap.carriers.length ? cap.carriers.map((c) => c.person.name).join("、") : "无"}
-        </p>
-        <p className="text-xs">岗位编制合计：{cap.targetSeats}</p>
-      </TooltipContent>
-    </Tooltip>
-  );
-}
-
-function StatusBadge({ cap }: { cap: Capability }) {
-  const meta = statusMeta[cap.status];
-  const cls =
-    meta.tone === "danger"
-      ? "border-danger/40 bg-danger/15 text-danger"
-      : meta.tone === "warn"
-        ? "border-warn/40 bg-warn/15 text-warn"
-        : meta.tone === "ok"
-          ? "border-ok/40 bg-ok/15 text-ok"
-          : "border-border/70 text-muted-foreground";
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-      <span
-        className={`inline-block whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] ${cls}`}
-      >
-        {meta.label}
-      </span>
-      </TooltipTrigger>
-      <TooltipContent>{meta.hint}</TooltipContent>
-    </Tooltip>
-  );
-}
-
-function RiskPanel({
-  icon: Icon,
-  tone,
-  title,
-  desc,
-  items,
-}: {
-  icon: typeof UserX;
-  tone: "danger" | "warn" | "muted";
-  title: string;
-  desc: string;
-  items: { label: string; meta: string }[];
-}) {
-  const toneCls =
-    tone === "danger" ? "text-danger" : tone === "warn" ? "text-warn" : "text-muted-foreground";
-  return (
-    <div className="panel flex flex-col p-5">
-      <div className="flex items-center gap-2">
-        <Icon className={`size-4 ${toneCls}`} />
-        <p className="font-display text-sm font-semibold">{title}</p>
-        <span className={`ml-auto font-display text-lg font-bold tabular-nums ${toneCls}`}>
-          {items.length}
-        </span>
-      </div>
-      <p className="mt-1 text-xs text-muted-foreground">{desc}</p>
-      <ul className="mt-3 space-y-2 overflow-y-auto pr-1 text-sm" style={{ maxHeight: 260 }}>
-        {items.map((it) => (
-          <li key={it.label} className="rounded-md border border-border/50 px-3 py-2">
-            <p className="truncate font-medium">{it.label}</p>
-            <p className="truncate text-xs text-muted-foreground">{it.meta || "—"}</p>
-          </li>
-        ))}
-        {items.length === 0 && <li className="text-xs text-muted-foreground">无</li>}
-      </ul>
+      {/* Footnote */}
+      <p className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
+        <Info className="mt-0.5 size-3.5 shrink-0" />
+        这些能力项不需要任何人额外维护——它们是从岗位画像里的专业领域 / 关键知识 / 技能 /
+        领导力自动汇总的，承载人则来自人员的任岗关系。岗位画像一改，这里就跟着变。
+      </p>
     </div>
+  );
+}
+
+function CapRow({ cap }: { cap: Capability }) {
+  return (
+    <li className="flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 text-sm">
+      <span className="font-medium">{cap.label}</span>
+      <span className="rounded bg-muted/40 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+        {kindLabel[cap.kind]}
+      </span>
+      <span className="ml-auto text-xs text-muted-foreground">
+        来自 {cap.roleTitles.join(" / ")}
+      </span>
+      <span className="w-full text-xs sm:w-44 sm:text-right">
+        {cap.carriers.length ? (
+          <span className="text-foreground">{cap.carriers.map((c) => c.person.name).join("、")}</span>
+        ) : (
+          <span className="text-danger">暂无人选</span>
+        )}
+      </span>
+    </li>
+  );
+}
+
+function Num({ n, tone }: { n: number; tone: "brand" | "danger" | "warn" | "ok" }) {
+  const cls =
+    tone === "danger"
+      ? "text-danger"
+      : tone === "warn"
+        ? "text-warn"
+        : tone === "ok"
+          ? "text-ok"
+          : "brand-gradient-text";
+  return <span className={`font-bold tabular-nums ${cls}`}>{n}</span>;
+}
+
+function Bar({ value, total, className }: { value: number; total: number; className: string }) {
+  if (!total || !value) return null;
+  return <div className={className} style={{ width: `${(value / total) * 100}%` }} />;
+}
+
+function Legend({ className, label }: { className: string; label: string }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <span className={`size-2 rounded-full ${className}`} />
+      {label}
+    </span>
   );
 }
