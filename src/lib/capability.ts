@@ -21,12 +21,12 @@ export const statusMeta: Record<
   { label: string; tone: "ok" | "warn" | "danger" | "muted"; hint: string }
 > = {
   blank: {
-    label: "结构性空白",
+    label: "无人承载",
     tone: "danger",
     hint: "岗位要求该能力，但目前没有任何在岗人员承载",
   },
-  single: { label: "单点风险", tone: "warn", hint: "仅 1 人承载，人一走能力即失守" },
-  thin: { label: "偏薄", tone: "warn", hint: "承载人数少于岗位编制需求" },
+  single: { label: "只靠 1 人", tone: "warn", hint: "仅 1 人承载，人一走能力即失守" },
+  thin: { label: "人手偏少", tone: "warn", hint: "承载人数少于岗位编制需求" },
   covered: { label: "已覆盖", tone: "ok", hint: "有足够人员承载该能力" },
 };
 
