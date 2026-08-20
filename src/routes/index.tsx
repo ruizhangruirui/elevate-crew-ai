@@ -2,12 +2,27 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Archive, Users, ArrowUpRight, Building2, Pencil } from "lucide-react";
+import {
+  Plus,
+  Archive,
+  Users,
+  ArrowUpRight,
+  Building2,
+  Pencil,
+  MoreHorizontal,
+} from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { StatTile } from "@/components/StatTile";
 import { RoleDetailSheet } from "@/components/RoleDetailSheet";
-import { coverageOf, criticalityLabel, fetchWorkspace, type Org, type Role } from "@/lib/talent";
+import {
+  coverageOf,
+  criticalityLabel,
+  fetchWorkspace,
+  type Direction,
+  type Org,
+  type Role,
+} from "@/lib/talent";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchOrgNodes } from "@/lib/org-tree";
 import {
@@ -37,6 +52,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/")({
   head: () => ({
