@@ -44,6 +44,82 @@ export type Database = {
         }
         Relationships: []
       }
+      actions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          detail: string | null
+          due_on: string | null
+          id: string
+          org_node_id: string | null
+          owner: string | null
+          person_id: string | null
+          priority: string
+          role_id: string | null
+          source_key: string | null
+          source_kind: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          detail?: string | null
+          due_on?: string | null
+          id?: string
+          org_node_id?: string | null
+          owner?: string | null
+          person_id?: string | null
+          priority?: string
+          role_id?: string | null
+          source_key?: string | null
+          source_kind?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          detail?: string | null
+          due_on?: string | null
+          id?: string
+          org_node_id?: string | null
+          owner?: string | null
+          person_id?: string | null
+          priority?: string
+          role_id?: string | null
+          source_key?: string | null
+          source_kind?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "actions_org_node_id_fkey"
+            columns: ["org_node_id"]
+            isOneToOne: false
+            referencedRelation: "org_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "actions_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "actions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
