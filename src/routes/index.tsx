@@ -2,12 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Archive, Users, ArrowUpRight, Building2 } from "lucide-react";
+import { Plus, Archive, Users, ArrowUpRight, Building2, Pencil } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { StatTile } from "@/components/StatTile";
 import { RoleDetailSheet } from "@/components/RoleDetailSheet";
-import { coverageOf, criticalityLabel, fetchWorkspace, type Role } from "@/lib/talent";
+import { coverageOf, criticalityLabel, fetchWorkspace, type Org, type Role } from "@/lib/talent";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchOrgNodes } from "@/lib/org-tree";
 import {
@@ -122,9 +122,12 @@ function StrategyBoard() {
         />
         <div className="relative grid gap-8 lg:grid-cols-[1.4fr_1fr]">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-              {org?.tagline ?? "战略组织"}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+                {org?.tagline ?? "战略组织"}
+              </p>
+              {org && <EditOrgDialog org={org} onDone={invalidate} />}
+            </div>
             <h2 className="mt-2 font-display text-4xl font-bold">
               <span className="brand-gradient-text">{org?.name}</span>
             </h2>
@@ -266,6 +269,106 @@ function StrategyBoard() {
 }
 
 function ActionStrip({ list }: { list: ActionItem[] }) {
+  return <ActionStripInner list={list} />;
+}
+
+function EditOrgDialog({ org, onDone }: { org: Org; onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(org.name);
+  const [tagline, setTagline] = useState(org.tagline ?? "");
+  const [description, setDescription] = useState(org.description ?? "");
+  const [tags, setTags] = useState((org.tags ?? []).join("、"));
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("orgs")
+        .update({
+          name: name.trim(),
+          tagline: tagline.trim() || null,
+          description: description.trim() || null,
+          tags: tags
+            .split(/[、,，\n]/)
+            .map((t) => t.trim())
+            .filter(Boolean),
+        })
+        .eq("id", org.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("组织信息已更新");
+      setOpen(false);
+      onDone();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (v) {
+          setName(org.name);
+          setTagline(org.tagline ?? "");
+          setDescription(org.description ?? "");
+          setTags((org.tags ?? []).join("、"));
+        }
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 gap-1 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+        >
+          <Pencil className="size-3" /> 编辑
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>编辑战略组织</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>组织名称</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>副标题</Label>
+            <Input
+              value={tagline}
+              onChange={(e) => setTagline(e.target.value)}
+              placeholder="例如：战略组织"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>组织使命 / 描述</Label>
+            <Textarea
+              rows={3}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>标签（用、或逗号分隔）</Label>
+            <Input value={tags} onChange={(e) => setTags(e.target.value)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button
+            onClick={() => save.mutate()}
+            disabled={save.isPending || !name.trim()}
+          >
+            保存
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ActionStripInner({ list }: { list: ActionItem[] }) {
   const s = actionSummary(list);
   const top = list
     .filter((a) => a.status === "todo" || a.status === "doing")
