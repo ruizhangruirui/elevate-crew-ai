@@ -143,7 +143,7 @@ function StrategyBoard() {
               <Link to="/org" className="text-brand hover:underline">
                 编制与团队结构 →
               </Link>
-              <Link to="/capability" className="text-brand hover:underline">
+              <Link to="/capability" search={{ scope: undefined }} className="text-brand hover:underline">
                 能力覆盖与缺口 →
               </Link>
               <Link to="/people" className="text-brand hover:underline">
