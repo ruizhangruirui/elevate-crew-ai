@@ -6,8 +6,8 @@ import { Plus, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { PersonDetailSheet } from "@/components/PersonDetailSheet";
-import { completeness, missingFieldLabel } from "@/lib/org-tree";
-import { Progress } from "@/components/ui/progress";
+import { completeness } from "@/lib/org-tree";
+import { Link } from "@tanstack/react-router";
 import { RoleDetailSheet } from "@/components/RoleDetailSheet";
 import { StatTile } from "@/components/StatTile";
 import { fetchWorkspace, type Person } from "@/lib/talent";
@@ -114,11 +114,17 @@ function PeopleBody() {
         <StatTile label="未分配岗位" value={unassigned.length} tone="danger" />
       </div>
 
-      <CompletenessPanel people={data.people} onOpen={setActivePersonId} />
-
       <div className="panel overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-6 py-4">
-          <h2 className="font-display text-lg font-semibold">人员名单</h2>
+          <div>
+            <h2 className="font-display text-lg font-semibold">人员名单</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              全员平铺清单；按团队层级浏览与数据完整度详情见
+              <Link to="/org" className="ml-1 text-brand hover:underline">
+                组织 & 人员视图
+              </Link>
+            </p>
+          </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1.5">
