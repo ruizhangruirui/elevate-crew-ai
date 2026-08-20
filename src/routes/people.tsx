@@ -296,3 +296,4 @@ function PeopleBody() {
       />
     </div>
   );
+}
