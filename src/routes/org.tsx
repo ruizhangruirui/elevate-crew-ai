@@ -33,12 +33,12 @@ import { TeamDiagnosisDialog } from "@/components/TeamDiagnosisDialog";
 export const Route = createFileRoute("/org")({
   head: () => ({
     meta: [
-      { title: "组织 & 人员视图 — 战略岗位与人才" },
+      { title: "组织视图 — 战略岗位与人才" },
       {
         name: "description",
         content: "从 Lab 到 Team 到人，逐层展开组织结构，点开成员查看岗位、技能与能力承载详情。",
       },
-      { property: "og:title", content: "组织 & 人员视图 — 战略岗位与人才" },
+      { property: "og:title", content: "组织视图 — 战略岗位与人才" },
       {
         property: "og:description",
         content: "从 Lab 到 Team 到人，逐层展开组织结构，点开成员查看详情。",
@@ -54,7 +54,7 @@ export const Route = createFileRoute("/org")({
 function OrgPage() {
   return (
     <AppShell
-      title="组织 & 人员视图"
+      title="组织视图"
       subtitle="系统设置里维护的 Lab / Team 结构，在这里逐层展开：每个团队下挂着成员，点开成员即可看到他的岗位、技能对照与能力承载。"
     >
       <OrgTreeBody />
@@ -241,8 +241,6 @@ function OrgTreeBody() {
         />
       </div>
 
-      <CompletenessBar people={people} onOpen={setPersonId} />
-
       {roots.length === 0 ? (
         <div className="rounded-xl border border-border/60 bg-surface-raised/40 p-8 text-center">
           <FolderTree className="mx-auto size-6 text-muted-foreground" />
@@ -345,67 +343,3 @@ function OrgTreeBody() {
   );
 }
 
-function CompletenessBar({
-  people,
-  onOpen,
-}: {
-  people: Person[];
-  onOpen: (id: string) => void;
-}) {
-  const [showAll, setShowAll] = useState(false);
-  const { rows, score, byField } = completeness(people);
-  if (rows.length === 0) return null;
-  const visible = showAll ? rows : rows.slice(0, 5);
-
-  return (
-    <section className="rounded-xl border border-border/60 bg-surface-raised/40 p-5">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h2 className="font-display text-sm font-semibold">组织数据完整度</h2>
-          <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
-            这些字段缺失会直接降低 AI 人岗匹配与能力诊断的准确度。按影响程度排序，先补上面的。
-          </p>
-        </div>
-        <p className="font-display text-2xl font-bold tabular-nums">{score}%</p>
-      </div>
-
-      <Progress value={score} className="mt-3 h-2" />
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        {byField.map((f) => (
-          <span
-            key={f.field}
-            className="rounded-full border border-border/60 px-2.5 py-1 text-[11px] text-muted-foreground"
-          >
-            {missingFieldLabel[f.field]} · {f.count} 人
-          </span>
-        ))}
-      </div>
-
-      <ul className="mt-3 divide-y divide-border/40 border-t border-border/40">
-        {visible.map((r) => (
-          <li key={r.person.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
-            <button
-              type="button"
-              onClick={() => onOpen(r.person.id)}
-              className="text-sm font-medium hover:text-brand"
-            >
-              {r.person.name}
-            </button>
-            <span className="text-xs text-muted-foreground">
-              {r.missing.map((m) => missingFieldLabel[m]).join(" · ")}
-            </span>
-          </li>
-        ))}
-      </ul>
-      {rows.length > 5 && (
-        <button
-          onClick={() => setShowAll((v) => !v)}
-          className="mt-2 text-xs text-muted-foreground hover:text-foreground"
-        >
-          {showAll ? "收起" : `展开其余 ${rows.length - 5} 人`}
-        </button>
-      )}
-    </section>
-  );
-}
