@@ -247,6 +247,8 @@ function OrgTreeBody() {
         />
       </div>
 
+      <CompletenessBar people={people} onOpen={setPersonId} />
+
       {roots.length === 0 ? (
         <div className="rounded-xl border border-border/60 bg-surface-raised/40 p-8 text-center">
           <FolderTree className="mx-auto size-6 text-muted-foreground" />
