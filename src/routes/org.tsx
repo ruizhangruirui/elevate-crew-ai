@@ -350,3 +350,68 @@ function OrgTreeBody() {
     </div>
   );
 }
+
+function CompletenessBar({
+  people,
+  onOpen,
+}: {
+  people: Person[];
+  onOpen: (id: string) => void;
+}) {
+  const [showAll, setShowAll] = useState(false);
+  const { rows, score, byField } = completeness(people);
+  if (rows.length === 0) return null;
+  const visible = showAll ? rows : rows.slice(0, 5);
+
+  return (
+    <section className="rounded-xl border border-border/60 bg-surface-raised/40 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="font-display text-sm font-semibold">组织数据完整度</h2>
+          <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+            这些字段缺失会直接降低 AI 人岗匹配与能力诊断的准确度。按影响程度排序，先补上面的。
+          </p>
+        </div>
+        <p className="font-display text-2xl font-bold tabular-nums">{score}%</p>
+      </div>
+
+      <Progress value={score} className="mt-3 h-2" />
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        {byField.map((f) => (
+          <span
+            key={f.field}
+            className="rounded-full border border-border/60 px-2.5 py-1 text-[11px] text-muted-foreground"
+          >
+            {missingFieldLabel[f.field]} · {f.count} 人
+          </span>
+        ))}
+      </div>
+
+      <ul className="mt-3 divide-y divide-border/40 border-t border-border/40">
+        {visible.map((r) => (
+          <li key={r.person.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+            <button
+              type="button"
+              onClick={() => onOpen(r.person.id)}
+              className="text-sm font-medium hover:text-brand"
+            >
+              {r.person.name}
+            </button>
+            <span className="text-xs text-muted-foreground">
+              {r.missing.map((m) => missingFieldLabel[m]).join(" · ")}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {rows.length > 5 && (
+        <button
+          onClick={() => setShowAll((v) => !v)}
+          className="mt-2 text-xs text-muted-foreground hover:text-foreground"
+        >
+          {showAll ? "收起" : `展开其余 ${rows.length - 5} 人`}
+        </button>
+      )}
+    </section>
+  );
+}
