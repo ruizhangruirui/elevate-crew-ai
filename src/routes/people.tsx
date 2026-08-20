@@ -104,6 +104,9 @@ function PeopleBody() {
   const onboard = data.people.filter((p) => p.status === "onboard");
   const candidates = data.people.filter((p) => p.status === "candidate");
   const unassigned = data.people.filter((p) => !p.role_id);
+  const incomplete = new Map(
+    completeness(data.people).rows.map((r) => [r.person.id, r.missing.length]),
+  );
 
   return (
     <div className="space-y-8">
@@ -240,6 +243,11 @@ function PeopleBody() {
               <p className="hidden max-w-56 truncate text-xs text-muted-foreground lg:block">
                 {p.note}
               </p>
+              {incomplete.has(p.id) && (
+                <span className="rounded-md bg-warn/12 px-2 py-1 text-xs font-medium text-warn">
+                  资料不全 {incomplete.get(p.id)} 项
+                </span>
+              )}
               <ConfirmAction
                 title={`确认删除「${p.name}」？`}
                 description={

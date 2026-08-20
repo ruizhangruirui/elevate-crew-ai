@@ -132,11 +132,24 @@ function StrategyBoard() {
               ))}
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 self-start">
-            <StatTile label="关键方向" value={directions.length} />
-            <StatTile label="目标岗位类型" value={roles.length} />
-            <StatTile label="目标 Seat" value={totalSeats} />
-            <StatTile label="当前 Gap" value={totalGap} tone={totalGap ? "danger" : "ok"} />
+          <div className="self-start">
+            <div className="grid grid-cols-2 gap-3">
+              <StatTile label="关键方向" value={directions.length} />
+              <StatTile label="目标岗位类型" value={roles.length} />
+              <StatTile label="目标 Seat" value={totalSeats} />
+              <StatTile label="当前 Gap" value={totalGap} tone={totalGap ? "danger" : "ok"} />
+            </div>
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+              <Link to="/org" className="text-brand hover:underline">
+                编制与团队结构 →
+              </Link>
+              <Link to="/capability" className="text-brand hover:underline">
+                能力覆盖与缺口 →
+              </Link>
+              <Link to="/people" className="text-brand hover:underline">
+                全员名单 →
+              </Link>
+            </div>
           </div>
         </div>
       </section>
