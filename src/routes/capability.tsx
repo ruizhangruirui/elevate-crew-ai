@@ -236,7 +236,13 @@ function HealthPanel({ data, activities }: { data: Workspace; activities: Activi
             </div>
             <ul className="divide-y divide-border/40">
               {clusters.map((c) => (
-                <VacancyRow key={c.role.id} title={c.role.title} crit={c.role.criticality} caps={c.caps} />
+                <VacancyRow
+                  key={c.role.id}
+                  roleId={c.role.id}
+                  title={c.role.title}
+                  crit={c.role.criticality}
+                  caps={c.caps}
+                />
               ))}
             </ul>
           </div>
