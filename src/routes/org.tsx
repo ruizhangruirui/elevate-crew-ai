@@ -10,6 +10,8 @@ import {
   FolderTree,
   Sparkles,
   ArrowUpRight,
+  Briefcase,
+  UserPlus,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
@@ -25,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { fetchWorkspace, criticalityLabel, type Person } from "@/lib/talent";
+import { fetchWorkspace, criticalityLabel, type Person, type Role } from "@/lib/talent";
 import { fetchOrgNodes, structureStats, type OrgNode } from "@/lib/org-tree";
 import { TeamDiagnosisDialog } from "@/components/TeamDiagnosisDialog";
 
@@ -54,10 +56,59 @@ function OrgPage() {
   return (
     <AppShell
       title="组织视图"
-      subtitle="系统设置里维护的 Lab / Team 结构，在这里逐层展开：每个团队下挂着成员，点开成员即可看到他的岗位、技能对照与能力承载。"
+      subtitle="系统设置里维护的 Lab / Team 结构，在这里逐层展开：团队下挂着岗位（含空缺席位），岗位下挂着人。"
     >
       <OrgTreeBody />
     </AppShell>
+  );
+}
+
+function PersonRow({
+  person,
+  onOpen,
+  muted,
+}: {
+  person: Person;
+  onOpen: () => void;
+  muted?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors hover:border-brand/50 hover:bg-surface-raised/60 ${
+        muted ? "border-dashed border-border/60 bg-background/20" : "border-border/50 bg-background/40"
+      }`}
+    >
+      <span className="grid size-7 shrink-0 place-items-center rounded-full bg-brand/15 text-[11px] font-semibold text-brand">
+        {person.name.slice(0, 1)}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium">
+          {person.name}
+          {person.level ? (
+            <span className="ml-2 text-xs text-muted-foreground">L{person.level}</span>
+          ) : null}
+        </p>
+        {(person.contract_type || (person.tags ?? []).length > 0 || muted) && (
+          <p className="truncate text-[11px] text-muted-foreground">
+            {[
+              muted ? "未匹配战略岗位" : null,
+              person.contract_type,
+              ...(person.tags ?? []),
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+        )}
+      </div>
+      {person.status !== "onboard" && (
+        <span className="shrink-0 rounded-md bg-warn/12 px-1.5 py-0.5 text-[10px] text-warn">
+          候选人
+        </span>
+      )}
+      <UserRound className="size-4 shrink-0 text-muted-foreground" />
+    </button>
   );
 }
 
@@ -101,6 +152,38 @@ function OrgTreeBody() {
 
   const unassigned = peopleOf.get("__none") ?? [];
 
+  /** 岗位归属团队：优先用 roles.org_node_id，未填写时按在岗人员所在团队推断 */
+  const rolePlacement = useMemo(() => {
+    const byNode = new Map<string, Role[]>();
+    const unplaced: Role[] = [];
+    for (const r of roles) {
+      let nid = r.org_node_id ?? null;
+      if (!nid) {
+        const counts = new Map<string, number>();
+        for (const p of people) {
+          if (p.role_id === r.id && p.org_node_id)
+            counts.set(p.org_node_id, (counts.get(p.org_node_id) ?? 0) + 1);
+        }
+        nid = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+      }
+      if (nid) byNode.set(nid, [...(byNode.get(nid) ?? []), r]);
+      else unplaced.push(r);
+    }
+    return { byNode, unplaced };
+  }, [roles, people]);
+
+  const placeRole = useMutation({
+    mutationFn: async ({ rid, nodeId }: { rid: string; nodeId: string }) => {
+      const { error } = await supabase.from("roles").update({ org_node_id: nodeId }).eq("id", rid);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("岗位归属已更新");
+      qc.invalidateQueries({ queryKey: ["workspace"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const assign = useMutation({
     mutationFn: async ({ pid, nodeId }: { pid: string; nodeId: string | null }) => {
       const { error } = await supabase.from("people").update({ org_node_id: nodeId }).eq("id", pid);
@@ -120,6 +203,8 @@ function OrgTreeBody() {
   const renderNode = (node: OrgNode, depth: number) => {
     const kids = childrenOf.get(node.id) ?? [];
     const members = peopleOf.get(node.id) ?? [];
+    const nodeRoles = rolePlacement.byNode.get(node.id) ?? [];
+    const roleless = members.filter((p) => !p.role_id || !nodeRoles.some((r) => r.id === p.role_id));
     const isOpen = expanded[node.id] ?? depth < 1;
     const total = countIn(node.id);
     const Icon = node.type === "Team" ? Users : Building2;
@@ -187,35 +272,76 @@ function OrgTreeBody() {
           <div className="space-y-2 border-t border-border/50 px-3 py-3 pl-6">
             {kids.map((k) => renderNode(k, depth + 1))}
 
-            {members.map((p) => {
-              const role = roles.find((r) => r.id === p.role_id);
+            {nodeRoles.map((r) => {
+              const holders = members.filter((p) => p.role_id === r.id);
+              const onboardAll = people.filter(
+                (p) => p.role_id === r.id && p.status === "onboard",
+              ).length;
+              const vacancies = Math.max(0, r.target_count - onboardAll);
+              const rk = `${node.id}:${r.id}`;
+              const rOpen = expanded[rk] ?? true;
               return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setPersonId(p.id)}
-                  className="flex w-full items-center gap-3 rounded-lg border border-border/50 bg-background/40 px-3 py-2.5 text-left transition-colors hover:border-brand/50 hover:bg-surface-raised/60"
-                >
-                  <span className="grid size-8 shrink-0 place-items-center rounded-full bg-brand/15 text-xs font-semibold text-brand">
-                    {p.name.slice(0, 1)}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">
-                      {p.name}
-                      {p.level ? (
-                        <span className="ml-2 text-xs text-muted-foreground">L{p.level}</span>
-                      ) : null}
-                    </p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {role ? `${role.title} · ${criticalityLabel[role.criticality] ?? role.criticality}` : "未匹配战略岗位"}
-                    </p>
+                <div key={r.id} className="rounded-lg border border-border/50 bg-background/30">
+                  <div className="flex items-center gap-2 px-3 py-2">
+                    <button
+                      type="button"
+                      onClick={() => setExpanded((s) => ({ ...s, [rk]: !rOpen }))}
+                      className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                    >
+                      <ChevronRight
+                        className={`size-3.5 shrink-0 text-muted-foreground transition-transform ${rOpen ? "rotate-90" : ""}`}
+                      />
+                      <Briefcase className="size-3.5 shrink-0 text-brand" />
+                      <span className="truncate text-sm font-medium">{r.title}</span>
+                      <span className="shrink-0 text-[11px] text-muted-foreground">
+                        {criticalityLabel[r.criticality] ?? r.criticality}
+                      </span>
+                      <span
+                        className={`ml-auto shrink-0 rounded-md px-1.5 py-0.5 text-[11px] tabular-nums ${
+                          vacancies > 0 ? "bg-warn/12 text-warn" : "bg-ok/12 text-ok"
+                        }`}
+                      >
+                        在岗 {onboardAll} / 编制 {r.target_count}
+                      </span>
+                    </button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0 text-xs text-muted-foreground"
+                      onClick={() => setRoleId(r.id)}
+                    >
+                      岗位画像
+                    </Button>
                   </div>
-                  <UserRound className="size-4 shrink-0 text-muted-foreground" />
-                </button>
+
+                  {rOpen && (
+                    <div className="space-y-1.5 border-t border-border/40 px-3 py-2 pl-7">
+                      {holders.map((p) => (
+                        <PersonRow key={p.id} person={p} onOpen={() => setPersonId(p.id)} />
+                      ))}
+                      {Array.from({ length: vacancies }).map((_, i) => (
+                        <div
+                          key={`vac-${i}`}
+                          className="flex items-center gap-3 rounded-lg border border-dashed border-warn/50 bg-warn/5 px-3 py-2 text-xs text-warn"
+                        >
+                          <UserPlus className="size-4 shrink-0" />
+                          <span className="flex-1">空缺席位（L{r.level_min}–{r.level_max}）</span>
+                        </div>
+                      ))}
+                      {holders.length === 0 && vacancies === 0 && (
+                        <p className="py-1 text-xs text-muted-foreground">暂无席位。</p>
+                      )}
+                    </div>
+                  )}
+                </div>
               );
             })}
 
-            {kids.length === 0 && members.length === 0 && (
+            {roleless.map((p) => (
+              <PersonRow key={p.id} person={p} onOpen={() => setPersonId(p.id)} muted />
+            ))}
+
+            {kids.length === 0 && members.length === 0 && nodeRoles.length === 0 && (
               <p className="px-2 py-3 text-xs text-muted-foreground">该节点下暂无子团队或成员。</p>
             )}
           </div>
@@ -249,6 +375,49 @@ function OrgTreeBody() {
         </div>
       ) : (
         <div className="space-y-3">{roots.map((r) => renderNode(r, 0))}</div>
+      )}
+
+      {rolePlacement.unplaced.length > 0 && (
+        <section className="rounded-xl border border-border/60 bg-surface-raised/40 p-4">
+          <h2 className="font-display text-sm font-semibold">未挂载到团队的岗位</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            这些岗位还没有在岗人员、也未指定团队，指定后会出现在组织树对应团队下（含空缺席位）。
+          </p>
+          <div className="mt-3 space-y-2">
+            {rolePlacement.unplaced.map((r) => (
+              <div
+                key={r.id}
+                className="flex flex-col gap-2 rounded-lg border border-border/50 bg-background/40 px-3 py-2.5 sm:flex-row sm:items-center"
+              >
+                <button
+                  type="button"
+                  onClick={() => setRoleId(r.id)}
+                  className="min-w-0 flex-1 text-left text-sm font-medium hover:text-brand"
+                >
+                  {r.title}
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    编制 {r.target_count}
+                  </span>
+                </button>
+                <Select
+                  onValueChange={(v) => placeRole.mutate({ rid: r.id, nodeId: v })}
+                  disabled={placeRole.isPending}
+                >
+                  <SelectTrigger className="w-full sm:w-64">
+                    <SelectValue placeholder="挂到团队" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectableNodes.map((n) => (
+                      <SelectItem key={n.id} value={n.id}>
+                        {n.name}（{n.type}）
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {unassigned.length > 0 && (

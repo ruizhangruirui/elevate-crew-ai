@@ -440,6 +440,7 @@ export type Database = {
           assessed_by: string | null
           assessed_skills: Json
           attrition_risk: string
+          contract_type: string | null
           created_at: string
           id: string
           level: number | null
@@ -452,6 +453,7 @@ export type Database = {
           readiness: string
           role_id: string | null
           status: string
+          tags: string[]
           tenure_months: number | null
           updated_at: string
         }
@@ -460,6 +462,7 @@ export type Database = {
           assessed_by?: string | null
           assessed_skills?: Json
           attrition_risk?: string
+          contract_type?: string | null
           created_at?: string
           id?: string
           level?: number | null
@@ -472,6 +475,7 @@ export type Database = {
           readiness?: string
           role_id?: string | null
           status?: string
+          tags?: string[]
           tenure_months?: number | null
           updated_at?: string
         }
@@ -480,6 +484,7 @@ export type Database = {
           assessed_by?: string | null
           assessed_skills?: Json
           attrition_risk?: string
+          contract_type?: string | null
           created_at?: string
           id?: string
           level?: number | null
@@ -492,6 +497,7 @@ export type Database = {
           readiness?: string
           role_id?: string | null
           status?: string
+          tags?: string[]
           tenure_months?: number | null
           updated_at?: string
         }
@@ -594,6 +600,7 @@ export type Database = {
           leadership: string[]
           level_max: number
           level_min: number
+          org_node_id: string | null
           recommended_action: string[]
           skills: Json
           sort_order: number
@@ -615,6 +622,7 @@ export type Database = {
           leadership?: string[]
           level_max?: number
           level_min?: number
+          org_node_id?: string | null
           recommended_action?: string[]
           skills?: Json
           sort_order?: number
@@ -636,6 +644,7 @@ export type Database = {
           leadership?: string[]
           level_max?: number
           level_min?: number
+          org_node_id?: string | null
           recommended_action?: string[]
           skills?: Json
           sort_order?: number
@@ -649,6 +658,13 @@ export type Database = {
             columns: ["direction_id"]
             isOneToOne: false
             referencedRelation: "directions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roles_org_node_id_fkey"
+            columns: ["org_node_id"]
+            isOneToOne: false
+            referencedRelation: "org_nodes"
             referencedColumns: ["id"]
           },
         ]

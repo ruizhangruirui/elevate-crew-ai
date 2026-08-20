@@ -24,6 +24,7 @@ export type Skill = { skill: string; level: string };
 export type Role = {
   id: string;
   direction_id: string;
+  org_node_id?: string | null;
   title: string;
   description: string | null;
   level_min: number;
@@ -50,6 +51,8 @@ export type Person = {
   level: number | null;
   status: string;
   note: string | null;
+  contract_type?: string | null;
+  tags?: string[];
   assessed_skills?: Skill[];
   performance?: string | null;
   tenure_months?: number | null;

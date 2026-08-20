@@ -226,7 +226,21 @@ function PeopleBody() {
               </div>
               <div className="min-w-40 flex-1">
                 <p className="font-display font-semibold">{p.name}</p>
-                <p className="text-xs text-muted-foreground">{roleName(p.role_id)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {[roleName(p.role_id), p.contract_type].filter(Boolean).join(" · ")}
+                </p>
+                {(p.tags ?? []).length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {(p.tags ?? []).slice(0, 3).map((t) => (
+                      <span
+                        key={t}
+                        className="rounded border border-brand/40 bg-brand/10 px-1.5 py-0.5 text-[10px] text-brand"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
               <span className="rounded-md border border-border/70 px-2 py-1 text-xs tabular-nums text-muted-foreground">
                 Level {p.level ?? "—"}
