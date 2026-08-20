@@ -1,8 +1,16 @@
 import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ChevronRight, Building2, Users, UserRound, FolderTree, Sparkles } from "lucide-react";
+import {
+  ChevronRight,
+  Building2,
+  Users,
+  UserRound,
+  FolderTree,
+  Sparkles,
+  ArrowUpRight,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { PersonDetailSheet } from "@/components/PersonDetailSheet";
@@ -10,6 +18,7 @@ import { RoleDetailSheet } from "@/components/RoleDetailSheet";
 import { StatTile } from "@/components/StatTile";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -18,7 +27,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { fetchWorkspace, criticalityLabel, type Person } from "@/lib/talent";
-import { fetchOrgNodes, nodeStats, type OrgNode } from "@/lib/org-tree";
+import {
+  completeness,
+  fetchOrgNodes,
+  missingFieldLabel,
+  structureStats,
+  type OrgNode,
+} from "@/lib/org-tree";
 import { TeamDiagnosisDialog } from "@/components/TeamDiagnosisDialog";
 
 export const Route = createFileRoute("/org")({
@@ -115,7 +130,7 @@ function OrgTreeBody() {
     const isOpen = expanded[node.id] ?? depth < 1;
     const total = countIn(node.id);
     const Icon = node.type === "Team" ? Users : Building2;
-    const st = nodeStats(node.id, nodes, people, roles, directions);
+    const st = structureStats(node.id, nodes, people, roles, directions);
 
     return (
       <div key={node.id} className="rounded-xl border border-border/60 bg-surface-raised/40">
@@ -160,18 +175,18 @@ function OrgTreeBody() {
               平均职级{" "}
               <b className="text-foreground tabular-nums">{st.avgLevel ?? "—"}</b>
             </span>
-            <span>
-              能力覆盖率 <b className="text-foreground tabular-nums">{st.coverageRate}%</b>
-            </span>
-            {st.soleCarriers > 0 && (
-              <span className="text-warn">单点风险 {st.soleCarriers} 项</span>
-            )}
-            {st.unassessed > 0 && <span className="text-warn">{st.unassessed} 人资料待补全</span>}
             {st.directions.length > 0 && (
               <span className="truncate">
                 承担方向：{st.directions.map((d) => d.title).join(" / ")}
               </span>
             )}
+            <Link
+              to="/capability"
+              search={{ scope: node.id }}
+              className="ml-auto inline-flex items-center gap-1 text-brand hover:underline"
+            >
+              查看该团队能力体检 <ArrowUpRight className="size-3" />
+            </Link>
           </div>
         )}
 
@@ -231,6 +246,8 @@ function OrgTreeBody() {
           tone={unassigned.length > 0 ? "warn" : "ok"}
         />
       </div>
+
+      <CompletenessBar people={people} onOpen={setPersonId} />
 
       {roots.length === 0 ? (
         <div className="rounded-xl border border-border/60 bg-surface-raised/40 p-8 text-center">
@@ -331,5 +348,70 @@ function OrgTreeBody() {
         onDone={() => qc.invalidateQueries({ queryKey: ["workspace"] })}
       />
     </div>
+  );
+}
+
+function CompletenessBar({
+  people,
+  onOpen,
+}: {
+  people: Person[];
+  onOpen: (id: string) => void;
+}) {
+  const [showAll, setShowAll] = useState(false);
+  const { rows, score, byField } = completeness(people);
+  if (rows.length === 0) return null;
+  const visible = showAll ? rows : rows.slice(0, 5);
+
+  return (
+    <section className="rounded-xl border border-border/60 bg-surface-raised/40 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="font-display text-sm font-semibold">组织数据完整度</h2>
+          <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+            这些字段缺失会直接降低 AI 人岗匹配与能力诊断的准确度。按影响程度排序，先补上面的。
+          </p>
+        </div>
+        <p className="font-display text-2xl font-bold tabular-nums">{score}%</p>
+      </div>
+
+      <Progress value={score} className="mt-3 h-2" />
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        {byField.map((f) => (
+          <span
+            key={f.field}
+            className="rounded-full border border-border/60 px-2.5 py-1 text-[11px] text-muted-foreground"
+          >
+            {missingFieldLabel[f.field]} · {f.count} 人
+          </span>
+        ))}
+      </div>
+
+      <ul className="mt-3 divide-y divide-border/40 border-t border-border/40">
+        {visible.map((r) => (
+          <li key={r.person.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+            <button
+              type="button"
+              onClick={() => onOpen(r.person.id)}
+              className="text-sm font-medium hover:text-brand"
+            >
+              {r.person.name}
+            </button>
+            <span className="text-xs text-muted-foreground">
+              {r.missing.map((m) => missingFieldLabel[m]).join(" · ")}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {rows.length > 5 && (
+        <button
+          onClick={() => setShowAll((v) => !v)}
+          className="mt-2 text-xs text-muted-foreground hover:text-foreground"
+        >
+          {showAll ? "收起" : `展开其余 ${rows.length - 5} 人`}
+        </button>
+      )}
+    </section>
   );
 }

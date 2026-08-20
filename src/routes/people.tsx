@@ -6,8 +6,8 @@ import { Plus, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { PersonDetailSheet } from "@/components/PersonDetailSheet";
-import { completeness, missingFieldLabel } from "@/lib/org-tree";
-import { Progress } from "@/components/ui/progress";
+import { completeness } from "@/lib/org-tree";
+import { Link } from "@tanstack/react-router";
 import { RoleDetailSheet } from "@/components/RoleDetailSheet";
 import { StatTile } from "@/components/StatTile";
 import { fetchWorkspace, type Person } from "@/lib/talent";
@@ -104,6 +104,9 @@ function PeopleBody() {
   const onboard = data.people.filter((p) => p.status === "onboard");
   const candidates = data.people.filter((p) => p.status === "candidate");
   const unassigned = data.people.filter((p) => !p.role_id);
+  const incomplete = new Map(
+    completeness(data.people).rows.map((r) => [r.person.id, r.missing.length]),
+  );
 
   return (
     <div className="space-y-8">
@@ -114,11 +117,17 @@ function PeopleBody() {
         <StatTile label="未分配岗位" value={unassigned.length} tone="danger" />
       </div>
 
-      <CompletenessPanel people={data.people} onOpen={setActivePersonId} />
-
       <div className="panel overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-6 py-4">
-          <h2 className="font-display text-lg font-semibold">人员名单</h2>
+          <div>
+            <h2 className="font-display text-lg font-semibold">人员名单</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              全员平铺清单；按团队层级浏览与数据完整度详情见
+              <Link to="/org" className="ml-1 text-brand hover:underline">
+                组织 & 人员视图
+              </Link>
+            </p>
+          </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1.5">
@@ -234,6 +243,11 @@ function PeopleBody() {
               <p className="hidden max-w-56 truncate text-xs text-muted-foreground lg:block">
                 {p.note}
               </p>
+              {incomplete.has(p.id) && (
+                <span className="rounded-md bg-warn/12 px-2 py-1 text-xs font-medium text-warn">
+                  资料不全 {incomplete.get(p.id)} 项
+                </span>
+              )}
               <ConfirmAction
                 title={`确认删除「${p.name}」？`}
                 description={
@@ -289,72 +303,5 @@ function PeopleBody() {
         onDone={() => qc.invalidateQueries({ queryKey: ["workspace"] })}
       />
     </div>
-  );
-}
-function CompletenessPanel({
-  people,
-  onOpen,
-}: {
-  people: Person[];
-  onOpen: (id: string) => void;
-}) {
-  const [showAll, setShowAll] = useState(false);
-  const { rows, score, byField } = completeness(people);
-  if (rows.length === 0) return null;
-  const visible = showAll ? rows : rows.slice(0, 5);
-
-  return (
-    <section className="panel p-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h2 className="font-display text-lg font-semibold">数据待补全</h2>
-          <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
-            这些字段缺失会直接降低 AI 人岗匹配与组织能力诊断的准确度。按影响程度排序，先补上面的。
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="font-display text-3xl font-bold tabular-nums">{score}%</p>
-          <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">数据完整度</p>
-        </div>
-      </div>
-
-      <Progress value={score} className="mt-4 h-2" />
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        {byField.map((f) => (
-          <span
-            key={f.field}
-            className="rounded-full border border-border/60 px-2.5 py-1 text-xs text-muted-foreground"
-          >
-            {missingFieldLabel[f.field]} · {f.count} 人
-          </span>
-        ))}
-      </div>
-
-      <ul className="mt-4 divide-y divide-border/40 border-t border-border/40">
-        {visible.map((r) => (
-          <li key={r.person.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5">
-            <button
-              type="button"
-              onClick={() => onOpen(r.person.id)}
-              className="text-sm font-medium hover:text-brand"
-            >
-              {r.person.name}
-            </button>
-            <span className="text-xs text-muted-foreground">
-              {r.missing.map((m) => missingFieldLabel[m]).join(" · ")}
-            </span>
-          </li>
-        ))}
-      </ul>
-      {rows.length > 5 && (
-        <button
-          onClick={() => setShowAll((v) => !v)}
-          className="mt-2 text-xs text-muted-foreground hover:text-foreground"
-        >
-          {showAll ? "收起" : `展开其余 ${rows.length - 5} 人`}
-        </button>
-      )}
-    </section>
   );
 }

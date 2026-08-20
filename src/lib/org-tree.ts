@@ -55,6 +55,37 @@ export type NodeStats = {
   unassessed: number;
 };
 
+export type StructureStats = Pick<
+  NodeStats,
+  "headcount" | "onboard" | "targetSeats" | "avgLevel" | "directions"
+>;
+
+/** 只算结构指标（人数/编制/职级/方向），能力类指标交给能力视图 */
+export function structureStats(
+  nodeId: string,
+  nodes: OrgNode[],
+  people: Person[],
+  roles: Role[],
+  directions: Direction[],
+): StructureStats {
+  const members = peopleInSubtree(people, nodes, nodeId);
+  const onboard = members.filter((p) => p.status === "onboard");
+  const roleIds = [...new Set(onboard.map((p) => p.role_id).filter(Boolean) as string[])];
+  const scopedRoles = roles.filter((r) => roleIds.includes(r.id));
+  const levels = onboard.map((p) => p.level).filter((l): l is number => l != null);
+  const dirIds = [...new Set(scopedRoles.map((r) => r.direction_id))];
+
+  return {
+    headcount: members.length,
+    onboard: onboard.length,
+    targetSeats: scopedRoles.reduce((n, r) => n + r.target_count, 0),
+    avgLevel: levels.length
+      ? Math.round((levels.reduce((a, b) => a + b, 0) / levels.length) * 10) / 10
+      : null,
+    directions: directions.filter((d) => dirIds.includes(d.id)),
+  };
+}
+
 /** 节点级统计：实际人数 vs 岗位编制、方向分布、单点风险、能力覆盖率 */
 export function nodeStats(
   nodeId: string,

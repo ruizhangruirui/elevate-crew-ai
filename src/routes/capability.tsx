@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -25,17 +25,13 @@ import {
 } from "@/lib/org-building";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { fetchOrgNodes, peopleInSubtree } from "@/lib/org-tree";
 import { fetchSnapshots, recordSnapshot, type Snapshot } from "@/lib/snapshots";
 
 export const Route = createFileRoute("/capability")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    scope: typeof search["scope"] === "string" ? (search["scope"] as string) : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "组织能力视图 · 战略岗位与人才管理系统" },
@@ -70,7 +66,8 @@ function CapabilityBody() {
   const { data } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
   const { data: building } = useQuery({ queryKey: ["org-building"], queryFn: fetchOrgBuilding });
   const { data: nodes } = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
-  const [scope, setScope] = useState("__all__");
+  const { scope: scopeParam } = useSearch({ from: "/capability" });
+  const scope = scopeParam ?? "__all__";
 
   if (!data) return <div className="text-sm text-muted-foreground">加载中…</div>;
 
@@ -88,6 +85,18 @@ function CapabilityBody() {
         };
   const scopeName = allNodes.find((n) => n.id === scope)?.name ?? "全组织";
 
+  const scopedPersonIds = new Set(scopedPeople.map((p) => p.id));
+  const scopedBuilding = (() => {
+    if (!building) return null;
+    if (scope === "__all__") return building;
+    const participants = building.participants.filter((p) => scopedPersonIds.has(p.person_id));
+    const keep = new Set(participants.map((p) => p.activity_id));
+    return {
+      activities: building.activities.filter((a) => keep.has(a.id)),
+      participants,
+    };
+  })();
+
   return (
     <Tabs defaultValue="health" className="space-y-8">
       <div className="flex flex-wrap items-center gap-3">
@@ -96,33 +105,32 @@ function CapabilityBody() {
           <TabsTrigger value="building">组织建设</TabsTrigger>
           <TabsTrigger value="trend">趋势</TabsTrigger>
         </TabsList>
-        <Select value={scope} onValueChange={setScope}>
-          <SelectTrigger className="w-56">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">全组织</SelectItem>
-            {allNodes.map((n) => (
-              <SelectItem key={n.id} value={n.id}>
-                {n.name}（{n.type}）
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {scope !== "__all__" && (
-          <span className="text-xs text-muted-foreground">
-            仅统计 {scopeName} 及其下级团队在岗人员所承担的岗位
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <span>
+            当前范围：<b className="text-foreground">{scopeName}</b>
           </span>
-        )}
+          {scope === "__all__" ? (
+            <Link to="/org" className="text-brand hover:underline">
+              按团队查看 →
+            </Link>
+          ) : (
+            <>
+              <span>（仅统计该节点及下级团队在岗人员所承担的岗位）</span>
+              <Link to="/capability" search={{ scope: undefined }} className="text-brand hover:underline">
+                回到全组织
+              </Link>
+            </>
+          )}
+        </div>
       </div>
       <TabsContent value="health">
-        <HealthPanel data={scoped} activities={building?.activities ?? []} />
+        <HealthPanel data={scoped} activities={scopedBuilding?.activities ?? []} />
       </TabsContent>
       <TabsContent value="building">
-        <BuildingPanel data={scoped} building={building ?? null} />
+        <BuildingPanel data={scoped} building={scopedBuilding} />
       </TabsContent>
       <TabsContent value="trend">
-        <TrendPanel data={scoped} activities={building?.activities ?? []} />
+        <TrendPanel data={scoped} activities={scopedBuilding?.activities ?? []} />
       </TabsContent>
     </Tabs>
   );
