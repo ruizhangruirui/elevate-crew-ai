@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 const nav = [
   { to: "/", label: "战略岗位视图", icon: LayoutGrid },
   { to: "/capability", label: "组织能力视图", icon: Network },
-  { to: "/org", label: "组织 & 人员视图", icon: FolderTree },
+  { to: "/org", label: "组织视图", icon: FolderTree },
   { to: "/people", label: "人员视图", icon: Users },
   { to: "/actions", label: "待办中心", icon: ListChecks },
   { to: "/settings", label: "系统设置", icon: Settings },
