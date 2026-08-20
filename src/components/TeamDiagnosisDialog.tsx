@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { diagnoseTeam, type TeamDiagnosis } from "@/lib/ai.functions";
+import { AddActionButton } from "@/components/AddActionButton";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -72,6 +73,16 @@ export function TeamDiagnosisDialog({
                       </span>
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">{x.why}</p>
+                    <div className="mt-2">
+                      <AddActionButton
+                        sourceKind="ai"
+                        sourceKey={`ai:${nodeId}:role:${x.title}`}
+                        orgNodeId={nodeId}
+                        defaultTitle={`${nodeName}：设立并招聘「${x.title}」`}
+                        defaultDetail={x.why}
+                        defaultPriority="high"
+                      />
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -83,6 +94,15 @@ export function TeamDiagnosisDialog({
                   <li key={i} className="rounded-lg border border-border/60 px-3 py-2">
                     <p className="font-medium">{x.capability}</p>
                     <p className="mt-1 text-xs text-muted-foreground">{x.action}</p>
+                    <div className="mt-2">
+                      <AddActionButton
+                        sourceKind="ai"
+                        sourceKey={`ai:${nodeId}:cap:${x.capability}`}
+                        orgNodeId={nodeId}
+                        defaultTitle={`${nodeName}：${x.capability} — ${x.action}`}
+                        defaultDetail={`来自 ${nodeName} 的 AI 组织能力诊断。`}
+                      />
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -94,7 +114,20 @@ export function TeamDiagnosisDialog({
 
             <Block title="未来 90 天">
               <ol className="list-decimal space-y-1 pl-5 text-muted-foreground">
-                {r.next_90_days.map((s, i) => <li key={i}>{s}</li>)}
+                {r.next_90_days.map((s, i) => (
+                  <li key={i} className="space-y-1">
+                    <span>{s}</span>
+                    <div>
+                      <AddActionButton
+                        sourceKind="ai"
+                        sourceKey={`ai:${nodeId}:90d:${i}`}
+                        orgNodeId={nodeId}
+                        defaultTitle={s}
+                        defaultDetail={`来自 ${nodeName} 的 AI 组织能力诊断 · 未来 90 天建议。`}
+                      />
+                    </div>
+                  </li>
+                ))}
               </ol>
             </Block>
 

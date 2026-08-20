@@ -6,6 +6,7 @@ import { CalendarDays, ChevronDown, Info, Pencil, Plus, Trash2, UserPlus } from 
 import { AppShell } from "@/components/AppShell";
 import { ActivityDialog } from "@/components/ActivityDialog";
 import { ConfirmAction } from "@/components/ConfirmAction";
+import { AddActionButton } from "@/components/AddActionButton";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchWorkspace, criticalityLabel } from "@/lib/talent";
 import {
@@ -235,7 +236,13 @@ function HealthPanel({ data, activities }: { data: Workspace; activities: Activi
             </div>
             <ul className="divide-y divide-border/40">
               {clusters.map((c) => (
-                <VacancyRow key={c.role.id} title={c.role.title} crit={c.role.criticality} caps={c.caps} />
+                <VacancyRow
+                  key={c.role.id}
+                  roleId={c.role.id}
+                  title={c.role.title}
+                  crit={c.role.criticality}
+                  caps={c.caps}
+                />
               ))}
             </ul>
           </div>
@@ -285,10 +292,12 @@ function VacancyRow({
   title,
   crit,
   caps,
+  roleId,
 }: {
   title: string;
   crit: string;
   caps: Capability[];
+  roleId: string;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -307,6 +316,17 @@ function VacancyRow({
           className={`ml-auto size-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
+      <div className="mt-2">
+        <AddActionButton
+          sourceKind="vacancy"
+          sourceKey={`vacancy:${roleId}`}
+          roleId={roleId}
+          defaultTitle={`推进「${title}」岗位招聘`}
+          defaultDetail={`该岗位空缺影响 ${caps.length} 项能力：${caps.map((c) => c.label).join("、")}`}
+          defaultPriority="high"
+          label="转为招聘待办"
+        />
+      </div>
       {open && (
         <div className="mt-3 flex flex-wrap gap-1.5">
           {caps.map((c) => (
@@ -428,6 +448,20 @@ function CapRow({ cap, activities }: { cap: Capability; activities: Activity[] }
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
         <span>来自 {cap.roleTitles.join(" / ")}</span>
         <span className="text-brand">下一步：{cap.suggestion}</span>
+        {cap.status !== "covered" && (
+          <AddActionButton
+            sourceKind="capability"
+            sourceKey={`capability:${cap.key}`}
+            roleId={cap.roleIds[0] ?? null}
+            defaultTitle={`${cap.label}：${cap.suggestion}`}
+            defaultDetail={`能力「${cap.label}」当前状态：${
+              cap.status === "blank" ? "无人承载" : cap.status === "single" ? "只靠 1 人" : "人手偏少"
+            }。来自岗位 ${cap.roleTitles.join(" / ")}；现有承载人：${
+              cap.carriers.map((c) => c.person.name).join("、") || "无"
+            }。`}
+            defaultPriority={cap.status === "blank" ? "high" : "normal"}
+          />
+        )}
       </div>
     </li>
   );

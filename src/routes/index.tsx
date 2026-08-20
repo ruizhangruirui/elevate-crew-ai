@@ -10,6 +10,13 @@ import { RoleDetailSheet } from "@/components/RoleDetailSheet";
 import { coverageOf, criticalityLabel, fetchWorkspace, type Role } from "@/lib/talent";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchOrgNodes } from "@/lib/org-tree";
+import {
+  actionSummary,
+  fetchActions,
+  isOverdue,
+  priorityLabel,
+  type ActionItem,
+} from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,6 +73,7 @@ function StrategyBoard() {
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
   const orgNodes = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
+  const actions = useQuery({ queryKey: ["actions"], queryFn: fetchActions });
   const [activeId, setActiveId] = useState<string | null>(null);
   const [openRoleId, setOpenRoleId] = useState<string | null>(null);
 
@@ -104,6 +112,8 @@ function StrategyBoard() {
 
   return (
     <div className="space-y-10">
+      <ActionStrip list={actions.data ?? []} />
+
       {/* Org overview */}
       <section className="panel relative overflow-hidden p-8">
         <div
@@ -252,6 +262,58 @@ function StrategyBoard() {
         onDone={invalidate}
       />
     </div>
+  );
+}
+
+function ActionStrip({ list }: { list: ActionItem[] }) {
+  const s = actionSummary(list);
+  const top = list
+    .filter((a) => a.status === "todo" || a.status === "doing")
+    .sort((a, b) => {
+      const rank = (x: ActionItem) =>
+        (isOverdue(x) ? 0 : 1) * 10 + (x.priority === "high" ? 0 : x.priority === "normal" ? 1 : 2);
+      return rank(a) - rank(b);
+    })
+    .slice(0, 4);
+
+  if (s.open === 0) return null;
+
+  return (
+    <section className="panel p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="font-display text-lg font-semibold">需要跟进</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {s.open} 项进行中
+            {s.overdue > 0 && <span className="text-danger"> · {s.overdue} 项已逾期</span>}
+            {s.high > 0 && <span className="text-warn"> · {s.high} 项高优先级</span>}
+          </p>
+        </div>
+        <Link to="/actions" className="text-xs text-brand hover:underline">
+          待办中心 →
+        </Link>
+      </div>
+      <ul className="mt-4 space-y-2">
+        {top.map((a) => (
+          <li
+            key={a.id}
+            className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border/60 bg-surface-raised/40 px-3 py-2 text-sm"
+          >
+            <span className="min-w-0 flex-1 truncate">{a.title}</span>
+            {a.owner && <span className="text-xs text-muted-foreground">{a.owner}</span>}
+            <span
+              className={`text-xs ${isOverdue(a) ? "text-danger" : "text-muted-foreground"}`}
+            >
+              {a.due_on ?? "无期限"}
+              {isOverdue(a) && " · 逾期"}
+            </span>
+            <span className="rounded bg-muted/40 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+              {priorityLabel[a.priority] ?? a.priority}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
