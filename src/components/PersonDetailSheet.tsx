@@ -416,6 +416,31 @@ export function PersonDetailSheet({
                   </div>
                 </div>
                 <div className="space-y-2">
+                  <Label>合同类型</Label>
+                  <Select
+                    value={form.contract_type}
+                    onValueChange={(v) => setForm({ ...form, contract_type: v })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unset">未填写</SelectItem>
+                      <SelectItem value="正式员工">正式员工</SelectItem>
+                      <SelectItem value="外包">外包</SelectItem>
+                      <SelectItem value="实习生">实习生</SelectItem>
+                      <SelectItem value="外部顾问">外部顾问</SelectItem>
+                      <SelectItem value="访问学者">访问学者</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>标签（获奖、内部定位等，逗号分隔）</Label>
+                  <Input
+                    value={form.tags}
+                    onChange={(e) => setForm({ ...form, tags: e.target.value })}
+                    placeholder="最佳员工 2025, 技术骨干, 后备干部"
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label>已评估技能（每行「技能 | 等级」）</Label>
                   <Textarea
                     rows={4}
