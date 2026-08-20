@@ -561,6 +561,139 @@ function Cell({
   );
 }
 
+function DirectionMenu({
+  direction,
+  roleCount,
+  onDone,
+}: {
+  direction: Direction;
+  roleCount: number;
+  onDone: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [title, setTitle] = useState(direction.title);
+  const [description, setDescription] = useState(direction.description ?? "");
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("directions")
+        .update({ title: title.trim(), description: description.trim() || null })
+        .eq("id", direction.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("方向已更新");
+      setEditing(false);
+      onDone();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const archive = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("directions")
+        .update({ archived: true })
+        .eq("id", direction.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("方向已归档");
+      setConfirming(false);
+      onDone();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-2 top-2 size-7 text-muted-foreground opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100"
+          >
+            <MoreHorizontal className="size-4" />
+            <span className="sr-only">方向操作</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuItem
+            onSelect={() => {
+              setTitle(direction.title);
+              setDescription(direction.description ?? "");
+              setEditing(true);
+            }}
+          >
+            <Pencil className="size-3.5" /> 编辑方向
+          </DropdownMenuItem>
+          <DropdownMenuItem className="text-danger" onSelect={() => setConfirming(true)}>
+            <Archive className="size-3.5" /> 归档方向
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <Dialog open={editing} onOpenChange={setEditing}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>编辑研究 / 工作方向</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>方向名称</Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>方向描述</Label>
+              <Textarea
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => save.mutate()} disabled={!title.trim() || save.isPending}>
+              保存
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={confirming} onOpenChange={setConfirming}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>归档「{direction.title}」？</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <p>归档后该方向会从战略岗位视图与能力视图中消失。</p>
+            {roleCount > 0 && (
+              <p className="text-danger">
+                该方向下仍挂着 {roleCount} 个目标岗位类型，它们将一并不再展示。
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setConfirming(false)}>
+              取消
+            </Button>
+            <Button
+              className="bg-danger text-white hover:bg-danger/90"
+              onClick={() => archive.mutate()}
+              disabled={archive.isPending}
+            >
+              确认归档
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 function NewDirectionDialog({ orgId, onDone }: { orgId: string; onDone: () => void }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -586,7 +719,7 @@ function NewDirectionDialog({ orgId, onDone }: { orgId: string; onDone: () => vo
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1.5">
+        <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
           <Plus className="size-4" /> 新增研究方向
         </Button>
       </DialogTrigger>
