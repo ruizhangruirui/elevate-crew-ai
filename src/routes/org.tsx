@@ -223,35 +223,76 @@ function OrgTreeBody() {
           <div className="space-y-2 border-t border-border/50 px-3 py-3 pl-6">
             {kids.map((k) => renderNode(k, depth + 1))}
 
-            {members.map((p) => {
-              const role = roles.find((r) => r.id === p.role_id);
+            {nodeRoles.map((r) => {
+              const holders = members.filter((p) => p.role_id === r.id);
+              const onboardAll = people.filter(
+                (p) => p.role_id === r.id && p.status === "onboard",
+              ).length;
+              const vacancies = Math.max(0, r.target_count - onboardAll);
+              const rk = `${node.id}:${r.id}`;
+              const rOpen = expanded[rk] ?? true;
               return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setPersonId(p.id)}
-                  className="flex w-full items-center gap-3 rounded-lg border border-border/50 bg-background/40 px-3 py-2.5 text-left transition-colors hover:border-brand/50 hover:bg-surface-raised/60"
-                >
-                  <span className="grid size-8 shrink-0 place-items-center rounded-full bg-brand/15 text-xs font-semibold text-brand">
-                    {p.name.slice(0, 1)}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">
-                      {p.name}
-                      {p.level ? (
-                        <span className="ml-2 text-xs text-muted-foreground">L{p.level}</span>
-                      ) : null}
-                    </p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {role ? `${role.title} · ${criticalityLabel[role.criticality] ?? role.criticality}` : "未匹配战略岗位"}
-                    </p>
+                <div key={r.id} className="rounded-lg border border-border/50 bg-background/30">
+                  <div className="flex items-center gap-2 px-3 py-2">
+                    <button
+                      type="button"
+                      onClick={() => setExpanded((s) => ({ ...s, [rk]: !rOpen }))}
+                      className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                    >
+                      <ChevronRight
+                        className={`size-3.5 shrink-0 text-muted-foreground transition-transform ${rOpen ? "rotate-90" : ""}`}
+                      />
+                      <Briefcase className="size-3.5 shrink-0 text-brand" />
+                      <span className="truncate text-sm font-medium">{r.title}</span>
+                      <span className="shrink-0 text-[11px] text-muted-foreground">
+                        {criticalityLabel[r.criticality] ?? r.criticality}
+                      </span>
+                      <span
+                        className={`ml-auto shrink-0 rounded-md px-1.5 py-0.5 text-[11px] tabular-nums ${
+                          vacancies > 0 ? "bg-warn/12 text-warn" : "bg-ok/12 text-ok"
+                        }`}
+                      >
+                        在岗 {onboardAll} / 编制 {r.target_count}
+                      </span>
+                    </button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0 text-xs text-muted-foreground"
+                      onClick={() => setRoleId(r.id)}
+                    >
+                      岗位画像
+                    </Button>
                   </div>
-                  <UserRound className="size-4 shrink-0 text-muted-foreground" />
-                </button>
+
+                  {rOpen && (
+                    <div className="space-y-1.5 border-t border-border/40 px-3 py-2 pl-7">
+                      {holders.map((p) => (
+                        <PersonRow key={p.id} person={p} onOpen={() => setPersonId(p.id)} />
+                      ))}
+                      {Array.from({ length: vacancies }).map((_, i) => (
+                        <div
+                          key={`vac-${i}`}
+                          className="flex items-center gap-3 rounded-lg border border-dashed border-warn/50 bg-warn/5 px-3 py-2 text-xs text-warn"
+                        >
+                          <UserPlus className="size-4 shrink-0" />
+                          <span className="flex-1">空缺席位（L{r.level_min}–{r.level_max}）</span>
+                        </div>
+                      ))}
+                      {holders.length === 0 && vacancies === 0 && (
+                        <p className="py-1 text-xs text-muted-foreground">暂无席位。</p>
+                      )}
+                    </div>
+                  )}
+                </div>
               );
             })}
 
-            {kids.length === 0 && members.length === 0 && (
+            {roleless.map((p) => (
+              <PersonRow key={p.id} person={p} onOpen={() => setPersonId(p.id)} muted />
+            ))}
+
+            {kids.length === 0 && members.length === 0 && nodeRoles.length === 0 && (
               <p className="px-2 py-3 text-xs text-muted-foreground">该节点下暂无子团队或成员。</p>
             )}
           </div>
