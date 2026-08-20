@@ -2,12 +2,27 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Archive, Users, ArrowUpRight, Building2, Pencil } from "lucide-react";
+import {
+  Plus,
+  Archive,
+  Users,
+  ArrowUpRight,
+  Building2,
+  Pencil,
+  MoreHorizontal,
+} from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { StatTile } from "@/components/StatTile";
 import { RoleDetailSheet } from "@/components/RoleDetailSheet";
-import { coverageOf, criticalityLabel, fetchWorkspace, type Org, type Role } from "@/lib/talent";
+import {
+  coverageOf,
+  criticalityLabel,
+  fetchWorkspace,
+  type Direction,
+  type Org,
+  type Role,
+} from "@/lib/talent";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchOrgNodes } from "@/lib/org-tree";
 import {
@@ -37,6 +52,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -182,30 +203,35 @@ function StrategyBoard() {
             const s = dirStats(d.id);
             const selected = d.id === active?.id;
             return (
-              <button
+              <div
                 key={d.id}
-                onClick={() => setActiveId(d.id)}
-                className={`panel group h-full p-5 text-left transition-all duration-200 hover:-translate-y-0.5 ${
+                className={`panel group relative h-full transition-all duration-200 hover:-translate-y-0.5 ${
                   selected ? "border-brand/70 shadow-[var(--glow-brand)]" : "hover:border-brand/40"
                 }`}
               >
-                <div className="flex items-center gap-2 text-[11px]">
-                  <span className="rounded-md bg-surface-raised px-2 py-1 text-muted-foreground">
-                    {s.count} 岗位类型
-                  </span>
-                  <span
-                    className={`rounded-md px-2 py-1 font-medium ${
-                      s.gap ? "bg-danger/12 text-danger" : "bg-ok/12 text-ok"
-                    }`}
-                  >
-                    {s.gap ? `${s.gap} Critical Gap` : "全覆盖"}
-                  </span>
-                </div>
-                <h3 className="mt-3 font-display text-base font-semibold">{d.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  {d.description}
-                </p>
-              </button>
+                <button
+                  onClick={() => setActiveId(d.id)}
+                  className="block h-full w-full p-5 text-left"
+                >
+                  <div className="flex items-center gap-2 text-[11px]">
+                    <span className="rounded-md bg-surface-raised px-2 py-1 text-muted-foreground">
+                      {s.count} 岗位类型
+                    </span>
+                    <span
+                      className={`rounded-md px-2 py-1 font-medium ${
+                        s.gap ? "bg-danger/12 text-danger" : "bg-ok/12 text-ok"
+                      }`}
+                    >
+                      {s.gap ? `${s.gap} Critical Gap` : "全覆盖"}
+                    </span>
+                  </div>
+                  <h3 className="mt-3 pr-7 font-display text-base font-semibold">{d.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    {d.description}
+                  </p>
+                </button>
+                <DirectionMenu direction={d} roleCount={s.count} onDone={invalidate} />
+              </div>
             );
           })}
         </div>
@@ -535,6 +561,139 @@ function Cell({
   );
 }
 
+function DirectionMenu({
+  direction,
+  roleCount,
+  onDone,
+}: {
+  direction: Direction;
+  roleCount: number;
+  onDone: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [title, setTitle] = useState(direction.title);
+  const [description, setDescription] = useState(direction.description ?? "");
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("directions")
+        .update({ title: title.trim(), description: description.trim() || null })
+        .eq("id", direction.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("方向已更新");
+      setEditing(false);
+      onDone();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const archive = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("directions")
+        .update({ archived: true })
+        .eq("id", direction.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("方向已归档");
+      setConfirming(false);
+      onDone();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-2 top-2 size-7 text-muted-foreground opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100"
+          >
+            <MoreHorizontal className="size-4" />
+            <span className="sr-only">方向操作</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuItem
+            onSelect={() => {
+              setTitle(direction.title);
+              setDescription(direction.description ?? "");
+              setEditing(true);
+            }}
+          >
+            <Pencil className="size-3.5" /> 编辑方向
+          </DropdownMenuItem>
+          <DropdownMenuItem className="text-danger" onSelect={() => setConfirming(true)}>
+            <Archive className="size-3.5" /> 归档方向
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <Dialog open={editing} onOpenChange={setEditing}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>编辑研究 / 工作方向</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>方向名称</Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>方向描述</Label>
+              <Textarea
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => save.mutate()} disabled={!title.trim() || save.isPending}>
+              保存
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={confirming} onOpenChange={setConfirming}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>归档「{direction.title}」？</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <p>归档后该方向会从战略岗位视图与能力视图中消失。</p>
+            {roleCount > 0 && (
+              <p className="text-danger">
+                该方向下仍挂着 {roleCount} 个目标岗位类型，它们将一并不再展示。
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setConfirming(false)}>
+              取消
+            </Button>
+            <Button
+              className="bg-danger text-white hover:bg-danger/90"
+              onClick={() => archive.mutate()}
+              disabled={archive.isPending}
+            >
+              确认归档
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 function NewDirectionDialog({ orgId, onDone }: { orgId: string; onDone: () => void }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -560,7 +719,7 @@ function NewDirectionDialog({ orgId, onDone }: { orgId: string; onDone: () => vo
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1.5">
+        <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
           <Plus className="size-4" /> 新增研究方向
         </Button>
       </DialogTrigger>
