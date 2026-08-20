@@ -454,6 +454,7 @@ function RoleCard({
   teams,
   onArchive,
   onOpen,
+  onSaved,
 }: {
   role: Role;
   filled: number;
@@ -462,6 +463,7 @@ function RoleCard({
   teams: string[];
   onArchive: () => void;
   onOpen: () => void;
+  onSaved: () => void;
 }) {
   const pct = Math.min(100, Math.round((filled / Math.max(1, role.target_count)) * 100));
   const state = gap === 0 ? "full" : filled === 0 ? "empty" : "partial";
@@ -474,12 +476,13 @@ function RoleCard({
   const stateLabel = state === "full" ? "Fully Covered" : state === "partial" ? "Partially Covered" : "Not Covered";
 
   return (
-    <article className="panel flex h-full flex-col p-5">
+    <article className="panel group relative flex h-full flex-col p-5">
+      <RoleMenu role={role} onArchive={onArchive} onSaved={onSaved} />
       <div className="flex items-start justify-between gap-3">
         <span className={`rounded-md px-2 py-1 text-[11px] font-medium ${stateStyle}`}>
           {stateLabel}
         </span>
-        <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+        <span className="pr-7 text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
           {criticalityLabel[role.criticality] ?? role.criticality}
         </span>
       </div>
@@ -516,27 +519,174 @@ function RoleCard({
         <Button size="sm" variant="outline" className="gap-1.5" onClick={onOpen}>
           查看岗位画像 <ArrowUpRight className="size-3.5" />
         </Button>
-        <ConfirmAction
-          title={`确认归档岗位「${role.title}」？`}
-          description={
-            <>
-              <p>归档后该岗位会从战略岗位视图和组织能力视图中移除，其画像所承载的能力将不再计入覆盖统计。</p>
-              <p>已归属该岗位的人员不会被删除，但会显示为未分配岗位。</p>
-            </>
-          }
-          confirmLabel="确认归档"
-          onConfirm={onArchive}
-        >
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-1.5 text-muted-foreground hover:text-foreground"
-          >
-            <Archive className="size-3.5" /> 归档
-          </Button>
-        </ConfirmAction>
       </div>
     </article>
+  );
+}
+
+function RoleMenu({
+  role,
+  onArchive,
+  onSaved,
+}: {
+  role: Role;
+  onArchive: () => void;
+  onSaved: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(role.title);
+  const [description, setDescription] = useState(role.description ?? "");
+  const [levelMin, setLevelMin] = useState(String(role.level_min));
+  const [levelMax, setLevelMax] = useState(String(role.level_max));
+  const [targetCount, setTargetCount] = useState(String(role.target_count));
+  const [criticality, setCriticality] = useState(role.criticality);
+
+  const reset = () => {
+    setTitle(role.title);
+    setDescription(role.description ?? "");
+    setLevelMin(String(role.level_min));
+    setLevelMax(String(role.level_max));
+    setTargetCount(String(role.target_count));
+    setCriticality(role.criticality);
+  };
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("roles")
+        .update({
+          title: title.trim(),
+          description: description.trim() || null,
+          level_min: Number(levelMin) || role.level_min,
+          level_max: Number(levelMax) || role.level_max,
+          target_count: Math.max(1, Number(targetCount) || 1),
+          criticality,
+        })
+        .eq("id", role.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("岗位已更新");
+      setEditing(false);
+      onSaved();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-2 top-2 size-7 text-muted-foreground opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100"
+          >
+            <MoreHorizontal className="size-4" />
+            <span className="sr-only">岗位操作</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuItem
+            onSelect={() => {
+              reset();
+              setEditing(true);
+            }}
+          >
+            <Pencil className="size-3.5" /> 编辑岗位
+          </DropdownMenuItem>
+          <ConfirmAction
+            title={`确认归档岗位「${role.title}」？`}
+            description={
+              <>
+                <p>
+                  归档后该岗位会从战略岗位视图和组织能力视图中移除，其画像所承载的能力将不再计入覆盖统计。
+                </p>
+                <p>已归属该岗位的人员不会被删除，但会显示为未分配岗位。</p>
+              </>
+            }
+            confirmLabel="确认归档"
+            onConfirm={onArchive}
+          >
+            <DropdownMenuItem className="text-danger" onSelect={(e) => e.preventDefault()}>
+              <Archive className="size-3.5" /> 归档岗位
+            </DropdownMenuItem>
+          </ConfirmAction>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <Dialog open={editing} onOpenChange={setEditing}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>编辑目标岗位</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>岗位名称</Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>岗位描述</Label>
+              <Textarea
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-2">
+                <Label>级别下限</Label>
+                <Input
+                  type="number"
+                  value={levelMin}
+                  onChange={(e) => setLevelMin(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>级别上限</Label>
+                <Input
+                  type="number"
+                  value={levelMax}
+                  onChange={(e) => setLevelMax(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>目标人数</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={targetCount}
+                  onChange={(e) => setTargetCount(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>关键度</Label>
+              <Select value={criticality} onValueChange={setCriticality}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(criticalityLabel).map(([v, l]) => (
+                    <SelectItem key={v} value={v}>
+                      {l}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              专业领域、关键知识、技能矩阵等画像内容请在「查看岗位画像」中编辑。
+            </p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => save.mutate()} disabled={!title.trim() || save.isPending}>
+              保存
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
