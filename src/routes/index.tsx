@@ -271,6 +271,7 @@ function StrategyBoard() {
                 )}
                 onArchive={() => archiveRole.mutate(role.id)}
                 onOpen={() => setOpenRoleId(role.id)}
+                onSaved={invalidate}
               />
             ))}
             {activeRoles.length === 0 && (
