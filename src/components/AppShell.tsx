@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { LayoutGrid, Users, Settings, LogOut, Loader2, Network, FolderTree } from "lucide-react";
+import { LayoutGrid, Users, Settings, LogOut, Loader2, Network, FolderTree, ListChecks } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +10,7 @@ const nav = [
   { to: "/capability", label: "组织能力视图", icon: Network },
   { to: "/org", label: "组织 & 人员视图", icon: FolderTree },
   { to: "/people", label: "人员视图", icon: Users },
+  { to: "/actions", label: "待办中心", icon: ListChecks },
   { to: "/settings", label: "系统设置", icon: Settings },
 ] as const;
 
