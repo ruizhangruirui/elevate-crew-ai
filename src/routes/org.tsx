@@ -56,10 +56,59 @@ function OrgPage() {
   return (
     <AppShell
       title="组织视图"
-      subtitle="系统设置里维护的 Lab / Team 结构，在这里逐层展开：每个团队下挂着成员，点开成员即可看到他的岗位、技能对照与能力承载。"
+      subtitle="系统设置里维护的 Lab / Team 结构，在这里逐层展开：团队下挂着岗位（含空缺席位），岗位下挂着人。"
     >
       <OrgTreeBody />
     </AppShell>
+  );
+}
+
+function PersonRow({
+  person,
+  onOpen,
+  muted,
+}: {
+  person: Person;
+  onOpen: () => void;
+  muted?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors hover:border-brand/50 hover:bg-surface-raised/60 ${
+        muted ? "border-dashed border-border/60 bg-background/20" : "border-border/50 bg-background/40"
+      }`}
+    >
+      <span className="grid size-7 shrink-0 place-items-center rounded-full bg-brand/15 text-[11px] font-semibold text-brand">
+        {person.name.slice(0, 1)}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium">
+          {person.name}
+          {person.level ? (
+            <span className="ml-2 text-xs text-muted-foreground">L{person.level}</span>
+          ) : null}
+        </p>
+        {(person.contract_type || (person.tags ?? []).length > 0 || muted) && (
+          <p className="truncate text-[11px] text-muted-foreground">
+            {[
+              muted ? "未匹配战略岗位" : null,
+              person.contract_type,
+              ...(person.tags ?? []),
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+        )}
+      </div>
+      {person.status !== "onboard" && (
+        <span className="shrink-0 rounded-md bg-warn/12 px-1.5 py-0.5 text-[10px] text-warn">
+          候选人
+        </span>
+      )}
+      <UserRound className="size-4 shrink-0 text-muted-foreground" />
+    </button>
   );
 }
 
