@@ -27,13 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { fetchWorkspace, criticalityLabel, type Person } from "@/lib/talent";
-import {
-  completeness,
-  fetchOrgNodes,
-  missingFieldLabel,
-  structureStats,
-  type OrgNode,
-} from "@/lib/org-tree";
+import { fetchOrgNodes, structureStats, type OrgNode } from "@/lib/org-tree";
 import { TeamDiagnosisDialog } from "@/components/TeamDiagnosisDialog";
 
 export const Route = createFileRoute("/org")({
