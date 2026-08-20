@@ -10,6 +10,8 @@ import {
   FolderTree,
   Sparkles,
   ArrowUpRight,
+  Briefcase,
+  UserPlus,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
@@ -25,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { fetchWorkspace, criticalityLabel, type Person } from "@/lib/talent";
+import { fetchWorkspace, criticalityLabel, type Person, type Role } from "@/lib/talent";
 import { fetchOrgNodes, structureStats, type OrgNode } from "@/lib/org-tree";
 import { TeamDiagnosisDialog } from "@/components/TeamDiagnosisDialog";
 
@@ -101,6 +103,38 @@ function OrgTreeBody() {
 
   const unassigned = peopleOf.get("__none") ?? [];
 
+  /** 岗位归属团队：优先用 roles.org_node_id，未填写时按在岗人员所在团队推断 */
+  const rolePlacement = useMemo(() => {
+    const byNode = new Map<string, Role[]>();
+    const unplaced: Role[] = [];
+    for (const r of roles) {
+      let nid = r.org_node_id ?? null;
+      if (!nid) {
+        const counts = new Map<string, number>();
+        for (const p of people) {
+          if (p.role_id === r.id && p.org_node_id)
+            counts.set(p.org_node_id, (counts.get(p.org_node_id) ?? 0) + 1);
+        }
+        nid = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+      }
+      if (nid) byNode.set(nid, [...(byNode.get(nid) ?? []), r]);
+      else unplaced.push(r);
+    }
+    return { byNode, unplaced };
+  }, [roles, people]);
+
+  const placeRole = useMutation({
+    mutationFn: async ({ rid, nodeId }: { rid: string; nodeId: string }) => {
+      const { error } = await supabase.from("roles").update({ org_node_id: nodeId }).eq("id", rid);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("岗位归属已更新");
+      qc.invalidateQueries({ queryKey: ["workspace"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const assign = useMutation({
     mutationFn: async ({ pid, nodeId }: { pid: string; nodeId: string | null }) => {
       const { error } = await supabase.from("people").update({ org_node_id: nodeId }).eq("id", pid);
@@ -120,6 +154,8 @@ function OrgTreeBody() {
   const renderNode = (node: OrgNode, depth: number) => {
     const kids = childrenOf.get(node.id) ?? [];
     const members = peopleOf.get(node.id) ?? [];
+    const nodeRoles = rolePlacement.byNode.get(node.id) ?? [];
+    const roleless = members.filter((p) => !p.role_id || !nodeRoles.some((r) => r.id === p.role_id));
     const isOpen = expanded[node.id] ?? depth < 1;
     const total = countIn(node.id);
     const Icon = node.type === "Team" ? Users : Building2;
