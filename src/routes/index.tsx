@@ -10,6 +10,7 @@ import { RoleDetailSheet } from "@/components/RoleDetailSheet";
 import { coverageOf, criticalityLabel, fetchWorkspace, type Role } from "@/lib/talent";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchOrgNodes } from "@/lib/org-tree";
+import { actionSummary, fetchActions, isOverdue, priorityLabel } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,6 +67,7 @@ function StrategyBoard() {
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
   const orgNodes = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
+  const actions = useQuery({ queryKey: ["actions"], queryFn: fetchActions });
   const [activeId, setActiveId] = useState<string | null>(null);
   const [openRoleId, setOpenRoleId] = useState<string | null>(null);
 
@@ -104,6 +106,8 @@ function StrategyBoard() {
 
   return (
     <div className="space-y-10">
+      <ActionStrip list={actions.data ?? []} />
+
       {/* Org overview */}
       <section className="panel relative overflow-hidden p-8">
         <div
