@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -68,6 +68,9 @@ function CapabilityBody() {
   const { data: nodes } = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
   const { scope: scopeParam } = useSearch({ from: "/capability" });
   const scope = scopeParam ?? "__all__";
+  const navigate = useNavigate({ from: "/capability" });
+  const setScope = (v: string) =>
+    navigate({ search: { scope: v === "__all__" ? undefined : v }, replace: true });
 
   if (!data) return <div className="text-sm text-muted-foreground">加载中…</div>;
 
@@ -105,24 +108,32 @@ function CapabilityBody() {
           <TabsTrigger value="building">组织建设</TabsTrigger>
           <TabsTrigger value="trend">趋势</TabsTrigger>
         </TabsList>
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <span>
-            当前范围：<b className="text-foreground">{scopeName}</b>
-          </span>
-          {scope === "__all__" ? (
-            <Link to="/org" className="text-brand hover:underline">
-              按团队查看 →
-            </Link>
-          ) : (
-            <>
-              <span>（仅统计该节点及下级团队在岗人员所承担的岗位）</span>
-              <Link to="/capability" search={{ scope: undefined }} className="text-brand hover:underline">
-                回到全组织
-              </Link>
-            </>
-          )}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 text-xs text-muted-foreground">范围</span>
+          {[{ id: "__all__", name: "全组织", type: "" }, ...allNodes].map((n) => {
+            const active = scope === n.id;
+            return (
+              <button
+                key={n.id}
+                type="button"
+                onClick={() => setScope(n.id)}
+                className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                  active
+                    ? "border-brand bg-brand/15 text-foreground"
+                    : "border-border text-muted-foreground hover:border-brand/50 hover:text-foreground"
+                }`}
+              >
+                {n.name}
+              </button>
+            );
+          })}
         </div>
       </div>
+      {scope !== "__all__" && (
+        <p className="-mt-4 text-xs text-muted-foreground">
+          仅统计 <b className="text-foreground">{scopeName}</b> 及其下级团队在岗人员所承担的岗位
+        </p>
+      )}
       <TabsContent value="health">
         <HealthPanel data={scoped} activities={scopedBuilding?.activities ?? []} />
       </TabsContent>
