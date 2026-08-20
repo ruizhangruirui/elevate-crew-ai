@@ -6,6 +6,7 @@ import { CalendarDays, ChevronDown, Info, Pencil, Plus, Trash2, UserPlus } from 
 import { AppShell } from "@/components/AppShell";
 import { ActivityDialog } from "@/components/ActivityDialog";
 import { ConfirmAction } from "@/components/ConfirmAction";
+import { AddActionButton } from "@/components/AddActionButton";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchWorkspace, criticalityLabel } from "@/lib/talent";
 import {
@@ -285,10 +286,12 @@ function VacancyRow({
   title,
   crit,
   caps,
+  roleId,
 }: {
   title: string;
   crit: string;
   caps: Capability[];
+  roleId: string;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -307,6 +310,17 @@ function VacancyRow({
           className={`ml-auto size-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
+      <div className="mt-2">
+        <AddActionButton
+          sourceKind="vacancy"
+          sourceKey={`vacancy:${roleId}`}
+          roleId={roleId}
+          defaultTitle={`推进「${title}」岗位招聘`}
+          defaultDetail={`该岗位空缺影响 ${caps.length} 项能力：${caps.map((c) => c.label).join("、")}`}
+          defaultPriority="high"
+          label="转为招聘待办"
+        />
+      </div>
       {open && (
         <div className="mt-3 flex flex-wrap gap-1.5">
           {caps.map((c) => (
