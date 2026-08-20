@@ -150,6 +150,8 @@ export function PersonDetailSheet({
   const [form, setForm] = useState({
     performance: "",
     tenure_months: "",
+    contract_type: "unset",
+    tags: "",
     readiness: "unknown",
     attrition_risk: "unknown",
     prior_experience: "",
@@ -166,6 +168,8 @@ export function PersonDetailSheet({
     setForm({
       performance: person.performance ?? "",
       tenure_months: person.tenure_months != null ? String(person.tenure_months) : "",
+      contract_type: person.contract_type || "unset",
+      tags: (person.tags ?? []).join(", "),
       readiness: person.readiness ?? "unknown",
       attrition_risk: person.attrition_risk ?? "unknown",
       prior_experience: (person.prior_experience ?? []).join("\n"),
@@ -197,6 +201,11 @@ export function PersonDetailSheet({
         .update({
           performance: form.performance || null,
           tenure_months: form.tenure_months ? Number(form.tenure_months) : null,
+          contract_type: form.contract_type === "unset" ? null : form.contract_type,
+          tags: form.tags
+            .split(/[,，\n]/)
+            .map((s) => s.trim())
+            .filter(Boolean),
           readiness: form.readiness,
           attrition_risk: form.attrition_risk,
           prior_experience: form.prior_experience.split("\n").map((s) => s.trim()).filter(Boolean),
@@ -251,6 +260,7 @@ export function PersonDetailSheet({
               tone={person.status === "onboard" ? "ok" : "warn"}
             />
             <Fact label="绩效" value={perfLabel[person.performance ?? ""] ?? "未评估"} />
+            <Fact label="合同类型" value={person.contract_type || "未填写"} />
             <Fact
               label="所属团队"
               value={
@@ -279,6 +289,19 @@ export function PersonDetailSheet({
               }
             />
           </div>
+
+          {(person.tags ?? []).length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {(person.tags ?? []).map((t) => (
+                <span
+                  key={t}
+                  className="rounded-md border border-brand/40 bg-brand/10 px-2 py-0.5 text-xs text-brand"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          )}
 
           {!editing && (
             <Button variant="outline" size="sm" className="gap-1.5" onClick={startEdit}>
