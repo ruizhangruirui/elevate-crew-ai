@@ -10,7 +10,13 @@ import { RoleDetailSheet } from "@/components/RoleDetailSheet";
 import { coverageOf, criticalityLabel, fetchWorkspace, type Role } from "@/lib/talent";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchOrgNodes } from "@/lib/org-tree";
-import { actionSummary, fetchActions, isOverdue, priorityLabel } from "@/lib/actions";
+import {
+  actionSummary,
+  fetchActions,
+  isOverdue,
+  priorityLabel,
+  type ActionItem,
+} from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -259,12 +265,12 @@ function StrategyBoard() {
   );
 }
 
-function ActionStrip({ list }: { list: ReturnType<typeof actionSummaryList> }) {
+function ActionStrip({ list }: { list: ActionItem[] }) {
   const s = actionSummary(list);
   const top = list
     .filter((a) => a.status === "todo" || a.status === "doing")
     .sort((a, b) => {
-      const rank = (x: (typeof list)[number]) =>
+      const rank = (x: ActionItem) =>
         (isOverdue(x) ? 0 : 1) * 10 + (x.priority === "high" ? 0 : x.priority === "normal" ? 1 : 2);
       return rank(a) - rank(b);
     })
@@ -310,8 +316,6 @@ function ActionStrip({ list }: { list: ReturnType<typeof actionSummaryList> }) {
     </section>
   );
 }
-
-declare function actionSummaryList(): never;
 
 function RoleCard({
   role,
