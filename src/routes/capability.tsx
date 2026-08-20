@@ -30,7 +30,7 @@ import { fetchSnapshots, recordSnapshot, type Snapshot } from "@/lib/snapshots";
 
 export const Route = createFileRoute("/capability")({
   validateSearch: (search: Record<string, unknown>) => ({
-    scope: typeof search.scope === "string" ? search.scope : undefined,
+    scope: typeof search["scope"] === "string" ? (search["scope"] as string) : undefined,
   }),
   head: () => ({
     meta: [

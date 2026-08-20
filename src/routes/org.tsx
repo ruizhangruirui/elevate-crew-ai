@@ -1,8 +1,16 @@
 import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ChevronRight, Building2, Users, UserRound, FolderTree, Sparkles } from "lucide-react";
+import {
+  ChevronRight,
+  Building2,
+  Users,
+  UserRound,
+  FolderTree,
+  Sparkles,
+  ArrowUpRight,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { PersonDetailSheet } from "@/components/PersonDetailSheet";
@@ -10,6 +18,7 @@ import { RoleDetailSheet } from "@/components/RoleDetailSheet";
 import { StatTile } from "@/components/StatTile";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -18,7 +27,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { fetchWorkspace, criticalityLabel, type Person } from "@/lib/talent";
-import { fetchOrgNodes, nodeStats, type OrgNode } from "@/lib/org-tree";
+import {
+  completeness,
+  fetchOrgNodes,
+  missingFieldLabel,
+  structureStats,
+  type OrgNode,
+} from "@/lib/org-tree";
 import { TeamDiagnosisDialog } from "@/components/TeamDiagnosisDialog";
 
 export const Route = createFileRoute("/org")({
@@ -115,7 +130,7 @@ function OrgTreeBody() {
     const isOpen = expanded[node.id] ?? depth < 1;
     const total = countIn(node.id);
     const Icon = node.type === "Team" ? Users : Building2;
-    const st = nodeStats(node.id, nodes, people, roles, directions);
+    const st = structureStats(node.id, nodes, people, roles, directions);
 
     return (
       <div key={node.id} className="rounded-xl border border-border/60 bg-surface-raised/40">
@@ -160,18 +175,18 @@ function OrgTreeBody() {
               平均职级{" "}
               <b className="text-foreground tabular-nums">{st.avgLevel ?? "—"}</b>
             </span>
-            <span>
-              能力覆盖率 <b className="text-foreground tabular-nums">{st.coverageRate}%</b>
-            </span>
-            {st.soleCarriers > 0 && (
-              <span className="text-warn">单点风险 {st.soleCarriers} 项</span>
-            )}
-            {st.unassessed > 0 && <span className="text-warn">{st.unassessed} 人资料待补全</span>}
             {st.directions.length > 0 && (
               <span className="truncate">
                 承担方向：{st.directions.map((d) => d.title).join(" / ")}
               </span>
             )}
+            <Link
+              to="/capability"
+              search={{ scope: node.id }}
+              className="ml-auto inline-flex items-center gap-1 text-brand hover:underline"
+            >
+              查看该团队能力体检 <ArrowUpRight className="size-3" />
+            </Link>
           </div>
         )}
 
