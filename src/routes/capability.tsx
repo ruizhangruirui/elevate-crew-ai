@@ -448,6 +448,20 @@ function CapRow({ cap, activities }: { cap: Capability; activities: Activity[] }
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
         <span>来自 {cap.roleTitles.join(" / ")}</span>
         <span className="text-brand">下一步：{cap.suggestion}</span>
+        {cap.status !== "covered" && (
+          <AddActionButton
+            sourceKind="capability"
+            sourceKey={`capability:${cap.key}`}
+            roleId={cap.roleIds[0] ?? null}
+            defaultTitle={`${cap.label}：${cap.suggestion}`}
+            defaultDetail={`能力「${cap.label}」当前状态：${
+              cap.status === "blank" ? "无人承载" : cap.status === "single" ? "只靠 1 人" : "人手偏少"
+            }。来自岗位 ${cap.roleTitles.join(" / ")}；现有承载人：${
+              cap.carriers.map((c) => c.person.name).join("、") || "无"
+            }。`}
+            defaultPriority={cap.status === "blank" ? "high" : "normal"}
+          />
+        )}
       </div>
     </li>
   );
