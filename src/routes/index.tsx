@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Archive, Users, ArrowUpRight, Building2 } from "lucide-react";
+import { Plus, Archive, Users, ArrowUpRight, Building2, Pencil } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { StatTile } from "@/components/StatTile";
@@ -122,9 +122,12 @@ function StrategyBoard() {
         />
         <div className="relative grid gap-8 lg:grid-cols-[1.4fr_1fr]">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-              {org?.tagline ?? "战略组织"}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+                {org?.tagline ?? "战略组织"}
+              </p>
+              {org && <EditOrgDialog org={org} onDone={invalidate} />}
+            </div>
             <h2 className="mt-2 font-display text-4xl font-bold">
               <span className="brand-gradient-text">{org?.name}</span>
             </h2>
