@@ -377,6 +377,49 @@ function OrgTreeBody() {
         <div className="space-y-3">{roots.map((r) => renderNode(r, 0))}</div>
       )}
 
+      {rolePlacement.unplaced.length > 0 && (
+        <section className="rounded-xl border border-border/60 bg-surface-raised/40 p-4">
+          <h2 className="font-display text-sm font-semibold">未挂载到团队的岗位</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            这些岗位还没有在岗人员、也未指定团队，指定后会出现在组织树对应团队下（含空缺席位）。
+          </p>
+          <div className="mt-3 space-y-2">
+            {rolePlacement.unplaced.map((r) => (
+              <div
+                key={r.id}
+                className="flex flex-col gap-2 rounded-lg border border-border/50 bg-background/40 px-3 py-2.5 sm:flex-row sm:items-center"
+              >
+                <button
+                  type="button"
+                  onClick={() => setRoleId(r.id)}
+                  className="min-w-0 flex-1 text-left text-sm font-medium hover:text-brand"
+                >
+                  {r.title}
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    编制 {r.target_count}
+                  </span>
+                </button>
+                <Select
+                  onValueChange={(v) => placeRole.mutate({ rid: r.id, nodeId: v })}
+                  disabled={placeRole.isPending}
+                >
+                  <SelectTrigger className="w-full sm:w-64">
+                    <SelectValue placeholder="挂到团队" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectableNodes.map((n) => (
+                      <SelectItem key={n.id} value={n.id}>
+                        {n.name}（{n.type}）
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {unassigned.length > 0 && (
         <section className="rounded-xl border border-warn/40 bg-surface-raised/40 p-4">
           <h2 className="font-display text-sm font-semibold">未归属成员</h2>
