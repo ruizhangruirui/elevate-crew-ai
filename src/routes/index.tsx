@@ -203,30 +203,35 @@ function StrategyBoard() {
             const s = dirStats(d.id);
             const selected = d.id === active?.id;
             return (
-              <button
+              <div
                 key={d.id}
-                onClick={() => setActiveId(d.id)}
-                className={`panel group h-full p-5 text-left transition-all duration-200 hover:-translate-y-0.5 ${
+                className={`panel group relative h-full transition-all duration-200 hover:-translate-y-0.5 ${
                   selected ? "border-brand/70 shadow-[var(--glow-brand)]" : "hover:border-brand/40"
                 }`}
               >
-                <div className="flex items-center gap-2 text-[11px]">
-                  <span className="rounded-md bg-surface-raised px-2 py-1 text-muted-foreground">
-                    {s.count} 岗位类型
-                  </span>
-                  <span
-                    className={`rounded-md px-2 py-1 font-medium ${
-                      s.gap ? "bg-danger/12 text-danger" : "bg-ok/12 text-ok"
-                    }`}
-                  >
-                    {s.gap ? `${s.gap} Critical Gap` : "全覆盖"}
-                  </span>
-                </div>
-                <h3 className="mt-3 font-display text-base font-semibold">{d.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  {d.description}
-                </p>
-              </button>
+                <button
+                  onClick={() => setActiveId(d.id)}
+                  className="block h-full w-full p-5 text-left"
+                >
+                  <div className="flex items-center gap-2 text-[11px]">
+                    <span className="rounded-md bg-surface-raised px-2 py-1 text-muted-foreground">
+                      {s.count} 岗位类型
+                    </span>
+                    <span
+                      className={`rounded-md px-2 py-1 font-medium ${
+                        s.gap ? "bg-danger/12 text-danger" : "bg-ok/12 text-ok"
+                      }`}
+                    >
+                      {s.gap ? `${s.gap} Critical Gap` : "全覆盖"}
+                    </span>
+                  </div>
+                  <h3 className="mt-3 pr-7 font-display text-base font-semibold">{d.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    {d.description}
+                  </p>
+                </button>
+                <DirectionMenu direction={d} roleCount={s.count} onDone={invalidate} />
+              </div>
             );
           })}
         </div>
