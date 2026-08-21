@@ -733,6 +733,8 @@ export function PersonDetailSheet({
           )}
 
           <Module
+            collapsible
+            defaultOpen={false}
             title={t("sheet.person.currentRole")}
             actions={
               role && onOpenRole ? (
@@ -799,7 +801,7 @@ export function PersonDetailSheet({
           </Module>
 
           {role && (
-            <Module title={t("sheet.person.skillMatchTitle")}>
+            <Module collapsible defaultOpen={false} badge={String(skillMatch.length)} title={t("sheet.person.skillMatchTitle")}>
               {skillMatch.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("sheet.person.noSkillRequirements")}</p>
               ) : (
@@ -883,7 +885,7 @@ export function PersonDetailSheet({
           )}
 
           {role && (
-            <Module title={t("sheet.person.carriedCapabilities")}>
+            <Module collapsible defaultOpen={false} title={t("sheet.person.carriedCapabilities")}>
               {carried.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("sheet.person.noRelatedCapabilities")}</p>
               ) : (
@@ -923,7 +925,7 @@ export function PersonDetailSheet({
           )}
 
 
-          <Module title={t("sheet.person.aiFitRecordsTitle")}>
+          <Module collapsible defaultOpen={false} badge={String((fits.data ?? []).length)} title={t("sheet.person.aiFitRecordsTitle")}>
             {fits.isLoading ? (
               <p className="text-sm text-muted-foreground">{t("sheet.loading")}</p>
             ) : (fits.data ?? []).length === 0 ? (
@@ -964,7 +966,7 @@ export function PersonDetailSheet({
           </Module>
 
           {(person.prior_experience ?? []).length > 0 && (
-            <Module title={t("sheet.person.priorExperienceTitle")}>
+            <Module collapsible defaultOpen={false} title={t("sheet.person.priorExperienceTitle")}>
               <ul className="space-y-1.5 text-sm text-foreground/85">
                 {(person.prior_experience ?? []).map((e) => (
                   <li key={e}>· {e}</li>
@@ -974,7 +976,7 @@ export function PersonDetailSheet({
           )}
 
           {person.note && (
-            <Module title={t("sheet.person.noteTitle")}>
+            <Module collapsible defaultOpen={false} title={t("sheet.person.noteTitle")}>
               <p className="text-sm text-foreground/85">{person.note}</p>
             </Module>
           )}
