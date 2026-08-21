@@ -4,8 +4,6 @@ import { toast } from "sonner";
 import {
   Pencil,
   ExternalLink,
-  AlertTriangle,
-  Check,
   ChevronRight,
   Plus,
   History,
@@ -23,7 +21,7 @@ import {
   type Role,
   type Skill,
 } from "@/lib/talent";
-import { buildCapabilities, normalizeKey, levelRank, carrierRiskTier } from "@/lib/capability";
+import { buildCapabilities, normalizeKey, carrierRiskTier } from "@/lib/capability";
 import { fetchOrgNodes } from "@/lib/org-tree";
 import { useI18n } from "@/lib/i18n";
 import { fetchLifecycleEvents, recordJoin } from "@/lib/lifecycle";
@@ -74,28 +72,6 @@ function perfLabelOf(t: (k: string) => string, key: string): string {
 
 const SKILL_LEVELS = ["Proficient", "Advanced", "Expert"] as const;
 
-function LevelScale({ required, actual }: { required: string; actual: string | null }) {
-  const req = levelRank(required);
-  const act = levelRank(actual);
-  return (
-    <span className="flex items-center gap-0.5" title={`${required} / ${actual ?? "-"}`}>
-      {[1, 2, 3].map((i) => (
-        <span
-          key={i}
-          className={`size-2 rounded-full border ${
-            i <= act
-              ? act >= req
-                ? "border-ok bg-ok"
-                : "border-warn bg-warn"
-              : i <= req
-                ? "border-muted-foreground/60"
-                : "border-transparent"
-          }`}
-        />
-      ))}
-    </span>
-  );
-}
 
 function CollapsedRest({ items, label }: { items: string[]; label: string }) {
   const [open, setOpen] = useState(false);
@@ -214,18 +190,6 @@ export function PersonProfile({
   const role = person.role_id ? (roles.find((r) => r.id === person.role_id) ?? null) : null;
   const direction = role ? (directions.find((d) => d.id === role.direction_id) ?? null) : null;
 
-  const fits = useQuery({
-    queryKey: ["person-fit", person.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("person_role_fit")
-        .select("*")
-        .eq("person_id", person.id)
-        .order("fit_score", { ascending: false });
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
 
   const perfRecords = useQuery({
     queryKey: ["person-perf", person.id],
@@ -397,43 +361,13 @@ export function PersonProfile({
       );
   }, [person, role, roles, people]);
 
-  const skillMatch = useMemo(() => {
-    if (!role) return [];
-    const own = (person.assessed_skills ?? []) as Skill[];
-    return (role.skills ?? []).map((req) => {
-      const k = normalizeKey(req.skill);
-      const exact = own.find((s) => normalizeKey(s.skill ?? "") === k);
-      const fuzzy =
-        exact ??
-        own.find((s) => {
-          const sk = normalizeKey(s.skill ?? "");
-          return sk && (sk.includes(k) || k.includes(sk));
-        });
-      const hit = fuzzy ?? null;
-      const gap = hit ? levelRank(req.level) - levelRank(hit.level) : null;
-      const state: "met" | "minor" | "major" | "none" =
-        gap == null ? "none" : gap <= 0 ? "met" : gap === 1 ? "minor" : "major";
-      return {
-        skill: req.skill,
-        required: req.level,
-        actual: hit?.level ?? null,
-        fuzzy: !!hit && !exact,
-        gap,
-        state,
-      };
-    });
-  }, [role, person]);
-
-  const skillSummary = useMemo(
-    () => ({
-      total: skillMatch.length,
-      ok: skillMatch.filter((s) => s.state === "met").length,
-      minor: skillMatch.filter((s) => s.state === "minor").length,
-      major: skillMatch.filter((s) => s.state === "major").length,
-      none: skillMatch.filter((s) => s.state === "none").length,
-    }),
-    [skillMatch],
+  const ownSkills = useMemo(
+    () => ((person.assessed_skills ?? []) as Skill[]).filter((s) => !!s?.skill),
+    [person],
   );
+  const [skillOpen, setSkillOpen] = useState(false);
+  const [newSkill, setNewSkill] = useState({ skill: "", level: "Proficient" });
+
 
   const setSkillLevel = useMutation({
     mutationFn: async ({ skill, level }: { skill: string; level: string | null }) => {
@@ -900,6 +834,79 @@ export function PersonProfile({
           )}
 
           <Module
+            title={t("sheet.person.currentRole")}
+            actions={
+              role && onOpenRole ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => onOpenRole(role.id)}
+                >
+                  <ExternalLink className="size-4" /> {t("sheet.person.viewRoleProfile")}
+                </Button>
+              ) : null
+            }
+          >
+            {!role ? (
+              <p className="text-sm text-muted-foreground">
+                {t("sheet.person.noRoleAssignedHint")}
+              </p>
+            ) : (
+              <div className="space-y-3">
+                <p className="font-display text-sm font-semibold">{role.title}</p>
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <span className="rounded-full border border-brand/40 bg-brand/10 px-2.5 py-1 text-foreground">
+                    {direction?.title ?? t("sheet.person.unknownDirection")}
+                  </span>
+                  <span className="rounded-full border border-border/70 px-2.5 py-1">
+                    {criticalityLabel[role.criticality] ?? role.criticality}
+                  </span>
+                  <span className="rounded-full border border-border/70 px-2.5 py-1">
+                    Level {role.level_min}–{role.level_max}
+                  </span>
+                </div>
+                {cov && (
+                  <div>
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>{t("sheet.person.roleCoverage")}</span>
+                      <span className="tabular-nums">
+                        {t("sheet.person.coverageGap")
+                          .replace("{filled}", String(cov.filled))
+                          .replace("{target}", String(role.target_count))
+                          .replace("{gap}", String(cov.gap))}
+                      </span>
+                    </div>
+                    <Progress
+                      className="mt-2"
+                      value={Math.min(100, (cov.filled / Math.max(1, role.target_count)) * 100)}
+                    />
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs text-muted-foreground">{t("sheet.person.teammates")}</p>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {teammates.length === 0 && (
+                      <span className="text-xs text-danger">
+                        {t("sheet.person.soleOwnerWarning")}
+                      </span>
+                    )}
+                    {teammates.map((m) => (
+                      <span
+                        key={m.id}
+                        className="rounded-full border border-border/70 px-2.5 py-1 text-xs"
+                      >
+                        {m.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </Module>
+
+
+          <Module
             title={t("pp.ms.title")}
             badge={String((milestones.data ?? []).length)}
             actions={
@@ -1181,15 +1188,6 @@ export function PersonProfile({
                     </Select>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>{t("sheet.person.assessedSkillsLabel")}</Label>
-                  <Textarea
-                    rows={4}
-                    value={form.assessed_skills}
-                    onChange={(e) => setForm({ ...form, assessed_skills: e.target.value })}
-                    placeholder={"RTL Design | Expert\nNPU Architecture | Working"}
-                  />
-                </div>
                 {saveBar}
               </div>
             </Module>
@@ -1320,91 +1318,124 @@ export function PersonProfile({
             )}
           </Module>
 
-          {role && (
-            <Module badge={String(skillMatch.length)} title={t("sheet.person.skillMatchTitle")}>
-              {skillMatch.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {t("sheet.person.noSkillRequirements")}
-                </p>
-              ) : (
-                <>
-                  <p className="mb-3 text-xs text-muted-foreground">
-                    {t("sheet.person.skillSummary")
-                      .replace("{total}", String(skillSummary.total))
-                      .replace("{ok}", String(skillSummary.ok))
-                      .replace("{minor}", String(skillSummary.minor))
-                      .replace("{major}", String(skillSummary.major))
-                      .replace("{none}", String(skillSummary.none))}
-                  </p>
-                  <ul className="space-y-2">
-                    {skillMatch.map((s) => {
-                      const tone =
-                        s.state === "met"
-                          ? "text-ok"
-                          : s.state === "none"
-                            ? "text-muted-foreground"
-                            : s.state === "minor"
-                              ? "text-warn"
-                              : "text-danger";
-                      const stateLabel =
-                        s.state === "met"
-                          ? t("sheet.person.gapMet")
-                          : s.state === "minor"
-                            ? t("sheet.person.gapMinor")
-                            : s.state === "major"
-                              ? t("sheet.person.gapMajor")
-                              : t("sheet.person.gapNone");
-                      return (
-                        <li
-                          key={s.skill}
-                          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/60 bg-surface-raised/40 px-3 py-2"
+          <Module
+            badge={String(ownSkills.length)}
+            title={t("pp.skill.title")}
+            actions={
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setSkillOpen((v) => !v)}
+              >
+                <Plus className="size-4" /> {t("pp.skill.add")}
+              </Button>
+            }
+          >
+            <p className="mb-3 text-xs text-muted-foreground">{t("pp.skill.hint")}</p>
+            {skillOpen && (
+              <div className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-border/60 bg-surface-raised/40 p-3">
+                <div className="min-w-[200px] flex-1 space-y-1.5">
+                  <Label>{t("pp.skill.name")}</Label>
+                  <Input
+                    value={newSkill.skill}
+                    placeholder={t("pp.skill.namePlaceholder")}
+                    onChange={(e) => setNewSkill({ ...newSkill, skill: e.target.value })}
+                  />
+                </div>
+                <div className="w-40 space-y-1.5">
+                  <Label>{t("pp.skill.level")}</Label>
+                  <Select
+                    value={newSkill.level}
+                    onValueChange={(v) => setNewSkill({ ...newSkill, level: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SKILL_LEVELS.map((lv) => (
+                        <SelectItem key={lv} value={lv}>
+                          {lv}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    disabled={!newSkill.skill.trim() || setSkillLevel.isPending}
+                    onClick={() =>
+                      setSkillLevel.mutate(
+                        { skill: newSkill.skill.trim(), level: newSkill.level },
+                        {
+                          onSuccess: () => {
+                            setNewSkill({ skill: "", level: "Proficient" });
+                            setSkillOpen(false);
+                          },
+                        },
+                      )
+                    }
+                  >
+                    {t("sheet.save")}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setSkillOpen(false)}>
+                    {t("sheet.cancel")}
+                  </Button>
+                </div>
+              </div>
+            )}
+            {ownSkills.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("pp.skill.empty")}</p>
+            ) : (
+              <ul className="space-y-2">
+                {ownSkills.map((s) => (
+                  <li
+                    key={s.skill}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/60 bg-surface-raised/40 px-3 py-2"
+                  >
+                    <span className="text-sm">{s.skill}</span>
+                    <span className="flex items-center gap-2">
+                      <Select
+                        value={s.level ?? "Proficient"}
+                        onValueChange={(v) =>
+                          setSkillLevel.mutate({ skill: s.skill as string, level: v })
+                        }
+                      >
+                        <SelectTrigger className="h-7 w-36 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SKILL_LEVELS.map((lv) => (
+                            <SelectItem key={lv} value={lv}>
+                              {lv}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <ConfirmAction
+                        title={t("pp.skill.removeTitle")}
+                        description={<p>{t("pp.skill.removeDesc")}</p>}
+                        confirmLabel={t("ppl.remove.confirmLabel")}
+                        onConfirm={() =>
+                          setSkillLevel.mutate({ skill: s.skill as string, level: null })
+                        }
+                      >
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-danger"
+                          aria-label={t("ppl.remove.label")}
                         >
-                          <span className="flex items-center gap-2 text-sm">
-                            {s.skill}
-                            {s.fuzzy && (
-                              <span className="rounded-full border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                                {t("sheet.person.fuzzyMatch")}
-                              </span>
-                            )}
-                          </span>
-                          <span className="flex items-center gap-2 text-xs">
-                            <LevelScale required={s.required} actual={s.actual} />
-                            <span className={tone}>{stateLabel}</span>
-                            {s.state === "met" ? (
-                              <Check className="size-4 text-ok" />
-                            ) : (
-                              <AlertTriangle className={`size-4 ${tone}`} />
-                            )}
-                            <Select
-                              value={s.actual ? String(s.actual) : "none"}
-                              onValueChange={(v) =>
-                                setSkillLevel.mutate({
-                                  skill: s.skill,
-                                  level: v === "none" ? null : v,
-                                })
-                              }
-                            >
-                              <SelectTrigger className="h-7 w-32 text-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">{t("sheet.person.gapNone")}</SelectItem>
-                                {SKILL_LEVELS.map((lv) => (
-                                  <SelectItem key={lv} value={lv}>
-                                    {lv}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </>
-              )}
-            </Module>
-          )}
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </ConfirmAction>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Module>
 
           {role && (
             <Module title={t("sheet.person.carriedCapabilities")}>
@@ -1448,126 +1479,8 @@ export function PersonProfile({
             </Module>
           )}
 
-          <Module
-            collapsible
-            defaultOpen={false}
-            title={t("sheet.person.currentRole")}
-            actions={
-              role && onOpenRole ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() => onOpenRole(role.id)}
-                >
-                  <ExternalLink className="size-4" /> {t("sheet.person.viewRoleProfile")}
-                </Button>
-              ) : null
-            }
-          >
-            {!role ? (
-              <p className="text-sm text-muted-foreground">
-                {t("sheet.person.noRoleAssignedHint")}
-              </p>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <span className="rounded-full border border-brand/40 bg-brand/10 px-2.5 py-1 text-foreground">
-                    {direction?.title ?? t("sheet.person.unknownDirection")}
-                  </span>
-                  <span className="rounded-full border border-border/70 px-2.5 py-1">
-                    {criticalityLabel[role.criticality] ?? role.criticality}
-                  </span>
-                  <span className="rounded-full border border-border/70 px-2.5 py-1">
-                    Level {role.level_min}–{role.level_max}
-                  </span>
-                </div>
-                {cov && (
-                  <div>
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>{t("sheet.person.roleCoverage")}</span>
-                      <span className="tabular-nums">
-                        {t("sheet.person.coverageGap")
-                          .replace("{filled}", String(cov.filled))
-                          .replace("{target}", String(role.target_count))
-                          .replace("{gap}", String(cov.gap))}
-                      </span>
-                    </div>
-                    <Progress
-                      className="mt-2"
-                      value={Math.min(100, (cov.filled / Math.max(1, role.target_count)) * 100)}
-                    />
-                  </div>
-                )}
-                <div>
-                  <p className="text-xs text-muted-foreground">{t("sheet.person.teammates")}</p>
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {teammates.length === 0 && (
-                      <span className="text-xs text-danger">
-                        {t("sheet.person.soleOwnerWarning")}
-                      </span>
-                    )}
-                    {teammates.map((m) => (
-                      <span
-                        key={m.id}
-                        className="rounded-full border border-border/70 px-2.5 py-1 text-xs"
-                      >
-                        {m.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </Module>
+          
 
-          <Module
-            collapsible
-            defaultOpen={false}
-            badge={String((fits.data ?? []).length)}
-            title={t("sheet.person.aiFitRecordsTitle")}
-          >
-            {fits.isLoading ? (
-              <p className="text-sm text-muted-foreground">{t("sheet.loading")}</p>
-            ) : (fits.data ?? []).length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("sheet.person.noFitRecords")}</p>
-            ) : (
-              <ul className="space-y-2">
-                {(fits.data ?? []).map((f) => {
-                  const r = roles.find((x) => x.id === f.role_id);
-                  return (
-                    <li
-                      key={f.id}
-                      className="rounded-lg border border-border/60 bg-surface-raised/40 p-3"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <button
-                          className="text-left font-display text-sm font-semibold hover:text-brand"
-                          onClick={() => r && onOpenRole?.(r.id)}
-                        >
-                          {r?.title ?? t("sheet.person.deletedRole")}
-                        </button>
-                        <span className="font-display text-sm tabular-nums text-brand">
-                          {f.fit_score}
-                        </span>
-                      </div>
-                      {f.summary && (
-                        <p className="mt-1 text-xs text-muted-foreground">{f.summary}</p>
-                      )}
-                      {f.recommendation && (
-                        <p className="mt-1 text-xs text-foreground/80">
-                          {t("sheet.person.recommendationLabel").replace(
-                            "{text}",
-                            f.recommendation,
-                          )}
-                        </p>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </Module>
         </TabsContent>
       </Tabs>
     </div>
