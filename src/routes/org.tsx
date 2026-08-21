@@ -108,7 +108,9 @@ function PersonRow({
         {(person.contract_type || (person.tags ?? []).length > 0 || muted) && (
           <p className="truncate text-[11px] text-muted-foreground">
             {[
-              muted ? t("org.noStrategicRole") : null,
+              muted && ["core", "key"].includes(effectiveImportance(person, roles))
+                ? t("org.noStrategicRole")
+                : null,
               contractLabel(t, person.contract_type),
               ...(person.tags ?? []),
             ]
