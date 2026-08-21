@@ -1188,15 +1188,6 @@ export function PersonProfile({
                     </Select>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>{t("sheet.person.assessedSkillsLabel")}</Label>
-                  <Textarea
-                    rows={4}
-                    value={form.assessed_skills}
-                    onChange={(e) => setForm({ ...form, assessed_skills: e.target.value })}
-                    placeholder={"RTL Design | Expert\nNPU Architecture | Working"}
-                  />
-                </div>
                 {saveBar}
               </div>
             </Module>
