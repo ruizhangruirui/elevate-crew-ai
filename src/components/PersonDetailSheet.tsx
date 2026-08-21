@@ -212,6 +212,76 @@ export function PersonDetailSheet({
     },
   });
 
+  const perfRecords = useQuery({
+    queryKey: ["person-perf", person?.id],
+    enabled: !!person && open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("performance_records")
+        .select("*")
+        .eq("person_id", person!.id)
+        .order("recorded_on", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const history = useQuery({
+    queryKey: ["person-audit", person?.id],
+    enabled: !!person && open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("audit_log")
+        .select("*")
+        .eq("person_id", person!.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const [perfForm, setPerfForm] = useState({
+    period: "",
+    rating: "meets",
+    summary: "",
+    highlights: "",
+    improvements: "",
+    reviewer: "",
+  });
+  const [perfOpen, setPerfOpen] = useState(false);
+
+  const addPerf = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("performance_records").insert({
+        person_id: person!.id,
+        period: perfForm.period.trim() || new Date().getFullYear().toString(),
+        rating: perfForm.rating,
+        summary: perfForm.summary || null,
+        highlights: perfForm.highlights || null,
+        improvements: perfForm.improvements || null,
+        reviewer: perfForm.reviewer || null,
+      });
+      if (error) throw error;
+      await supabase.from("audit_log").insert({
+        person_id: person!.id,
+        action: t("sheet.person.perfAddAction"),
+        entity: person!.name,
+        detail: `${perfForm.period} · ${perfLabelOf(t, perfForm.rating)}`,
+      });
+    },
+    onSuccess: () => {
+      toast.success(t("sheet.person.perfSaved"));
+      setPerfOpen(false);
+      setPerfForm({ period: "", rating: "meets", summary: "", highlights: "", improvements: "", reviewer: "" });
+      perfRecords.refetch();
+      history.refetch();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+
+
   // 该人员承载的组织能力（来自其岗位画像），按「能力关键度 × 人员可替代性」分级
   const carried = useMemo(() => {
     if (!person || !role) return [];
