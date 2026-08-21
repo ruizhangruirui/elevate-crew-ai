@@ -64,10 +64,7 @@ export const Route = createFileRoute("/actions")({
 function ActionsPage() {
   const { t } = useI18n();
   return (
-    <AppShell
-      title={t("act.title")}
-      subtitle={t("act.subtitle")}
-    >
+    <AppShell title={t("act.title")} subtitle={t("act.subtitle")}>
       <ActionsBoard />
     </AppShell>
   );
@@ -125,7 +122,11 @@ function ActionsBoard() {
     <div className="space-y-8">
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile label={t("act.stat.open")} value={s.open} />
-        <StatTile label={t("act.stat.overdue")} value={s.overdue} tone={s.overdue ? "danger" : "ok"} />
+        <StatTile
+          label={t("act.stat.overdue")}
+          value={s.overdue}
+          tone={s.overdue ? "danger" : "ok"}
+        />
         <StatTile label={t("act.stat.high")} value={s.high} tone={s.high ? "warn" : "ok"} />
         <StatTile label={t("act.stat.done")} value={s.done} tone="ok" />
       </section>
@@ -142,7 +143,13 @@ function ActionsBoard() {
                   : "border-border text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t(tabKey === "open" ? "act.tab.open" : tabKey === "done" ? "act.tab.done" : "act.tab.all")}
+              {t(
+                tabKey === "open"
+                  ? "act.tab.open"
+                  : tabKey === "done"
+                    ? "act.tab.done"
+                    : "act.tab.all",
+              )}
             </button>
           ))}
         </div>
@@ -153,12 +160,17 @@ function ActionsBoard() {
         {shown.map((a) => {
           const over = isOverdue(a);
           const done = a.status === "done";
+          const workflow = parseActionWorkflow(a.detail);
+          const confirmationText =
+            workflow.confirmationStatus === "confirmed"
+              ? t("act.workflow.confirmed")
+              : workflow.confirmationStatus === "rejected"
+                ? t("act.workflow.rejected")
+                : t("act.workflow.pending");
           return (
             <article key={a.id} className="flex flex-wrap items-start gap-3 px-5 py-4">
               <button
-                onClick={() =>
-                  move.mutate({ id: a.id, status: done ? "todo" : "done" })
-                }
+                onClick={() => move.mutate({ id: a.id, status: done ? "todo" : "done" })}
                 className={`mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border transition-colors ${
                   done ? "border-ok bg-ok/20 text-ok" : "border-border hover:border-brand"
                 }`}
@@ -168,15 +180,21 @@ function ActionsBoard() {
               </button>
 
               <div className="min-w-0 flex-1">
-                <p className={`text-sm font-medium ${done ? "text-muted-foreground line-through" : ""}`}>
+                <p
+                  className={`text-sm font-medium ${done ? "text-muted-foreground line-through" : ""}`}
+                >
                   {a.title}
                 </p>
-                {a.detail && (
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{a.detail}</p>
+                {workflow.description && (
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    {workflow.description}
+                  </p>
                 )}
                 <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
                   <span className="rounded bg-muted/40 px-1.5 py-0.5">
-                    {t(`act.source.${a.source_kind}`) !== `act.source.${a.source_kind}` ? t(`act.source.${a.source_kind}`) : a.source_kind}
+                    {t(`act.source.${a.source_kind}`) !== `act.source.${a.source_kind}`
+                      ? t(`act.source.${a.source_kind}`)
+                      : a.source_kind}
                   </span>
                   <span
                     className={
@@ -187,9 +205,17 @@ function ActionsBoard() {
                           : "text-warn"
                     }
                   >
-                    {t("act.priorityPrefix")} {t(`act.priority.${a.priority}`) !== `act.priority.${a.priority}` ? t(`act.priority.${a.priority}`) : a.priority}
+                    {t("act.priorityPrefix")}{" "}
+                    {t(`act.priority.${a.priority}`) !== `act.priority.${a.priority}`
+                      ? t(`act.priority.${a.priority}`)
+                      : a.priority}
                   </span>
-                  {a.owner && <span>{t("act.ownerPrefix")}{a.owner}</span>}
+                  {a.owner && (
+                    <span>
+                      {t("act.ownerPrefix")}
+                      {a.owner}
+                    </span>
+                  )}
                   {a.due_on && (
                     <span className={`inline-flex items-center gap-1 ${over ? "text-danger" : ""}`}>
                       <CalendarDays className="size-3" />
@@ -200,6 +226,38 @@ function ActionsBoard() {
                   {context(a).map((c) => (
                     <span key={c}>{c}</span>
                   ))}
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5 text-[11px]">
+                  <WorkflowTag
+                    label={t("act.workflow.confirmation")}
+                    value={confirmationText}
+                    tone={
+                      workflow.confirmationStatus === "confirmed"
+                        ? "ok"
+                        : workflow.confirmationStatus === "rejected"
+                          ? "danger"
+                          : "warn"
+                    }
+                  />
+                  {workflow.approver && (
+                    <WorkflowTag label={t("act.workflow.approver")} value={workflow.approver} />
+                  )}
+                  {workflow.relatedObject && (
+                    <WorkflowTag
+                      label={t("act.workflow.relatedObject")}
+                      value={workflow.relatedObject}
+                    />
+                  )}
+                  {workflow.evidence && (
+                    <WorkflowTag label={t("act.workflow.evidence")} value={workflow.evidence} />
+                  )}
+                  {workflow.rejectionReason && (
+                    <WorkflowTag
+                      label={t("act.workflow.rejectionReason")}
+                      value={workflow.rejectionReason}
+                      tone="danger"
+                    />
+                  )}
                 </div>
               </div>
 
@@ -236,9 +294,7 @@ function ActionsBoard() {
         })}
 
         {shown.length === 0 && (
-          <p className="px-5 py-10 text-center text-sm text-muted-foreground">
-            {t("act.empty")}
-          </p>
+          <p className="px-5 py-10 text-center text-sm text-muted-foreground">{t("act.empty")}</p>
         )}
       </section>
     </div>
@@ -251,7 +307,13 @@ function NewActionDialog({ onDone }: { onDone: () => void }) {
   const [form, setForm] = useState({
     title: "",
     detail: "",
+    sourceNote: "",
+    relatedObject: "",
     owner: "",
+    approver: "",
+    confirmationStatus: "pending",
+    rejectionReason: "",
+    evidence: "",
     due_on: inDays(30),
     priority: "normal" as ActionPriority,
   });
@@ -260,7 +322,7 @@ function NewActionDialog({ onDone }: { onDone: () => void }) {
     mutationFn: () =>
       createAction({
         title: form.title,
-        detail: form.detail,
+        detail: composeActionDetail(form),
         source_kind: "manual",
         source_key: null,
         owner: form.owner,
@@ -270,7 +332,19 @@ function NewActionDialog({ onDone }: { onDone: () => void }) {
     onSuccess: () => {
       toast.success(t("act.toast.added"));
       setOpen(false);
-      setForm({ title: "", detail: "", owner: "", due_on: inDays(30), priority: "normal" });
+      setForm({
+        title: "",
+        detail: "",
+        sourceNote: "",
+        relatedObject: "",
+        owner: "",
+        approver: "",
+        confirmationStatus: "pending",
+        rejectionReason: "",
+        evidence: "",
+        due_on: inDays(30),
+        priority: "normal",
+      });
       onDone();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -290,7 +364,10 @@ function NewActionDialog({ onDone }: { onDone: () => void }) {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>{t("act.field.title")}</Label>
-            <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+            <Input
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+            />
           </div>
           <div className="space-y-2">
             <Label>{t("act.field.detail")}</Label>
@@ -300,10 +377,39 @@ function NewActionDialog({ onDone }: { onDone: () => void }) {
               onChange={(e) => setForm({ ...form, detail: e.target.value })}
             />
           </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>{t("act.field.sourceNote")}</Label>
+              <Input
+                placeholder={t("act.field.sourceNote.placeholder")}
+                value={form.sourceNote}
+                onChange={(e) => setForm({ ...form, sourceNote: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("act.field.relatedObject")}</Label>
+              <Input
+                placeholder={t("act.field.relatedObject.placeholder")}
+                value={form.relatedObject}
+                onChange={(e) => setForm({ ...form, relatedObject: e.target.value })}
+              />
+            </div>
+          </div>
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
               <Label>{t("act.field.owner")}</Label>
-              <Input value={form.owner} onChange={(e) => setForm({ ...form, owner: e.target.value })} />
+              <Input
+                value={form.owner}
+                onChange={(e) => setForm({ ...form, owner: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("act.field.approver")}</Label>
+              <Input
+                placeholder={t("act.field.approver.placeholder")}
+                value={form.approver}
+                onChange={(e) => setForm({ ...form, approver: e.target.value })}
+              />
             </div>
             <div className="space-y-2">
               <Label>{t("act.field.dueDate")}</Label>
@@ -313,13 +419,17 @@ function NewActionDialog({ onDone }: { onDone: () => void }) {
                 onChange={(e) => setForm({ ...form, due_on: e.target.value })}
               />
             </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
               <Label>{t("act.field.priority")}</Label>
               <Select
                 value={form.priority}
                 onValueChange={(v) => setForm({ ...form, priority: v as ActionPriority })}
               >
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="high">{t("act.priority.high")}</SelectItem>
                   <SelectItem value="normal">{t("act.priority.normal")}</SelectItem>
@@ -327,6 +437,39 @@ function NewActionDialog({ onDone }: { onDone: () => void }) {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label>{t("act.field.confirmationStatus")}</Label>
+              <Select
+                value={form.confirmationStatus}
+                onValueChange={(v) => setForm({ ...form, confirmationStatus: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">{t("act.workflow.pending")}</SelectItem>
+                  <SelectItem value="confirmed">{t("act.workflow.confirmed")}</SelectItem>
+                  <SelectItem value="rejected">{t("act.workflow.rejected")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{t("act.field.evidence")}</Label>
+              <Input
+                placeholder={t("act.field.evidence.placeholder")}
+                value={form.evidence}
+                onChange={(e) => setForm({ ...form, evidence: e.target.value })}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>{t("act.field.rejectionReason")}</Label>
+            <Textarea
+              rows={2}
+              placeholder={t("act.field.rejectionReason.placeholder")}
+              value={form.rejectionReason}
+              onChange={(e) => setForm({ ...form, rejectionReason: e.target.value })}
+            />
           </div>
         </div>
         <DialogFooter>
@@ -336,5 +479,78 @@ function NewActionDialog({ onDone }: { onDone: () => void }) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+type ActionForm = {
+  detail: string;
+  sourceNote: string;
+  relatedObject: string;
+  approver: string;
+  confirmationStatus: string;
+  rejectionReason: string;
+  evidence: string;
+};
+
+function composeActionDetail(form: ActionForm) {
+  const meta = [
+    ["Source", form.sourceNote],
+    ["Related", form.relatedObject],
+    ["Approver", form.approver],
+    ["Confirmation", form.confirmationStatus],
+    ["Evidence", form.evidence],
+    ["Rejection reason", form.rejectionReason],
+  ]
+    .filter(([, value]) => value.trim())
+    .map(([key, value]) => `${key}: ${value.trim()}`);
+
+  return [form.detail.trim(), meta.length ? `Workflow\n${meta.join("\n")}` : ""]
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+function parseActionWorkflow(detail: string | null) {
+  const text = detail ?? "";
+  const [descriptionRaw, workflowRaw = ""] = text.split(/\n\nWorkflow\n/);
+  const pairs = Object.fromEntries(
+    workflowRaw
+      .split("\n")
+      .map((line) => line.split(/:\s*/))
+      .filter((parts) => parts.length >= 2)
+      .map(([key, ...rest]) => [key, rest.join(": ").trim()]),
+  );
+
+  return {
+    description: descriptionRaw.trim(),
+    sourceNote: pairs["Source"] ?? "",
+    relatedObject: pairs["Related"] ?? "",
+    approver: pairs["Approver"] ?? "",
+    confirmationStatus: pairs["Confirmation"] ?? "pending",
+    evidence: pairs["Evidence"] ?? "",
+    rejectionReason: pairs["Rejection reason"] ?? "",
+  };
+}
+
+function WorkflowTag({
+  label,
+  value,
+  tone = "default",
+}: {
+  label: string;
+  value: string;
+  tone?: "default" | "ok" | "warn" | "danger";
+}) {
+  const toneClass =
+    tone === "ok"
+      ? "border-ok/25 bg-ok/10 text-ok"
+      : tone === "warn"
+        ? "border-warn/25 bg-warn/10 text-warn"
+        : tone === "danger"
+          ? "border-danger/25 bg-danger/10 text-danger"
+          : "border-border/60 bg-surface-raised/40 text-muted-foreground";
+  return (
+    <span className={`rounded-full border px-2 py-0.5 ${toneClass}`}>
+      {label}: {value}
+    </span>
   );
 }

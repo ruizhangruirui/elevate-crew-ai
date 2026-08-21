@@ -35,12 +35,12 @@ export const Route = createFileRoute("/capability")({
   }),
   head: () => ({
     meta: [
-      { title: "组织能力视图 · 战略岗位与人才管理系统" },
+      { title: "团队与文化发展 · 战略岗位与人才管理系统" },
       {
         name: "description",
         content: "按根因看清能力缺口是招聘问题还是培养问题，并记录团建、技术分享等组织建设活动。",
       },
-      { property: "og:title", content: "组织能力视图 · 战略岗位与人才管理系统" },
+      { property: "og:title", content: "团队与文化发展 · 战略岗位与人才管理系统" },
       {
         property: "og:description",
         content: "按根因看清能力缺口是招聘问题还是培养问题，并记录团建、技术分享等组织建设活动。",
@@ -109,11 +109,11 @@ function CapabilityBody() {
           <TabsTrigger value="health">{t("cap.tab.health")}</TabsTrigger>
         </TabsList>
         <ScopePicker nodes={allNodes} scope={scope} scopeName={scopeName} onChange={setScope} />
-
       </div>
       {scope !== "__all__" && (
         <p className="-mt-4 text-xs text-muted-foreground">
-          {t("cap.scopeNotePrefix")} <b className="text-foreground">{scopeName}</b> {t("cap.scopeNoteSuffix")}
+          {t("cap.scopeNotePrefix")} <b className="text-foreground">{scopeName}</b>{" "}
+          {t("cap.scopeNoteSuffix")}
         </p>
       )}
       <TabsContent value="health">
@@ -205,8 +205,6 @@ function ScopePicker({
   );
 }
 
-
-
 /* ---------------------------------- 能力体检 --------------------------------- */
 
 type Workspace = NonNullable<Awaited<ReturnType<typeof fetchWorkspace>>>;
@@ -233,27 +231,42 @@ function HealthPanel({ data, activities }: { data: Workspace; activities: Activi
   return (
     <div className="space-y-8">
       <section className="panel p-6 md:p-8">
-        <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{t("cap.health.title")}</p>
+        <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+          {t("cap.health.title")}
+        </p>
         <p className="mt-3 max-w-3xl font-display text-xl leading-relaxed md:text-2xl">
-          {active?.title ?? t("cap.health.defaultDirection")}{t("cap.health.summary1")} <Num n={health.total} tone="brand" /> {t("cap.health.summary2")}{" "}
-          <Num n={health.vacancyDriven} tone="muted" /> {t("cap.health.summary3")}
-          <strong className="text-foreground">{t("cap.health.summaryStrong")}</strong>{t("cap.health.summary4")}{" "}
-          <Num n={gaps.length + singles.length + thins.length} tone="warn" /> {t("cap.health.summary5")}{" "}
-          <Num n={covered.length} tone="ok" /> {t("cap.health.summary6")}
+          {active?.title ?? t("cap.health.defaultDirection")}
+          {t("cap.health.summary1")} <Num n={health.total} tone="brand" />{" "}
+          {t("cap.health.summary2")} <Num n={health.vacancyDriven} tone="muted" />{" "}
+          {t("cap.health.summary3")}
+          <strong className="text-foreground">{t("cap.health.summaryStrong")}</strong>
+          {t("cap.health.summary4")}{" "}
+          <Num n={gaps.length + singles.length + thins.length} tone="warn" />{" "}
+          {t("cap.health.summary5")} <Num n={covered.length} tone="ok" /> {t("cap.health.summary6")}
         </p>
 
         <div className="mt-6 h-3 w-full overflow-hidden rounded-full bg-muted/30">
           <div className="flex h-full">
-            <Bar value={health.vacancyDriven} total={health.total} className="bg-muted-foreground/50" />
+            <Bar
+              value={health.vacancyDriven}
+              total={health.total}
+              className="bg-muted-foreground/50"
+            />
             <Bar value={gaps.length} total={health.total} className="bg-danger" />
             <Bar value={singles.length + thins.length} total={health.total} className="bg-warn" />
             <Bar value={covered.length} total={health.total} className="bg-ok" />
           </div>
         </div>
         <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground">
-          <Legend className="bg-muted-foreground/50" label={`${t("cap.legend.vacancy")} ${health.vacancyDriven}`} />
+          <Legend
+            className="bg-muted-foreground/50"
+            label={`${t("cap.legend.vacancy")} ${health.vacancyDriven}`}
+          />
           <Legend className="bg-danger" label={`${t("cap.legend.gap")} ${gaps.length}`} />
-          <Legend className="bg-warn" label={`${t("cap.legend.short")} ${singles.length + thins.length}`} />
+          <Legend
+            className="bg-warn"
+            label={`${t("cap.legend.short")} ${singles.length + thins.length}`}
+          />
           <Legend className="bg-ok" label={`${t("cap.legend.covered")} ${covered.length}`} />
         </div>
       </section>
@@ -367,11 +380,17 @@ function VacancyRow({
         className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 text-left"
       >
         <UserPlus className="size-4 text-muted-foreground" />
-        <span className="text-sm font-medium">{t("cap.vacancyRow.prefix")}{title}{t("cap.vacancyRow.suffix")}</span>
+        <span className="text-sm font-medium">
+          {t("cap.vacancyRow.prefix")}
+          {title}
+          {t("cap.vacancyRow.suffix")}
+        </span>
         <span className="rounded bg-muted/40 px-1.5 py-0.5 text-[10px] text-muted-foreground">
           {criticalityLabel[crit] ?? crit}
         </span>
-        <span className="text-xs text-muted-foreground">{t("cap.vacancyRow.impactPrefix")} {caps.length} {t("cap.vacancyRow.impactSuffix")}</span>
+        <span className="text-xs text-muted-foreground">
+          {t("cap.vacancyRow.impactPrefix")} {caps.length} {t("cap.vacancyRow.impactSuffix")}
+        </span>
         <ChevronDown
           className={`ml-auto size-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
         />
@@ -440,7 +459,9 @@ function Group({
           onClick={() => setShowAll((v) => !v)}
           className="w-full border-t border-border/40 px-5 py-2.5 text-xs text-muted-foreground hover:text-foreground"
         >
-          {showAll ? t("cap.group.collapse") : `${t("cap.group.expandPrefix")} ${list.length - 6} ${t("cap.group.expandSuffix")}`}
+          {showAll
+            ? t("cap.group.collapse")
+            : `${t("cap.group.expandPrefix")} ${list.length - 6} ${t("cap.group.expandSuffix")}`}
         </button>
       )}
     </div>
@@ -494,7 +515,8 @@ function CapRow({ cap, activities }: { cap: Capability; activities: Activity[] }
         </span>
         {cap.aliases.length > 0 && (
           <span className="text-[10px] text-muted-foreground">
-            {t("cap.caprow.merged")}{cap.aliases.join("、")}
+            {t("cap.caprow.merged")}
+            {cap.aliases.join("、")}
           </span>
         )}
         {built.length > 0 && (
@@ -509,8 +531,13 @@ function CapRow({ cap, activities }: { cap: Capability; activities: Activity[] }
         </span>
       </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-        <span>{t("cap.caprow.from")} {cap.roleTitles.join(" / ")}</span>
-        <span className="text-brand">{t("cap.caprow.nextStep")}{suggestion}</span>
+        <span>
+          {t("cap.caprow.from")} {cap.roleTitles.join(" / ")}
+        </span>
+        <span className="text-brand">
+          {t("cap.caprow.nextStep")}
+          {suggestion}
+        </span>
         {cap.status !== "covered" && (
           <AddActionButton
             sourceKind="capability"
@@ -518,7 +545,11 @@ function CapRow({ cap, activities }: { cap: Capability; activities: Activity[] }
             roleId={cap.roleIds[0] ?? null}
             defaultTitle={`${cap.label}：${suggestion}`}
             defaultDetail={`${t("cap.caprow.detail1")}${cap.label}${t("cap.caprow.detail2")}${
-              cap.status === "blank" ? t("cap.status.blank") : cap.status === "single" ? t("cap.group.singleTitle") : t("cap.group.thinTitle")
+              cap.status === "blank"
+                ? t("cap.status.blank")
+                : cap.status === "single"
+                  ? t("cap.group.singleTitle")
+                  : t("cap.group.thinTitle")
             }${t("cap.caprow.detail3")} ${cap.roleTitles.join(" / ")}${t("cap.caprow.detail4")}${
               cap.carriers.map((c) => c.person.name).join("、") || t("cap.common.none")
             }${t("cap.caprow.detail5")}`}
@@ -571,25 +602,42 @@ function BuildingPanel({
   return (
     <div className="space-y-8">
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Tile label={t("cap.tile.recentActivities")} value={stats.recentCount} unit={t("cap.unit.session")} />
-        <Tile label={t("cap.tile.participation")} value={stats.participationRate} unit={t("cap.unit.percent")} />
-        <Tile label={t("cap.tile.avgParticipation")} value={stats.perPersonAvg} unit={t("cap.unit.times")} />
-        <Tile label={t("cap.tile.dormant")} value={stats.dormant.length} unit={t("cap.unit.people")} tone={stats.dormant.length ? "warn" : "ok"} />
+        <Tile
+          label={t("cap.tile.recentActivities")}
+          value={stats.recentCount}
+          unit={t("cap.unit.session")}
+        />
+        <Tile
+          label={t("cap.tile.participation")}
+          value={stats.participationRate}
+          unit={t("cap.unit.percent")}
+        />
+        <Tile
+          label={t("cap.tile.avgParticipation")}
+          value={stats.perPersonAvg}
+          unit={t("cap.unit.times")}
+        />
+        <Tile
+          label={t("cap.tile.dormant")}
+          value={stats.dormant.length}
+          unit={t("cap.unit.people")}
+          tone={stats.dormant.length ? "warn" : "ok"}
+        />
       </section>
 
       <section className="grid gap-6 lg:grid-cols-3">
         <div className="panel p-5 lg:col-span-2">
           <h3 className="font-display text-base font-semibold">{t("cap.structure.title")}</h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {t("cap.structure.desc")}
-          </p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("cap.structure.desc")}</p>
           <div className="mt-4 space-y-2">
             {stats.byKind.length === 0 && (
               <p className="text-sm text-muted-foreground">{t("cap.structure.empty")}</p>
             )}
             {stats.byKind.map((k) => (
               <div key={k.kind} className="flex items-center gap-3 text-sm">
-                <span className="w-24 shrink-0 text-muted-foreground">{t(`cap.activityKind.${k.kind}`)}</span>
+                <span className="w-24 shrink-0 text-muted-foreground">
+                  {t(`cap.activityKind.${k.kind}`)}
+                </span>
                 <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted/30">
                   <div
                     className="h-full bg-brand"
@@ -611,7 +659,9 @@ function BuildingPanel({
             {stats.topPeople.map(({ person, count }) => (
               <div key={person.id} className="flex justify-between">
                 <span>{person.name}</span>
-                <span className="tabular-nums text-muted-foreground">{count} {t("cap.unit.times")}</span>
+                <span className="tabular-nums text-muted-foreground">
+                  {count} {t("cap.unit.times")}
+                </span>
               </div>
             ))}
             {stats.topPeople.length === 0 && (
@@ -632,9 +682,7 @@ function BuildingPanel({
       {singleRisk.length > 0 && (
         <section className="panel p-5">
           <h3 className="font-display text-base font-semibold">{t("cap.suggestBuild.title")}</h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {t("cap.suggestBuild.desc")}
-          </p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("cap.suggestBuild.desc")}</p>
           <div className="mt-4 space-y-2">
             {singleRisk.map((c) => (
               <div
@@ -643,7 +691,9 @@ function BuildingPanel({
               >
                 <span className="font-medium">{c.label}</span>
                 <span className="text-xs text-muted-foreground">
-                  {t("cap.suggestBuild.carriedPrefix")} {c.carriers.map((x) => x.person.name).join("、")} {t("cap.suggestBuild.carriedSuffix")}
+                  {t("cap.suggestBuild.carriedPrefix")}{" "}
+                  {c.carriers.map((x) => x.person.name).join("、")}{" "}
+                  {t("cap.suggestBuild.carriedSuffix")}
                 </span>
                 <Button
                   size="sm"
@@ -697,7 +747,9 @@ function BuildingPanel({
                     {t(`cap.activityKind.${a.kind}`)}
                   </span>
                   <span className="font-medium">{a.title}</span>
-                  <span className="text-xs tabular-nums text-muted-foreground">{a.happened_on}</span>
+                  <span className="text-xs tabular-nums text-muted-foreground">
+                    {a.happened_on}
+                  </span>
                   <div className="ml-auto flex items-center gap-1">
                     <Button
                       size="icon"
@@ -723,14 +775,35 @@ function BuildingPanel({
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                  {a.host && <span>{t("cap.records.hostPrefix")} {a.host}</span>}
-                  {a.duration_minutes && <span>{a.duration_minutes} {t("cap.unit.minutes")}</span>}
-                  {joined.length > 0 && <span>{t("cap.records.joinedPrefix")} {joined.length} {t("cap.records.joinedMid")}{joined.join("、")}</span>}
+                  {a.host && (
+                    <span>
+                      {t("cap.records.hostPrefix")} {a.host}
+                    </span>
+                  )}
+                  {a.duration_minutes && (
+                    <span>
+                      {a.duration_minutes} {t("cap.unit.minutes")}
+                    </span>
+                  )}
+                  {joined.length > 0 && (
+                    <span>
+                      {t("cap.records.joinedPrefix")} {joined.length} {t("cap.records.joinedMid")}
+                      {joined.join("、")}
+                    </span>
+                  )}
                   {(a.capability_tags ?? []).length > 0 && (
-                    <span className="text-ok">{t("cap.records.capabilitiesPrefix")}{a.capability_tags.join("、")}</span>
+                    <span className="text-ok">
+                      {t("cap.records.capabilitiesPrefix")}
+                      {a.capability_tags.join("、")}
+                    </span>
                   )}
                   {a.link && (
-                    <a href={a.link} target="_blank" rel="noreferrer" className="text-brand underline">
+                    <a
+                      href={a.link}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-brand underline"
+                    >
                       {t("cap.records.notes")}
                     </a>
                   )}
@@ -773,7 +846,9 @@ function Tile({
     <div className="panel p-5">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-2 font-display text-3xl font-bold tabular-nums">
-        <span className={tone === "warn" ? "text-warn" : tone === "ok" ? "text-ok" : ""}>{value}</span>
+        <span className={tone === "warn" ? "text-warn" : tone === "ok" ? "text-ok" : ""}>
+          {value}
+        </span>
         <span className="ml-1 text-sm font-normal text-muted-foreground">{unit}</span>
       </p>
     </div>
@@ -864,10 +939,28 @@ function TrendPanel({ data, activities }: { data: Workspace; activities: Activit
         </div>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-4">
-          <TrendTile label={t("cap.trend.coverageRate")} value={`${health.coverageRate}%`} delta={first ? health.coverageRate - first.coverage_rate : null} unit="%" />
-          <TrendTile label={t("cap.trend.onboard")} value={String(onboard)} delta={first ? onboard - first.onboard_people : null} />
-          <TrendTile label={t("cap.trend.blank")} value={String(health.blank)} delta={first ? health.blank - first.blank_caps : null} invert />
-          <TrendTile label={t("cap.trend.activities90d")} value={String(acts90)} delta={first ? acts90 - first.activities_90d : null} />
+          <TrendTile
+            label={t("cap.trend.coverageRate")}
+            value={`${health.coverageRate}%`}
+            delta={first ? health.coverageRate - first.coverage_rate : null}
+            unit="%"
+          />
+          <TrendTile
+            label={t("cap.trend.onboard")}
+            value={String(onboard)}
+            delta={first ? onboard - first.onboard_people : null}
+          />
+          <TrendTile
+            label={t("cap.trend.blank")}
+            value={String(health.blank)}
+            delta={first ? health.blank - first.blank_caps : null}
+            invert
+          />
+          <TrendTile
+            label={t("cap.trend.activities90d")}
+            value={String(acts90)}
+            delta={first ? acts90 - first.activities_90d : null}
+          />
         </div>
       </section>
 
@@ -876,13 +969,13 @@ function TrendPanel({ data, activities }: { data: Workspace; activities: Activit
           <h3 className="font-display text-base font-semibold">{t("cap.trend.curveTitle")}</h3>
           <Sparkline snaps={list} />
           <p className="mt-2 text-xs text-muted-foreground">
-            {first?.taken_on} → {last?.taken_on}{t("cap.trend.periodMid")}{list.length} {t("cap.trend.periodSuffix")}
+            {first?.taken_on} → {last?.taken_on}
+            {t("cap.trend.periodMid")}
+            {list.length} {t("cap.trend.periodSuffix")}
           </p>
         </section>
       ) : (
-        <p className="text-sm text-muted-foreground">
-          {t("cap.trend.needTwo")}
-        </p>
+        <p className="text-sm text-muted-foreground">{t("cap.trend.needTwo")}</p>
       )}
 
       {list.length > 0 && (
@@ -959,7 +1052,12 @@ function Sparkline({ snaps }: { snaps: Snapshot[] }) {
     return `${x},${y}`;
   });
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="mt-4 w-full" role="img" aria-label={t("cap.trend.curveAriaLabel")}>
+    <svg
+      viewBox={`0 0 ${w} ${h}`}
+      className="mt-4 w-full"
+      role="img"
+      aria-label={t("cap.trend.curveAriaLabel")}
+    >
       <polyline
         points={pts.join(" ")}
         fill="none"

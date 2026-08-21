@@ -15,12 +15,50 @@ export const indexDict: Dict = {
   "idx.linkCapability": { zh: "能力覆盖与缺口 →", en: "Capability coverage & gaps →" },
   "idx.linkPeople": { zh: "全员名单 →", en: "All people →" },
   "idx.directionsHeading": { zh: "关键研究 / 工作方向", en: "Key research / work directions" },
-  "idx.directionsHint": { zh: "点击方向进入对应目标岗位架构。", en: "Click a direction to view its target role architecture." },
+  "idx.directionsHint": {
+    zh: "点击方向进入对应目标岗位架构。",
+    en: "Click a direction to view its target role architecture.",
+  },
   "idx.roleTypesCount": { zh: "{count} 岗位类型", en: "{count} role types" },
   "idx.fullCoverage": { zh: "全覆盖", en: "Fully covered" },
   "idx.criticalGapCount": { zh: "{count} Critical Gap", en: "{count} Critical Gap" },
   "idx.rolesHeading": { zh: "目标岗位架构", en: "Target role architecture" },
-  "idx.noRolesInDirection": { zh: "该方向下还没有目标岗位。", en: "No target roles under this direction yet." },
+  "idx.riskOverview": { zh: "风险摘要", en: "Risk overview" },
+  "idx.riskHeading": {
+    zh: "当前最需要管理层关注的岗位缺口",
+    en: "Role gaps that need management attention now",
+  },
+  "idx.gapLabel": { zh: "Gap {count}", en: "Gap {count}" },
+  "idx.noCriticalRisk": {
+    zh: "当前没有明显岗位覆盖风险。",
+    en: "No obvious role coverage risk right now.",
+  },
+  "idx.nextSteps": { zh: "关键入口", en: "Key entry points" },
+  "idx.drilldownHeading": {
+    zh: "进入二级页面处理具体问题",
+    en: "Use drill-down pages for detailed work",
+  },
+  "idx.homeOrgTitle": { zh: "组织与编制", en: "Org and headcount" },
+  "idx.homeOrgDesc": {
+    zh: "查看 Lab / Team / 岗位 / 空缺席位的完整结构。",
+    en: "Review the full Lab / Team / role / vacancy structure.",
+  },
+  "idx.homeCapabilityTitle": { zh: "Team & Culture Development", en: "Team & Culture Development" },
+  "idx.homeCapabilityDesc": {
+    zh: "查看能力覆盖、团队建设活动、文化信号与建议动作。",
+    en: "Review capability coverage, team-building activities, culture signals and suggested actions.",
+  },
+  "idx.homePeopleTitle": { zh: "人员档案", en: "People profiles" },
+  "idx.homePeopleDesc": {
+    zh: "进入个人档案查看绩效、技能、HR 记录与发展风险。",
+    en: "Open individual profiles for performance, skills, HR records and development risks.",
+  },
+  "idx.selectedDirection": { zh: "当前选中方向", en: "Selected direction" },
+  "idx.currentGapForDirection": { zh: "方向 Gap {count}", en: "Direction gap {count}" },
+  "idx.noRolesInDirection": {
+    zh: "该方向下还没有目标岗位。",
+    en: "No target roles under this direction yet.",
+  },
   "idx.roleArchived": { zh: "岗位已归档", en: "Role archived" },
   "idx.edit": { zh: "编辑", en: "Edit" },
   "idx.editOrgTitle": { zh: "编辑战略组织", en: "Edit strategic organization" },
@@ -44,7 +82,7 @@ export const indexDict: Dict = {
   "idx.viewRoleProfile": { zh: "查看岗位画像", en: "View role profile" },
   "idx.roleActionsSr": { zh: "岗位操作", en: "Role actions" },
   "idx.editRole": { zh: "编辑岗位", en: "Edit role" },
-  "idx.confirmArchiveRoleTitle": { zh: "确认归档岗位「{title}」？", en: "Archive role \"{title}\"?" },
+  "idx.confirmArchiveRoleTitle": { zh: "确认归档岗位「{title}」？", en: 'Archive role "{title}"?' },
   "idx.archiveRoleDesc1": {
     zh: "归档后该岗位会从战略岗位视图和组织能力视图中移除，其画像所承载的能力将不再计入覆盖统计。",
     en: "Once archived, this role will be removed from the Strategic Roles and Org Capability views, and its capabilities will no longer count toward coverage.",
@@ -64,7 +102,7 @@ export const indexDict: Dict = {
   "idx.criticality": { zh: "关键度", en: "Criticality" },
   "idx.roleProfileHint": {
     zh: "专业领域、关键知识、技能矩阵等画像内容请在「查看岗位画像」中编辑。",
-    en: "Edit profile content such as expertise areas, key knowledge and skill matrix in \"View role profile\".",
+    en: 'Edit profile content such as expertise areas, key knowledge and skill matrix in "View role profile".',
   },
   "idx.directionActionsSr": { zh: "方向操作", en: "Direction actions" },
   "idx.editDirection": { zh: "编辑方向", en: "Edit direction" },
@@ -74,7 +112,7 @@ export const indexDict: Dict = {
   "idx.editDirectionTitle": { zh: "编辑研究 / 工作方向", en: "Edit research / work direction" },
   "idx.directionName": { zh: "方向名称", en: "Direction name" },
   "idx.directionDescription": { zh: "方向描述", en: "Direction description" },
-  "idx.archiveDirectionConfirmTitle": { zh: "归档「{title}」？", en: "Archive \"{title}\"?" },
+  "idx.archiveDirectionConfirmTitle": { zh: "归档「{title}」？", en: 'Archive "{title}"?' },
   "idx.archiveDirectionDesc1": {
     zh: "归档后该方向会从战略岗位视图与能力视图中消失。",
     en: "Once archived, this direction will disappear from the Strategic Roles and Capability views.",
@@ -93,5 +131,4 @@ export const indexDict: Dict = {
   "idx.highestLevel": { zh: "最高级别", en: "Highest level" },
   "idx.assignTeam": { zh: "所属团队", en: "Assigned team" },
   "idx.noTeam": { zh: "未指定团队", en: "No team" },
-
 };

@@ -3,7 +3,7 @@ import type { Dict } from "../i18n-types";
 export const coreDict: Dict = {
   // ---- nav / shell ----
   "nav.index": { zh: "战略岗位视图", en: "Strategic Roles" },
-  "nav.capability": { zh: "组织能力视图", en: "Org Capability" },
+  "nav.capability": { zh: "团队与文化发展", en: "Team & Culture" },
   "nav.org": { zh: "组织视图", en: "Org Structure" },
   "nav.people": { zh: "人员视图", en: "People" },
   "nav.actions": { zh: "待办中心", en: "Action Center" },
@@ -44,7 +44,10 @@ export const coreDict: Dict = {
   "org.viewCapability": { zh: "查看该团队能力体检", en: "View capability check" },
   "org.roleProfile": { zh: "岗位画像", en: "Role profile" },
   "org.noSeats": { zh: "暂无席位。", en: "No seats yet." },
-  "org.emptyNode": { zh: "该节点下暂无子团队或成员。", en: "No sub-teams or members under this node." },
+  "org.emptyNode": {
+    zh: "该节点下暂无子团队或成员。",
+    en: "No sub-teams or members under this node.",
+  },
   "org.emptyTree": {
     zh: "还没有组织结构，请先在「系统设置 → 组织管理」中创建 Lab 与 Team。",
     en: "No org structure yet. Create Labs and Teams in Settings → Organization first.",
@@ -70,7 +73,10 @@ export const coreDict: Dict = {
   "importance.peripheral": { zh: "边缘", en: "Peripheral" },
   "importance.label": { zh: "重要性", en: "Importance" },
   "importance.auto": { zh: "自动推导", en: "Auto (derived)" },
-  "importance.autoHint": { zh: "自动：领导职务或高职级视为核心，外包/实习/访问学者视为边缘", en: "Auto: leadership or senior level counts as core; outsourced/intern/visiting counts as peripheral" },
+  "importance.autoHint": {
+    zh: "自动：领导职务或高职级视为核心，外包/实习/访问学者视为边缘",
+    en: "Auto: leadership or senior level counts as core; outsourced/intern/visiting counts as peripheral",
+  },
   "importance.isLeader": { zh: "担任领导职务", en: "Holds a leadership position" },
   "importance.leaderBadge": { zh: "领导", en: "Leader" },
   "common.yes": { zh: "是", en: "Yes" },

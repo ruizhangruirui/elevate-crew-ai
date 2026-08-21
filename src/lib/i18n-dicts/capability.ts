@@ -1,15 +1,15 @@
 import type { Dict } from "../i18n-types";
 
 export const capabilityDict: Dict = {
-  "cap.title": { zh: "组织能力视图", en: "Capability View" },
+  "cap.title": { zh: "团队与文化发展", en: "Team & Culture Development" },
   "cap.subtitle": {
-    zh: "两件事：我们的岗位要求的能力有没有人扛得起来，以及我们为建设这支队伍做了什么。",
-    en: "Two questions: can our people actually deliver the capabilities our roles require, and what have we done to build this team.",
+    zh: "同时看三件事：团队当前状态、能力覆盖与缺口，以及文化 / 活动建设有没有真正发生。",
+    en: "Track three things together: current team situation, capability coverage and gaps, and whether culture-building activity is actually happening.",
   },
   "cap.loading": { zh: "加载中…", en: "Loading…" },
-  "cap.tab.health": { zh: "能力体检", en: "Health Check" },
-  "cap.tab.building": { zh: "组织建设", en: "Org Building" },
-  "cap.tab.trend": { zh: "趋势", en: "Trend" },
+  "cap.tab.health": { zh: "能力与缺口", en: "Capability Gaps" },
+  "cap.tab.building": { zh: "团队 / 文化建设", en: "Team / Culture" },
+  "cap.tab.trend": { zh: "进展追踪", en: "Progress" },
   "cap.scopeLabel": { zh: "范围", en: "Scope" },
   "cap.scopeAll": { zh: "全组织", en: "Whole Org" },
   "cap.scopeNotePrefix": { zh: "仅统计", en: "Only counting roles held by onboard staff within" },
@@ -42,15 +42,24 @@ export const capabilityDict: Dict = {
     en: "These capabilities currently sit on vacant roles and share the same root cause — no need to worry about each one, just push forward on hiring.",
   },
 
-  "cap.group.gapTitle": { zh: "人在，但这项能力没人扛", en: "Staffed, but no one covers this capability" },
+  "cap.group.gapTitle": {
+    zh: "人在，但这项能力没人扛",
+    en: "Staffed, but no one covers this capability",
+  },
   "cap.group.gapDesc": {
     zh: "岗位上有人，却没有人被评估具备这项能力——这是培养或引进要解决的",
     en: "The role is staffed, but no one has been assessed as having this capability — this needs development or hiring to fix",
   },
   "cap.group.singleTitle": { zh: "只靠 1 人", en: "Relies on 1 person" },
-  "cap.group.singleDesc": { zh: "他一走，这项能力就断了", en: "If they leave, this capability is lost" },
+  "cap.group.singleDesc": {
+    zh: "他一走，这项能力就断了",
+    en: "If they leave, this capability is lost",
+  },
   "cap.group.thinTitle": { zh: "人手偏少", en: "Understaffed" },
-  "cap.group.thinDesc": { zh: "有人承载，但少于岗位编制需求", en: "Covered, but fewer people than the role's headcount requires" },
+  "cap.group.thinDesc": {
+    zh: "有人承载，但少于岗位编制需求",
+    en: "Covered, but fewer people than the role's headcount requires",
+  },
   "cap.group.coveredLabel": { zh: "已覆盖", en: "Covered" },
   "cap.group.items": { zh: "项", en: "items" },
   "cap.group.collapse": { zh: "收起", en: "Collapse" },
@@ -63,15 +72,15 @@ export const capabilityDict: Dict = {
 
   "cap.footer.info": {
     zh: "能力项由岗位画像自动汇总（近义写法已合并），承载人来自任岗关系；「近期有建设」来自组织建设里记录的技术分享 / 培训 / 复盘 / 跨团队交流。岗位画像一改，这里就跟着变。",
-    en: "Capabilities are auto-aggregated from role profiles (similar wordings merged); carriers come from role assignments. \"Recently built\" comes from tech shares / training / retros / cross-team exchanges logged in Org Building. Any change to a role profile updates this view automatically.",
+    en: 'Capabilities are auto-aggregated from role profiles (similar wordings merged); carriers come from role assignments. "Recently built" comes from tech shares / training / retros / cross-team exchanges logged in Org Building. Any change to a role profile updates this view automatically.',
   },
 
-  "cap.vacancyRow.prefix": { zh: "岗位「", en: "Role \"" },
-  "cap.vacancyRow.suffix": { zh: "」尚未到岗", en: "\" not yet filled" },
+  "cap.vacancyRow.prefix": { zh: "岗位「", en: 'Role "' },
+  "cap.vacancyRow.suffix": { zh: "」尚未到岗", en: '" not yet filled' },
   "cap.vacancyRow.impactPrefix": { zh: "影响", en: "Affects" },
   "cap.vacancyRow.impactSuffix": { zh: "项能力", en: "capabilities" },
-  "cap.vacancyRow.actionTitlePrefix": { zh: "推进「", en: "Advance hiring for \"" },
-  "cap.vacancyRow.actionTitleSuffix": { zh: "」岗位招聘", en: "\"" },
+  "cap.vacancyRow.actionTitlePrefix": { zh: "推进「", en: 'Advance hiring for "' },
+  "cap.vacancyRow.actionTitleSuffix": { zh: "」岗位招聘", en: '"' },
   "cap.vacancyRow.detailPrefix": { zh: "该岗位空缺影响", en: "This vacancy affects" },
   "cap.vacancyRow.detailMid": { zh: "项能力：", en: "capabilities:" },
   "cap.vacancyRow.actionLabel": { zh: "转为招聘待办", en: "Convert to hiring to-do" },
@@ -89,19 +98,34 @@ export const capabilityDict: Dict = {
   "cap.caprow.noCarrier": { zh: "暂无人选", en: "No one yet" },
   "cap.caprow.from": { zh: "来自", en: "From" },
   "cap.caprow.nextStep": { zh: "下一步：", en: "Next step: " },
-  "cap.caprow.detail1": { zh: "能力「", en: "Capability \"" },
-  "cap.caprow.detail2": { zh: "」当前状态：", en: "\" current status: " },
+  "cap.caprow.detail1": { zh: "能力「", en: 'Capability "' },
+  "cap.caprow.detail2": { zh: "」当前状态：", en: '" current status: ' },
   "cap.caprow.detail3": { zh: "。来自岗位", en: ". From role(s)" },
   "cap.caprow.detail4": { zh: "；现有承载人：", en: "; current carriers: " },
   "cap.caprow.detail5": { zh: "。", en: "." },
   "cap.common.none": { zh: "无", en: "None" },
 
-  "cap.suggestion.vacancy": { zh: "招到人即可解决，跟进招聘", en: "Resolved once hired; follow up on recruiting" },
-  "cap.suggestion.blank": { zh: "现有人员没有这项能力：安排培训或外部引入", en: "No one currently has this capability: arrange training or bring in outside talent" },
-  "cap.suggestion.single": { zh: "指定第二承载人，并安排一次内部技术分享", en: "Designate a second carrier and schedule an internal tech share" },
+  "cap.suggestion.vacancy": {
+    zh: "招到人即可解决，跟进招聘",
+    en: "Resolved once hired; follow up on recruiting",
+  },
+  "cap.suggestion.blank": {
+    zh: "现有人员没有这项能力：安排培训或外部引入",
+    en: "No one currently has this capability: arrange training or bring in outside talent",
+  },
+  "cap.suggestion.single": {
+    zh: "指定第二承载人，并安排一次内部技术分享",
+    en: "Designate a second carrier and schedule an internal tech share",
+  },
   "cap.suggestion.thin": { zh: "补充编制或交叉培养", en: "Add headcount or cross-train" },
-  "cap.suggestion.depthGap": { zh: "深度不足：需要专家级培养或引进", en: "Insufficient depth: needs expert-level development or hiring" },
-  "cap.suggestion.default": { zh: "保持现状，定期复核", en: "Maintain current state, review periodically" },
+  "cap.suggestion.depthGap": {
+    zh: "深度不足：需要专家级培养或引进",
+    en: "Insufficient depth: needs expert-level development or hiring",
+  },
+  "cap.suggestion.default": {
+    zh: "保持现状，定期复核",
+    en: "Maintain current state, review periodically",
+  },
 
   "cap.tile.recentActivities": { zh: "近 90 天活动", en: "Activities (90d)" },
   "cap.tile.participation": { zh: "参与覆盖率", en: "Participation Rate" },
@@ -119,12 +143,21 @@ export const capabilityDict: Dict = {
     zh: "氛围类（团建）和能力类（分享 / 培训）都需要，只有一种说明组织建设是偏的。",
     en: "You need both morale-building (team building) and capability-building (shares/training) activities; having only one means org building is skewed.",
   },
-  "cap.structure.empty": { zh: "近 90 天还没有活动记录。", en: "No activities recorded in the last 90 days." },
+  "cap.structure.empty": {
+    zh: "近 90 天还没有活动记录。",
+    en: "No activities recorded in the last 90 days.",
+  },
 
   "cap.vibe.title": { zh: "氛围信号", en: "Engagement Signals" },
-  "cap.vibe.desc": { zh: "谁在参与，谁被落下了。", en: "Who's participating, and who's being left out." },
+  "cap.vibe.desc": {
+    zh: "谁在参与，谁被落下了。",
+    en: "Who's participating, and who's being left out.",
+  },
   "cap.vibe.empty": { zh: "暂无参与记录。", en: "No participation records yet." },
-  "cap.vibe.dormantTitle": { zh: "90 天内没参加过任何活动", en: "No activity participation in 90 days" },
+  "cap.vibe.dormantTitle": {
+    zh: "90 天内没参加过任何活动",
+    en: "No activity participation in 90 days",
+  },
 
   "cap.suggestBuild.title": { zh: "建议安排的建设动作", en: "Suggested Building Actions" },
   "cap.suggestBuild.desc": {
@@ -165,7 +198,7 @@ export const capabilityDict: Dict = {
   "cap.trend.title": { zh: "组织能力趋势", en: "Capability Trend" },
   "cap.trend.desc": {
     zh: "系统里的数据都是「当前快照」。每周（或每次盘点后）记一次，就能看到覆盖率、在岗人数与建设活动的变化曲线。",
-    en: "Data in the system is always a \"current snapshot\". Record one each week (or after each review) to see how coverage rate, headcount, and building activities change over time.",
+    en: 'Data in the system is always a "current snapshot". Record one each week (or after each review) to see how coverage rate, headcount, and building activities change over time.',
   },
   "cap.trend.save": { zh: "记录本期快照", en: "Record Snapshot" },
   "cap.trend.saveToast": { zh: "已记录本期快照", en: "Snapshot recorded" },
@@ -177,7 +210,10 @@ export const capabilityDict: Dict = {
   "cap.trend.curveAriaLabel": { zh: "能力覆盖率趋势", en: "Capability coverage trend" },
   "cap.trend.periodMid": { zh: "，共", en: ", " },
   "cap.trend.periodSuffix": { zh: "期", en: "periods total" },
-  "cap.trend.needTwo": { zh: "至少记录 2 期快照后，这里会显示趋势曲线。", en: "Record at least 2 snapshots to see the trend curve here." },
+  "cap.trend.needTwo": {
+    zh: "至少记录 2 期快照后，这里会显示趋势曲线。",
+    en: "Record at least 2 snapshots to see the trend curve here.",
+  },
   "cap.trend.sinceFirst": { zh: "自首期", en: "since first period" },
 
   "cap.table.date": { zh: "日期", en: "Date" },
@@ -209,9 +245,15 @@ export const capabilityDict: Dict = {
   },
 
   "cap.activityKindHint.team_building": { zh: "增进氛围与信任", en: "Build morale and trust" },
-  "cap.activityKindHint.tech_share": { zh: "能力扩散，降低单点风险", en: "Spread capability, reduce single-point risk" },
+  "cap.activityKindHint.tech_share": {
+    zh: "能力扩散，降低单点风险",
+    en: "Spread capability, reduce single-point risk",
+  },
   "cap.activityKindHint.meeting": { zh: "对齐目标与进展", en: "Align on goals and progress" },
-  "cap.activityKindHint.training": { zh: "定向补齐能力缺口", en: "Targeted closing of capability gaps" },
+  "cap.activityKindHint.training": {
+    zh: "定向补齐能力缺口",
+    en: "Targeted closing of capability gaps",
+  },
   "cap.activityKindHint.retro": { zh: "沉淀经验", en: "Capture lessons learned" },
   "cap.activityKindHint.cross_team": { zh: "打通外部资源", en: "Connect external resources" },
   "cap.activityKindHint.recruiting": { zh: "补齐空缺岗位", en: "Fill vacant roles" },
