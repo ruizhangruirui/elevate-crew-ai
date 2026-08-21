@@ -477,6 +477,7 @@ function BuildingPanel({
   building: { activities: Activity[]; participants: Participant[] } | null;
 }) {
   const qc = useQueryClient();
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Activity | null>(null);
 
