@@ -56,10 +56,10 @@ export function OrgChart({ nodes, people, roles, rolesByNode, onPerson, onRole }
       ...holders.map(renderPerson),
       ...Array.from({ length: vacancies }).map((_, i) => (
         <Branch key={`vac-${r.id}-${i}`}>
-          <div className="flex w-36 flex-col items-center gap-1 rounded-lg border border-dashed border-warn/50 bg-warn/5 px-2 py-2 text-center text-warn">
-            <UserPlus className="size-5" />
-            <span className="text-xs font-medium">{t("common.vacantSeat")}</span>
-            <span className="text-[10px] opacity-80">
+          <div className="flex w-28 flex-col items-center gap-0.5 rounded-md border border-dashed border-warn/50 bg-warn/5 px-1.5 py-1.5 text-center text-warn">
+            <UserPlus className="size-4" />
+            <span className="text-[11px] font-medium">{t("common.vacantSeat")}</span>
+            <span className="text-[9px] opacity-80">
               L{r.level_min}–{r.level_max}
             </span>
           </div>
@@ -73,12 +73,12 @@ export function OrgChart({ nodes, people, roles, rolesByNode, onPerson, onRole }
           <button
             type="button"
             onClick={() => onRole(r.id)}
-            className="w-44 rounded-lg border border-border/60 bg-background/40 px-3 py-2 text-center transition-colors hover:border-brand/60 hover:bg-surface-raised/60"
+            className="w-32 rounded-md border border-border/60 bg-background/40 px-2 py-1.5 text-center transition-colors hover:border-brand/60 hover:bg-surface-raised/60"
           >
-            <Briefcase className="mx-auto size-4 text-brand" />
-            <p className="mt-1 truncate text-xs font-semibold">{r.title}</p>
+            <Briefcase className="mx-auto size-3.5 text-brand" />
+            <p className="mt-0.5 truncate text-[11px] font-semibold">{r.title}</p>
             <p
-              className={`mt-0.5 text-[10px] tabular-nums ${vacancies > 0 ? "text-warn" : "text-ok"}`}
+              className={`mt-0.5 text-[9px] tabular-nums ${vacancies > 0 ? "text-warn" : "text-ok"}`}
             >
               {t("org.onboard")} {onboardAll} / {t("org.target")} {r.target_count}
             </p>
