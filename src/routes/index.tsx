@@ -1030,11 +1030,13 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
             </Select>
           </div>
         </div>
-        <DialogFooter>
-          <Button onClick={() => create.mutate()} disabled={!form.title.trim() || create.isPending}>
-            {t("idx.save")}
-          </Button>
-        </DialogFooter>
+        <FormActions
+          onCancel={() => setOpen(false)}
+          onSave={() => create.mutate()}
+          pending={create.isPending}
+          disabled={!form.title.trim()}
+        />
+
       </DialogContent>
     </Dialog>
   );
