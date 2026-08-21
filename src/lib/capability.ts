@@ -335,3 +335,50 @@ export function directionStats(
     };
   });
 }
+/* --------------------------- 单点承载风险分级 --------------------------- */
+
+/**
+ * 「一个人承载」本身不等于风险，要看这项能力有多关键、这个人有多难替代。
+ * 返回三档：critical（关键单点）/ watch（需留意）/ normal（正常单人承载）
+ */
+export type CarrierRiskTier = "critical" | "watch" | "normal";
+
+export function capabilityWeight(cap: Capability, roles: Role[]): number {
+  const srcRoles = roles.filter((r) => cap.roleIds.includes(r.id));
+  const crit = Math.max(1, ...srcRoles.map((r) => CRITICALITY_WEIGHT[r.criticality] ?? 1));
+  const depth = levelRank(cap.requiredLevel); // 0–3
+  const spread = Math.min(cap.roleIds.length, 3); // 被几个岗位共用
+  return crit * 2 + depth + spread;
+}
+
+const RISK_WEIGHT: Record<string, number> = { high: 3, medium: 2, low: 0 };
+
+export function personReplaceability(person: Person, people: Person[], roles: Role[]): number {
+  let score = 0;
+  score += RISK_WEIGHT[String(person.attrition_risk ?? "").toLowerCase()] ?? 1;
+  // 同岗位是否还有其他在岗人员
+  const peers = people.filter(
+    (p) => p.role_id === person.role_id && p.id !== person.id && p.status === "onboard",
+  );
+  if (peers.length === 0) score += 2;
+  // 外部/合同工的连续性更弱
+  const ct = String(person.contract_type ?? "").toLowerCase();
+  if (ct && ct !== "fte" && ct !== "permanent") score += 1;
+  // 层级越高，市场上越难替换
+  const role = roles.find((r) => r.id === person.role_id);
+  const lvl = person.level ?? role?.level_min ?? 0;
+  if (lvl >= 8) score += 2;
+  else if (lvl >= 6) score += 1;
+  return score;
+}
+
+export function carrierRiskTier(
+  cap: Capability,
+  person: Person,
+  people: Person[],
+  roles: Role[],
+): { tier: CarrierRiskTier; score: number } {
+  const score = capabilityWeight(cap, roles) * Math.max(1, personReplaceability(person, people, roles));
+  const tier: CarrierRiskTier = score >= 40 ? "critical" : score >= 22 ? "watch" : "normal";
+  return { tier, score };
+}
