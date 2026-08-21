@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export const Route = createFileRoute("/people")({
+export const Route = createFileRoute("/people/")({
   head: () => ({
     meta: [
       { title: "人员视图 · 战略岗位与人才管理系统" },
