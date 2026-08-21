@@ -16,6 +16,7 @@ import { buildCapabilities, normalizeKey, levelRank, carrierRiskTier } from "@/l
 import { fetchOrgNodes } from "@/lib/org-tree";
 import { useI18n } from "@/lib/i18n";
 import { contractLabel } from "@/lib/contract";
+import { effectiveImportance, IMPORTANCE_TONE } from "@/lib/importance";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -387,6 +388,8 @@ export function PersonDetailSheet({
     performance: "",
     tenure_months: "",
     contract_type: "unset",
+    importance: "auto",
+    is_leader: false,
     tags: "",
     readiness: "unknown",
     attrition_risk: "unknown",
@@ -405,6 +408,8 @@ export function PersonDetailSheet({
       performance: person.performance ?? "",
       tenure_months: person.tenure_months != null ? String(person.tenure_months) : "",
       contract_type: person.contract_type || "unset",
+      importance: person.importance || "auto",
+      is_leader: !!person.is_leader,
       tags: (person.tags ?? []).join(", "),
       readiness: person.readiness ?? "unknown",
       attrition_risk: person.attrition_risk ?? "unknown",
@@ -438,6 +443,8 @@ export function PersonDetailSheet({
           performance: form.performance || null,
           tenure_months: form.tenure_months ? Number(form.tenure_months) : null,
           contract_type: form.contract_type === "unset" ? null : form.contract_type,
+          importance: form.importance,
+          is_leader: form.is_leader,
           tags: form.tags
             .split(/[,，\n]/)
             .map((s) => s.trim())
@@ -478,6 +485,8 @@ export function PersonDetailSheet({
       cmp(t("sheet.person.readiness"), readinessLabelOf(t, person!.readiness ?? "unknown"), readinessLabelOf(t, form.readiness));
       cmp(t("sheet.person.attritionRisk"), riskLabelOf(t, person!.attrition_risk ?? "unknown"), riskLabelOf(t, form.attrition_risk));
       cmp(t("sheet.person.contractType"), person!.contract_type ?? "", form.contract_type === "unset" ? "" : form.contract_type);
+      cmp(t("importance.label"), person!.importance ?? "auto", form.importance);
+      cmp(t("importance.isLeader"), person!.is_leader ? t("common.yes") : t("common.no"), form.is_leader ? t("common.yes") : t("common.no"));
       cmp(t("sheet.person.tags"), (person!.tags ?? []).join(", "), form.tags);
       if (diffs.length > 0) {
         await supabase.from("audit_log").insert({
@@ -520,6 +529,10 @@ export function PersonDetailSheet({
             />
             <Fact label={t("sheet.person.performance")} value={perfLabelOf(t, person.performance ?? "") ?? t("sheet.person.notAssessed")} />
             <Fact label={t("sheet.person.contractType")} value={contractLabel(t, person.contract_type) || t("sheet.person.notFilled")} />
+            <Fact
+              label={t("importance.label")}
+              value={`${t(`importance.${effectiveImportance(person, roles)}`)}${person.is_leader ? ` · ${t("importance.leaderBadge")}` : ""}`}
+            />
             <Fact
               label={t("sheet.person.team")}
               value={
@@ -690,6 +703,35 @@ export function PersonDetailSheet({
                       <SelectItem value="访问学者">{t("sheet.person.contractVisitingScholar")}</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>{t("importance.label")}</Label>
+                    <Select value={form.importance} onValueChange={(v) => setForm({ ...form, importance: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="auto">{t("importance.auto")}</SelectItem>
+                        <SelectItem value="core">{t("importance.core")}</SelectItem>
+                        <SelectItem value="key">{t("importance.key")}</SelectItem>
+                        <SelectItem value="standard">{t("importance.standard")}</SelectItem>
+                        <SelectItem value="peripheral">{t("importance.peripheral")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[11px] text-muted-foreground">{t("importance.autoHint")}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("importance.isLeader")}</Label>
+                    <Select
+                      value={form.is_leader ? "yes" : "no"}
+                      onValueChange={(v) => setForm({ ...form, is_leader: v === "yes" })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="no">{t("common.no")}</SelectItem>
+                        <SelectItem value="yes">{t("common.yes")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label>{t("sheet.person.tagsLabel")}</Label>
