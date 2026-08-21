@@ -12,6 +12,7 @@ import {
   Trash2,
   Award,
   TrendingUp,
+  LogOut,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
