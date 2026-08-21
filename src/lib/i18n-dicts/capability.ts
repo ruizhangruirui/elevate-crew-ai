@@ -186,4 +186,41 @@ export const capabilityDict: Dict = {
   "cap.table.single": { zh: "只靠 1 人", en: "Single-covered" },
   "cap.table.onboardVsTarget": { zh: "在岗 / 编制", en: "Onboard / Target" },
   "cap.table.activities90d": { zh: "90 天活动", en: "Activities (90d)" },
+
+  "cap.status.single": { zh: "只靠 1 人", en: "Relies on 1 person" },
+  "cap.status.thin": { zh: "人手偏少", en: "Understaffed" },
+  "cap.status.covered": { zh: "已覆盖", en: "Covered" },
+
+  "cap.statusHint.blank": {
+    zh: "岗位要求该能力，但目前没有任何在岗人员承载",
+    en: "The role requires this capability, but no onboard staff currently cover it",
+  },
+  "cap.statusHint.single": {
+    zh: "仅 1 人承载，人一走能力即失守",
+    en: "Only 1 person covers this; if they leave, the capability is lost",
+  },
+  "cap.statusHint.thin": {
+    zh: "承载人数少于岗位编制需求",
+    en: "Fewer carriers than the role's headcount requires",
+  },
+  "cap.statusHint.covered": {
+    zh: "有足够人员承载该能力",
+    en: "Enough people cover this capability",
+  },
+
+  "cap.activityKindHint.team_building": { zh: "增进氛围与信任", en: "Build morale and trust" },
+  "cap.activityKindHint.tech_share": { zh: "能力扩散，降低单点风险", en: "Spread capability, reduce single-point risk" },
+  "cap.activityKindHint.meeting": { zh: "对齐目标与进展", en: "Align on goals and progress" },
+  "cap.activityKindHint.training": { zh: "定向补齐能力缺口", en: "Targeted closing of capability gaps" },
+  "cap.activityKindHint.retro": { zh: "沉淀经验", en: "Capture lessons learned" },
+  "cap.activityKindHint.cross_team": { zh: "打通外部资源", en: "Connect external resources" },
+  "cap.activityKindHint.recruiting": { zh: "补齐空缺岗位", en: "Fill vacant roles" },
+
+  "orgtree.missingField.role": { zh: "未匹配岗位", en: "No role matched" },
+  "orgtree.missingField.node": { zh: "未归属团队", en: "No team assigned" },
+  "orgtree.missingField.level": { zh: "缺职级", en: "Missing level" },
+  "orgtree.missingField.performance": { zh: "缺绩效", en: "Missing performance" },
+  "orgtree.missingField.readiness": { zh: "缺 Readiness", en: "Missing readiness" },
+  "orgtree.missingField.skills": { zh: "缺技能评估", en: "Missing skill assessment" },
+  "orgtree.missingField.tenure": { zh: "缺司龄", en: "Missing tenure" },
 };
