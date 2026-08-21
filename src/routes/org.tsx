@@ -28,7 +28,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { fetchWorkspace, criticalityLabel, type Person, type Role } from "@/lib/talent";
-import { dict } from "@/lib/i18n";
 import { fetchOrgNodes, structureStats, type OrgNode } from "@/lib/org-tree";
 import { TeamDiagnosisDialog } from "@/components/TeamDiagnosisDialog";
 import { OrgChart } from "@/components/OrgChart";
@@ -181,7 +180,7 @@ function OrgTreeBody() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success(dict["org.roleAttached"].zh);
+      toast.success(t("org.roleAttached"));
       qc.invalidateQueries({ queryKey: ["workspace"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -193,7 +192,7 @@ function OrgTreeBody() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success(dict["org.personAssigned"].zh);
+      toast.success(t("org.personAssigned"));
       qc.invalidateQueries({ queryKey: ["workspace"] });
     },
     onError: (e: Error) => toast.error(e.message),
