@@ -25,8 +25,8 @@ import {
 } from "@/components/ui/select";
 
 /**
- * 把任意一条分析结论变成可跟进的待办。
- * sourceKey 用于识别「这条结论已经建过待办了」，避免重复。
+ * Turns any analytical finding into a trackable action item.
+ * sourceKey identifies whether "this finding already has an action item" to avoid duplicates.
  */
 export function AddActionButton({
   sourceKind,
