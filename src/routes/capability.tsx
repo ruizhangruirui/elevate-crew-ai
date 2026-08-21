@@ -107,26 +107,8 @@ function CapabilityBody() {
           <TabsTrigger value="building">{t("cap.tab.building")}</TabsTrigger>
           <TabsTrigger value="trend">{t("cap.tab.trend")}</TabsTrigger>
         </TabsList>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="mr-1 text-xs text-muted-foreground">{t("cap.scopeLabel")}</span>
-          {[{ id: "__all__", name: t("cap.scopeAll"), type: "" }, ...allNodes].map((n) => {
-            const active = scope === n.id;
-            return (
-              <button
-                key={n.id}
-                type="button"
-                onClick={() => setScope(n.id)}
-                className={`rounded-full border px-3 py-1 text-xs transition-colors ${
-                  active
-                    ? "border-brand bg-brand/15 text-foreground"
-                    : "border-border text-muted-foreground hover:border-brand/50 hover:text-foreground"
-                }`}
-              >
-                {n.name}
-              </button>
-            );
-          })}
-        </div>
+        <ScopePicker nodes={allNodes} scope={scope} scopeName={scopeName} onChange={setScope} />
+
       </div>
       {scope !== "__all__" && (
         <p className="-mt-4 text-xs text-muted-foreground">
