@@ -867,6 +867,7 @@ function TrendTile({
   unit?: string;
   invert?: boolean;
 }) {
+  const { t } = useI18n();
   const good = delta == null ? null : invert ? delta <= 0 : delta >= 0;
   return (
     <div className="rounded-lg border border-border/70 bg-surface-raised/60 px-4 py-3">
@@ -876,7 +877,7 @@ function TrendTile({
         <p className={`mt-0.5 text-xs tabular-nums ${good ? "text-ok" : "text-warn"}`}>
           {delta > 0 ? "+" : ""}
           {delta}
-          {unit} 自首期
+          {unit} {t("cap.trend.sinceFirst")}
         </p>
       )}
     </div>
@@ -884,6 +885,7 @@ function TrendTile({
 }
 
 function Sparkline({ snaps }: { snaps: Snapshot[] }) {
+  const { t } = useI18n();
   const w = 600;
   const h = 120;
   const pts = snaps.map((s, i) => {
@@ -892,7 +894,7 @@ function Sparkline({ snaps }: { snaps: Snapshot[] }) {
     return `${x},${y}`;
   });
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="mt-4 w-full" role="img" aria-label="能力覆盖率趋势">
+    <svg viewBox={`0 0 ${w} ${h}`} className="mt-4 w-full" role="img" aria-label={t("cap.trend.curveAriaLabel")}>
       <polyline
         points={pts.join(" ")}
         fill="none"
