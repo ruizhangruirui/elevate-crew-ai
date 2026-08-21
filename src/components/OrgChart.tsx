@@ -33,13 +33,13 @@ export function OrgChart({ nodes, people, roles, rolesByNode, onPerson, onRole }
       <button
         type="button"
         onClick={() => onPerson(p.id)}
-        className="flex w-36 flex-col items-center gap-1 rounded-lg border border-border/60 bg-background/50 px-2 py-2 text-center transition-colors hover:border-brand/60 hover:bg-surface-raised/60"
+        className="flex w-28 flex-col items-center gap-0.5 rounded-md border border-border/60 bg-background/50 px-1.5 py-1.5 text-center transition-colors hover:border-brand/60 hover:bg-surface-raised/60"
       >
-        <span className="grid size-7 place-items-center rounded-full bg-brand/15 text-[11px] font-semibold text-brand">
+        <span className="grid size-6 place-items-center rounded-full bg-brand/15 text-[10px] font-semibold text-brand">
           {p.name.slice(0, 1)}
         </span>
-        <span className="w-full truncate text-xs font-medium">{p.name}</span>
-        <span className="w-full truncate text-[10px] text-muted-foreground">
+        <span className="w-full truncate text-[11px] font-medium">{p.name}</span>
+        <span className="w-full truncate text-[9px] text-muted-foreground">
           {[p.level ? `L${p.level}` : null, contractLabel(t, p.contract_type), p.status !== "onboard" ? t("common.candidate") : null]
             .filter(Boolean)
             .join(" · ") || "—"}
