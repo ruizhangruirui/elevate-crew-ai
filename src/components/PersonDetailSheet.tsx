@@ -361,12 +361,20 @@ export function PersonDetailSheet({
         .update({ assessed_skills: own as unknown as never, assessed_at: new Date().toISOString() })
         .eq("id", person!.id);
       if (error) throw error;
+      await supabase.from("audit_log").insert({
+        person_id: person!.id,
+        action: t("sheet.person.skillChangeAction"),
+        entity: person!.name,
+        detail: `${skill}: ${level ?? "—"}`,
+      });
     },
     onSuccess: () => {
       toast.success(t("sheet.person.levelSaved"));
+      history.refetch();
       onDone();
     },
     onError: (e: unknown) => toast.error(String((e as Error)?.message ?? e)),
+
   });
 
 
