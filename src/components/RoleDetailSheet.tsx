@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { coverageOf, criticalityLabel, type Person, type Role, type Skill } from "@/lib/talent";
 import { analyzeRoleFit, generateRoleProfile, type FitResult } from "@/lib/ai.functions";
 import { ConfirmAction } from "@/components/ConfirmAction";
+import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,7 +37,9 @@ function Fact({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-function TagList({ items, empty = "待补充" }: { items: string[]; empty?: string }) {
+function TagList({ items, empty }: { items: string[]; empty?: string }) {
+  const { t } = useI18n();
+  empty = empty ?? t("sheet.pendingFill");
   if (!items.length) return <p className="text-xs text-muted-foreground">{empty}</p>;
   return (
     <div className="flex flex-wrap gap-1.5">
@@ -90,6 +93,7 @@ export function RoleDetailSheet({
   onOpenChange: (v: boolean) => void;
   onDone: () => void;
 }) {
+  const { t } = useI18n();
   const [editing, setEditing] = useState(false);
   const [assignSeat, setAssignSeat] = useState<number | null>(null);
   const [fits, setFits] = useState<FitResult[]>([]);
@@ -114,7 +118,7 @@ export function RoleDetailSheet({
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("AI 已生成岗位画像草稿，请复核后调整");
+      toast.success(t("sheet.role.aiProfileGenerated"));
       onDone();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -124,7 +128,7 @@ export function RoleDetailSheet({
     mutationFn: () => runFit({ data: { roleId: role!.id } }),
     onSuccess: (rows) => {
       setFits(rows);
-      toast.success(`已完成 ${rows.length} 位人员的匹配分析`);
+      toast.success(t("sheet.role.fitAnalysisDone").replace("{n}", String(rows.length)));
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -142,7 +146,7 @@ export function RoleDetailSheet({
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("已指派 Owner");
+      toast.success(t("sheet.role.ownerAssigned"));
       setAssignSeat(null);
       onDone();
     },
@@ -155,7 +159,7 @@ export function RoleDetailSheet({
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("已移除 Owner");
+      toast.success(t("sheet.role.ownerRemoved"));
       onDone();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -174,12 +178,12 @@ export function RoleDetailSheet({
       <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-2xl">
         <SheetHeader className="text-left">
           <SheetTitle className="font-display text-2xl">{role.title}</SheetTitle>
-          <SheetDescription>岗位画像 / 覆盖分析 · {directionTitle}</SheetDescription>
+          <SheetDescription>{t("sheet.role.headerDesc").replace("{direction}", directionTitle)}</SheetDescription>
         </SheetHeader>
 
         <div className="mt-6 space-y-5 pb-10">
           <Module
-            title="岗位画像"
+            title={t("sheet.role.profile")}
             actions={
               <div className="flex items-center gap-2">
                 <span
@@ -194,14 +198,14 @@ export function RoleDetailSheet({
                   {criticalityLabel[role.criticality] ?? role.criticality}
                 </span>
                 <ConfirmAction
-                  title="确认用 AI 重新生成岗位画像？"
+                  title={t("sheet.role.confirmRegenTitle")}
                   description={
                     <>
-                      <p>生成结果会覆盖当前的专业领域、关键知识、Leadership、经验要求、技能要求、KPA 与建议行动。</p>
-                      <p>覆盖后原内容无法恢复，请确认已保存需要保留的内容。</p>
+                      <p>{t("sheet.role.confirmRegenDesc1")}</p>
+                      <p>{t("sheet.role.confirmRegenDesc2")}</p>
                     </>
                   }
-                  confirmLabel="覆盖并生成"
+                  confirmLabel={t("sheet.role.confirmRegenLabel")}
                   onConfirm={() => aiProfile.mutate()}
                 >
                   <Button variant="outline" size="sm" className="gap-1.5" disabled={aiProfile.isPending}>
@@ -210,11 +214,11 @@ export function RoleDetailSheet({
                     ) : (
                       <Sparkles className="size-3.5" />
                     )}
-                    AI 生成画像
+                    {t("sheet.role.aiGenerateProfile")}
                   </Button>
                 </ConfirmAction>
                 <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setEditing((v) => !v)}>
-                  <Pencil className="size-3.5" /> {editing ? "取消" : "编辑岗位画像"}
+                  <Pencil className="size-3.5" /> {editing ? t("sheet.cancel") : t("sheet.role.editProfile")}
                 </Button>
               </div>
             }
@@ -230,24 +234,24 @@ export function RoleDetailSheet({
             ) : (
               <>
                 <p className="text-sm leading-relaxed text-muted-foreground">
-                  {role.description || "暂无岗位描述。"}
+                  {role.description || t("sheet.role.noDescription")}
                 </p>
                 <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  <Fact label="所属方向" value={directionTitle} />
-                  <Fact label="目标级别" value={`${role.level_min}–${role.level_max}`} />
-                  <Fact label="目标人数" value={role.target_count} />
-                  <Fact label="当前覆盖" value={`${cov.filled}/${role.target_count}`} />
+                  <Fact label={t("sheet.role.direction")} value={directionTitle} />
+                  <Fact label={t("sheet.role.targetLevel")} value={`${role.level_min}–${role.level_max}`} />
+                  <Fact label={t("sheet.role.targetCount")} value={role.target_count} />
+                  <Fact label={t("sheet.role.currentCoverage")} value={`${cov.filled}/${role.target_count}`} />
                 </div>
 
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <ProfileBlock title="专业领域" items={role.domains} />
-                  <ProfileBlock title="关键知识" items={role.knowledge} />
+                  <ProfileBlock title={t("sheet.role.domains")} items={role.domains} />
+                  <ProfileBlock title={t("sheet.role.knowledge")} items={role.knowledge} />
                   <ProfileBlock title="Leadership" items={role.leadership} />
-                  <ProfileBlock title="经验要求" items={role.experience} />
+                  <ProfileBlock title={t("sheet.role.experience")} items={role.experience} />
                 </div>
 
                 <div className="mt-4">
-                  <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">技能要求</p>
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{t("sheet.role.skillRequirements")}</p>
                   {role.skills.length ? (
                     <div className="mt-2 grid gap-2 sm:grid-cols-2">
                       {role.skills.map((s) => (
@@ -261,7 +265,7 @@ export function RoleDetailSheet({
                       ))}
                     </div>
                   ) : (
-                    <p className="mt-2 text-xs text-muted-foreground">待补充</p>
+                    <p className="mt-2 text-xs text-muted-foreground">{t("sheet.pendingFill")}</p>
                   )}
                 </div>
               </>
@@ -269,7 +273,7 @@ export function RoleDetailSheet({
           </Module>
 
           <Module
-            title="当前人才覆盖"
+            title={t("sheet.role.currentCoverageTitle")}
             actions={
               <span
                 className={`rounded-md px-2 py-1 text-[11px] font-medium ${
@@ -292,7 +296,7 @@ export function RoleDetailSheet({
                   className="rounded-xl border border-border/60 bg-surface-raised/40 p-4"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <strong className="text-sm">Seat {i + 1}</strong>
+                    <strong className="text-sm">{t("sheet.role.seat").replace("{n}", String(i + 1))}</strong>
                     <span
                       className={`rounded-md px-2 py-1 text-[11px] font-medium ${
                         owner ? "bg-ok/12 text-ok" : "bg-danger/12 text-danger"
@@ -307,14 +311,14 @@ export function RoleDetailSheet({
                         {owner.name} · Level {owner.level ?? "-"}
                       </p>
                       <ConfirmAction
-                        title={`确认把「${owner.name}」从该岗位移除？`}
+                        title={t("sheet.role.confirmRemoveOwnerTitle").replace("{name}", owner.name)}
                         description={
                           <>
-                            <p>移除后该 Seat 变为空缺，岗位覆盖率与组织能力承载会立即重算。</p>
-                            <p>人员本身不会被删除，只是不再归属此岗位。</p>
+                            <p>{t("sheet.role.confirmRemoveOwnerDesc1")}</p>
+                            <p>{t("sheet.role.confirmRemoveOwnerDesc2")}</p>
                           </>
                         }
-                        confirmLabel="确认移除"
+                        confirmLabel={t("sheet.role.confirmRemoveLabel")}
                         onConfirm={() => unassign.mutate(owner.id)}
                       >
                         <Button
@@ -322,7 +326,7 @@ export function RoleDetailSheet({
                           size="sm"
                           className="gap-1.5 text-muted-foreground hover:text-danger"
                         >
-                          <UserMinus className="size-3.5" /> 移除 Owner
+                          <UserMinus className="size-3.5" /> {t("sheet.role.removeOwner")}
                         </Button>
                       </ConfirmAction>
                     </div>
@@ -330,7 +334,7 @@ export function RoleDetailSheet({
                     <div className="mt-3 flex gap-2">
                       <Select onValueChange={(v) => assign.mutate(v)}>
                         <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="选择人员" />
+                          <SelectValue placeholder={t("sheet.role.selectPerson")} />
                         </SelectTrigger>
                         <SelectContent>
                           {unassigned.map((p) => (
@@ -341,13 +345,13 @@ export function RoleDetailSheet({
                         </SelectContent>
                       </Select>
                       <Button variant="ghost" size="sm" onClick={() => setAssignSeat(null)}>
-                        取消
+                        {t("sheet.cancel")}
                       </Button>
                     </div>
                   ) : (
                     <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                       <p className="text-sm text-muted-foreground">
-                        当前 Vacant，需要内部 backup 或外部 KPA。
+                        {t("sheet.role.vacantHint")}
                       </p>
                       <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setAssignSeat(i)}>
                         <UserPlus className="size-3.5" /> Assign Owner
@@ -359,25 +363,25 @@ export function RoleDetailSheet({
             </div>
           </Module>
 
-          <Module title="Gap / Risk / KPA / Action">
+          <Module title={t("sheet.role.gapRiskKpaAction")}>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               <Fact
                 label="Gap"
-                value={cov.gap ? `缺口 ${cov.gap} 个 Seat` : "无关键缺口"}
+                value={cov.gap ? t("sheet.role.gapCount").replace("{n}", String(cov.gap)) : t("sheet.role.noCriticalGap")}
               />
               <Fact label="Risk" value={risk} />
-              <Fact label="KPA" value={role.kpa || "待补充"} />
+              <Fact label="KPA" value={role.kpa || t("sheet.pendingFill")} />
               <Fact
                 label="Action"
-                value={role.recommended_action.length ? role.recommended_action.join(" / ") : "待补充"}
+                value={role.recommended_action.length ? role.recommended_action.join(" / ") : t("sheet.pendingFill")}
               />
             </div>
           </Module>
 
-          <Module title="AI 辅助判断">
+          <Module title={t("sheet.role.aiAssist")}>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-brand/30 bg-brand/5 p-4">
               <p className="text-xs text-muted-foreground">
-                基于 HR / 主管录入的能力评估数据，计算全员对本岗位的匹配度。
+                {t("sheet.role.aiAssistDesc")}
               </p>
               <Button size="sm" className="gap-1.5" disabled={aiFit.isPending} onClick={() => aiFit.mutate()}>
                 {aiFit.isPending ? (
@@ -385,7 +389,7 @@ export function RoleDetailSheet({
                 ) : (
                   <Sparkles className="size-3.5" />
                 )}
-                {aiFit.isPending ? "分析中…" : "AI 人岗匹配分析"}
+                {aiFit.isPending ? t("sheet.role.analyzing") : t("sheet.role.aiFitAnalysis")}
               </Button>
             </div>
 
@@ -404,27 +408,27 @@ export function RoleDetailSheet({
                               : "bg-danger/12 text-danger"
                         }`}
                       >
-                        匹配度 {f.fit_score}%
+                        {t("sheet.role.fitScore").replace("{n}", String(f.fit_score))}
                       </span>
                     </div>
                     <Progress value={f.fit_score} className="mt-3 h-1.5" />
                     <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{f.summary}</p>
                     <div className="mt-3 grid gap-3 sm:grid-cols-2">
                       <div>
-                        <p className="text-[10px] uppercase tracking-[0.12em] text-ok">优势</p>
+                        <p className="text-[10px] uppercase tracking-[0.12em] text-ok">{t("sheet.role.strengths")}</p>
                         <div className="mt-1.5">
                           <TagList items={f.strengths} empty="—" />
                         </div>
                       </div>
                       <div>
-                        <p className="text-[10px] uppercase tracking-[0.12em] text-danger">缺口</p>
+                        <p className="text-[10px] uppercase tracking-[0.12em] text-danger">{t("sheet.role.gaps")}</p>
                         <div className="mt-1.5">
                           <TagList items={f.gaps} empty="—" />
                         </div>
                       </div>
                     </div>
                     <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-                      培养建议：{f.recommendation}
+                      {t("sheet.role.developmentSuggestion").replace("{text}", f.recommendation)}
                     </p>
                   </div>
                 ))}
@@ -434,36 +438,36 @@ export function RoleDetailSheet({
             <div className="grid gap-3 sm:grid-cols-3">
               {[
                 {
-                  t: "当前判断",
+                  title: t("sheet.role.currentJudgment"),
                   s: coverageLabel,
                   d:
                     cov.state === "empty"
-                      ? "岗位存在未覆盖 Seat，需同时推进内部培养与外部 mapping。"
+                      ? t("sheet.role.emptyStateDesc")
                       : cov.state === "partial"
-                        ? "当前 owner 具备基础覆盖，但关键技能证据不足。"
-                        : "当前 owner 与岗位画像匹配度较高。",
+                        ? t("sheet.role.partialStateDesc")
+                        : t("sheet.role.fullStateDesc"),
                 },
                 {
-                  t: "核心依据",
-                  s: `${cov.filled}/${role.target_count} Seat 已覆盖`,
-                  d: owners.length ? `在岗：${owners.map((o) => o.name).join("、")}` : "暂无在岗 owner 记录。",
+                  title: t("sheet.role.coreEvidence"),
+                  s: t("sheet.role.seatsCovered").replace("{filled}", String(cov.filled)).replace("{target}", String(role.target_count)),
+                  d: owners.length
+                    ? t("sheet.role.onboardList").replace("{names}", owners.map((o) => o.name).join("、"))
+                    : t("sheet.role.noOwnerRecord"),
                 },
                 {
-                  t: "建议行动",
-                  s: role.recommended_action[0] ?? (cov.gap ? "启动 KPA / 内部培养" : "保持季度复核"),
-                  d: cov.gap
-                    ? "优先识别内部 backup，同步启动外部 mapping。"
-                    : "关注继任梯队与关键技能演进。",
+                  title: t("sheet.role.recommendedAction"),
+                  s: role.recommended_action[0] ?? (cov.gap ? t("sheet.role.startKpa") : t("sheet.role.keepQuarterlyReview")),
+                  d: cov.gap ? t("sheet.role.gapActionDesc") : t("sheet.role.noGapActionDesc"),
                 },
               ].map((c) => (
-                <article key={c.t} className="rounded-xl border border-border/60 bg-surface-raised/40 p-4">
-                  <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{c.t}</p>
+                <article key={c.title} className="rounded-xl border border-border/60 bg-surface-raised/40 p-4">
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{c.title}</p>
                   <p className="mt-1 font-display text-sm font-semibold">{c.s}</p>
                   <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{c.d}</p>
                 </article>
               ))}
             </div>
-            <p className="mt-3 text-[11px] text-muted-foreground">AI 辅助分析 · 最终由 Manager / HR 确认</p>
+            <p className="mt-3 text-[11px] text-muted-foreground">{t("sheet.role.aiFootnote")}</p>
           </Module>
         </div>
       </SheetContent>
@@ -479,6 +483,7 @@ const fromLines = (v: string) =>
     .filter(Boolean);
 
 function EditRoleForm({ role, onDone }: { role: Role; onDone: () => void }) {
+  const { t } = useI18n();
   const [form, setForm] = useState({
     title: role.title,
     description: role.description ?? "",
@@ -522,7 +527,7 @@ function EditRoleForm({ role, onDone }: { role: Role; onDone: () => void }) {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("岗位画像已更新");
+      toast.success(t("sheet.role.profileUpdated"));
       onDone();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -531,11 +536,11 @@ function EditRoleForm({ role, onDone }: { role: Role; onDone: () => void }) {
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label>岗位名称</Label>
+        <Label>{t("sheet.role.editRoleName")}</Label>
         <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
       </div>
       <div className="space-y-2">
-        <Label>岗位描述</Label>
+        <Label>{t("sheet.role.editRoleDesc")}</Label>
         <Textarea
           rows={3}
           value={form.description}
@@ -544,7 +549,7 @@ function EditRoleForm({ role, onDone }: { role: Role; onDone: () => void }) {
       </div>
       <div className="grid grid-cols-3 gap-3">
         <div className="space-y-2">
-          <Label>最低级别</Label>
+          <Label>{t("sheet.role.editMinLevel")}</Label>
           <Input
             type="number"
             value={form.level_min}
@@ -552,7 +557,7 @@ function EditRoleForm({ role, onDone }: { role: Role; onDone: () => void }) {
           />
         </div>
         <div className="space-y-2">
-          <Label>最高级别</Label>
+          <Label>{t("sheet.role.editMaxLevel")}</Label>
           <Input
             type="number"
             value={form.level_max}
@@ -560,7 +565,7 @@ function EditRoleForm({ role, onDone }: { role: Role; onDone: () => void }) {
           />
         </div>
         <div className="space-y-2">
-          <Label>目标人数</Label>
+          <Label>{t("sheet.role.editTargetCount")}</Label>
           <Input
             type="number"
             value={form.target_count}
@@ -569,7 +574,7 @@ function EditRoleForm({ role, onDone }: { role: Role; onDone: () => void }) {
         </div>
       </div>
       <div className="space-y-2">
-        <Label>关键度</Label>
+        <Label>{t("sheet.role.editCriticality")}</Label>
         <Select value={form.criticality} onValueChange={(v) => setForm({ ...form, criticality: v })}>
           <SelectTrigger>
             <SelectValue />
@@ -583,16 +588,16 @@ function EditRoleForm({ role, onDone }: { role: Role; onDone: () => void }) {
       </div>
       {(
         [
-          ["domains", "专业领域"],
-          ["knowledge", "关键知识"],
+          ["domains", t("sheet.role.domains")],
+          ["knowledge", t("sheet.role.knowledge")],
           ["leadership", "Leadership"],
-          ["experience", "经验要求"],
-          ["recommended_action", "建议行动"],
+          ["experience", t("sheet.role.experience")],
+          ["recommended_action", t("sheet.role.recommendedAction")],
         ] as const
       ).map(([key, label]) => (
         <div key={key} className="space-y-2">
           <Label>
-            {label} <span className="text-xs text-muted-foreground">（每行一条，或用逗号分隔）</span>
+            {label} <span className="text-xs text-muted-foreground">{t("sheet.role.perLineHint")}</span>
           </Label>
           <Textarea
             rows={2}
@@ -603,7 +608,7 @@ function EditRoleForm({ role, onDone }: { role: Role; onDone: () => void }) {
       ))}
       <div className="space-y-2">
         <Label>
-          技能要求 <span className="text-xs text-muted-foreground">（每行「技能: 等级」）</span>
+          {t("sheet.role.skillRequirementsHint")} <span className="text-xs text-muted-foreground">{t("sheet.role.skillLineHint")}</span>
         </Label>
         <Textarea
           rows={3}
@@ -617,7 +622,7 @@ function EditRoleForm({ role, onDone }: { role: Role; onDone: () => void }) {
         <Input value={form.kpa} onChange={(e) => setForm({ ...form, kpa: e.target.value })} />
       </div>
       <Button onClick={() => save.mutate()} disabled={!form.title.trim() || save.isPending}>
-        保存
+        {t("sheet.save")}
       </Button>
     </div>
   );

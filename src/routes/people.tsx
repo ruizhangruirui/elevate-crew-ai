@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { useI18n } from "@/lib/i18n";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { PersonDetailSheet } from "@/components/PersonDetailSheet";
 import { completeness } from "@/lib/org-tree";
@@ -49,14 +50,16 @@ export const Route = createFileRoute("/people")({
 });
 
 function PeoplePage() {
+  const { t } = useI18n();
   return (
-    <AppShell title="人员视图" subtitle="管理在岗人员与候选人，追踪职级分布与岗位归属。">
+    <AppShell title={t("ppl.title")} subtitle={t("ppl.subtitle")}>
       <PeopleBody />
     </AppShell>
   );
 }
 
 function PeopleBody() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
   const [open, setOpen] = useState(false);
@@ -66,7 +69,7 @@ function PeopleBody() {
 
   const addPerson = useMutation({
     mutationFn: async () => {
-      if (!data?.org) throw new Error("组织尚未初始化");
+      if (!data?.org) throw new Error(t("ppl.error.orgNotInit"));
       const { error } = await supabase.from("people").insert({
         org_id: data.org.id,
         name: form.name,
@@ -77,7 +80,7 @@ function PeopleBody() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("已添加人员");
+      toast.success(t("ppl.toast.added"));
       setOpen(false);
       setForm({ name: "", level: "15", role_id: "none", status: "onboard" });
       qc.invalidateQueries({ queryKey: ["workspace"] });
@@ -91,16 +94,16 @@ function PeopleBody() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("已移除");
+      toast.success(t("ppl.toast.removed"));
       qc.invalidateQueries({ queryKey: ["workspace"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  if (!data) return <div className="text-sm text-muted-foreground">加载中…</div>;
+  if (!data) return <div className="text-sm text-muted-foreground">{t("ppl.loading")}</div>;
 
   const roleName = (id: string | null) =>
-    data.roles.find((r) => r.id === id)?.title ?? "未分配岗位";
+    data.roles.find((r) => r.id === id)?.title ?? t("ppl.role.noRole");
   const onboard = data.people.filter((p) => p.status === "onboard");
   const candidates = data.people.filter((p) => p.status === "candidate");
   const unassigned = data.people.filter((p) => !p.role_id);
@@ -111,36 +114,36 @@ function PeopleBody() {
   return (
     <div className="space-y-8">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile label="总人数" value={data.people.length} />
-        <StatTile label="在岗" value={onboard.length} tone="ok" />
-        <StatTile label="候选人" value={candidates.length} tone="warn" />
-        <StatTile label="未分配岗位" value={unassigned.length} tone="danger" />
+        <StatTile label={t("ppl.stat.total")} value={data.people.length} />
+        <StatTile label={t("ppl.stat.onboard")} value={onboard.length} tone="ok" />
+        <StatTile label={t("ppl.stat.candidate")} value={candidates.length} tone="warn" />
+        <StatTile label={t("ppl.stat.unassigned")} value={unassigned.length} tone="danger" />
       </div>
 
       <div className="panel overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-6 py-4">
           <div>
-            <h2 className="font-display text-lg font-semibold">人员名单</h2>
+            <h2 className="font-display text-lg font-semibold">{t("ppl.list.title")}</h2>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              全员平铺清单；按团队层级浏览与数据完整度详情见
+              {t("ppl.list.desc.pre")}
               <Link to="/org" className="ml-1 text-brand hover:underline">
-                组织 & 人员视图
+                {t("ppl.list.desc.link")}
               </Link>
             </p>
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1.5">
-                <Plus className="size-4" /> 新增人员
+                <Plus className="size-4" /> {t("ppl.add")}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>新增人员</DialogTitle>
+                <DialogTitle>{t("ppl.dialog.title")}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>姓名</Label>
+                  <Label>{t("ppl.field.name")}</Label>
                   <Input
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -148,7 +151,7 @@ function PeopleBody() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>职级</Label>
+                    <Label>{t("ppl.field.level")}</Label>
                     <Input
                       type="number"
                       value={form.level}
@@ -156,7 +159,7 @@ function PeopleBody() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>状态</Label>
+                    <Label>{t("ppl.field.status")}</Label>
                     <Select
                       value={form.status}
                       onValueChange={(v) => setForm({ ...form, status: v })}
@@ -165,14 +168,14 @@ function PeopleBody() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="onboard">在岗</SelectItem>
-                        <SelectItem value="candidate">候选人</SelectItem>
+                        <SelectItem value="onboard">{t("ppl.status.onboard")}</SelectItem>
+                        <SelectItem value="candidate">{t("ppl.status.candidate")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>目标岗位</Label>
+                  <Label>{t("ppl.field.targetRole")}</Label>
                   <Select
                     value={form.role_id}
                     onValueChange={(v) => setForm({ ...form, role_id: v })}
@@ -181,7 +184,7 @@ function PeopleBody() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">未分配</SelectItem>
+                      <SelectItem value="none">{t("ppl.role.unassigned")}</SelectItem>
                       {data.roles.map((r) => (
                         <SelectItem key={r.id} value={r.id}>
                           {r.title}
@@ -196,7 +199,7 @@ function PeopleBody() {
                   onClick={() => addPerson.mutate()}
                   disabled={!form.name.trim() || addPerson.isPending}
                 >
-                  保存
+                  {t("ppl.save")}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -252,32 +255,32 @@ function PeopleBody() {
                     : "bg-warn/12 text-warn"
                 }`}
               >
-                {p.status === "onboard" ? "在岗" : "候选人"}
+                {p.status === "onboard" ? t("ppl.status.onboard") : t("ppl.status.candidate")}
               </span>
               <p className="hidden max-w-56 truncate text-xs text-muted-foreground lg:block">
                 {p.note}
               </p>
               {incomplete.has(p.id) && (
                 <span className="rounded-md bg-warn/12 px-2 py-1 text-xs font-medium text-warn">
-                  资料不全 {incomplete.get(p.id)} 项
+                  {t("ppl.incomplete")} {incomplete.get(p.id)} {t("ppl.incomplete.items")}
                 </span>
               )}
               <ConfirmAction
-                title={`确认删除「${p.name}」？`}
+                title={t("ppl.remove.confirmTitle").replace("{name}", p.name)}
                 description={
                   <>
-                    <p>该人员的所有评估信息、岗位归属与 AI 匹配记录都会一并删除，且无法恢复。</p>
-                    <p>如果只是离岗，建议改为在详情里把状态改为「候选人」或移除岗位归属。</p>
+                    <p>{t("ppl.remove.desc1")}</p>
+                    <p>{t("ppl.remove.desc2")}</p>
                   </>
                 }
-                confirmLabel="仍要删除"
+                confirmLabel={t("ppl.remove.confirmLabel")}
                 onConfirm={() => removePerson.mutate(p.id)}
               >
                 <Button
                   variant="ghost"
                   size="icon"
                   className="text-muted-foreground hover:text-danger"
-                  aria-label={`移除 ${p.name}`}
+                  aria-label={`${t("ppl.remove.label")} ${p.name}`}
                 >
                   <Trash2 className="size-4" />
                 </Button>
@@ -285,7 +288,7 @@ function PeopleBody() {
             </div>
           ))}
           {data.people.length === 0 && (
-            <p className="px-6 py-10 text-center text-sm text-muted-foreground">暂无人员</p>
+            <p className="px-6 py-10 text-center text-sm text-muted-foreground">{t("ppl.empty")}</p>
           )}
         </div>
       </div>

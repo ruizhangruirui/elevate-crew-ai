@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CheckCircle2, ListPlus } from "lucide-react";
 import { createAction, fetchActions, inDays, type ActionPriority, type ActionSourceKind } from "@/lib/actions";
+import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,8 +25,8 @@ import {
 } from "@/components/ui/select";
 
 /**
- * 把任意一条分析结论变成可跟进的待办。
- * sourceKey 用于识别「这条结论已经建过待办了」，避免重复。
+ * Turns any analytical finding into a trackable action item.
+ * sourceKey identifies whether "this finding already has an action item" to avoid duplicates.
  */
 export function AddActionButton({
   sourceKind,
@@ -36,7 +37,7 @@ export function AddActionButton({
   roleId,
   personId,
   orgNodeId,
-  label = "转为待办",
+  label,
   size = "sm",
 }: {
   sourceKind: ActionSourceKind;
@@ -50,6 +51,8 @@ export function AddActionButton({
   label?: string;
   size?: "sm" | "xs";
 }) {
+  const { t } = useI18n();
+  const displayLabel = label ?? t("act.toConvert");
   const qc = useQueryClient();
   const { data: actions } = useQuery({ queryKey: ["actions"], queryFn: fetchActions });
   const [open, setOpen] = useState(false);
@@ -80,7 +83,7 @@ export function AddActionButton({
         priority: form.priority,
       }),
     onSuccess: () => {
-      toast.success("已加入待办");
+      toast.success(t("act.toast.addedToAction"));
       setOpen(false);
       qc.invalidateQueries({ queryKey: ["actions"] });
     },
@@ -91,7 +94,7 @@ export function AddActionButton({
     return (
       <span className="inline-flex items-center gap-1 text-[11px] text-ok">
         <CheckCircle2 className="size-3.5" />
-        {existing.status === "done" ? "已完成" : "已在待办"}
+        {existing.status === "done" ? t("act.alreadyDone") : t("act.alreadyInActions")}
       </span>
     );
   }
@@ -106,24 +109,24 @@ export function AddActionButton({
         }`}
       >
         <ListPlus className="size-3.5" />
-        {label}
+        {displayLabel}
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>转为待办</DialogTitle>
+            <DialogTitle>{t("act.toConvert")}</DialogTitle>
             <DialogDescription>
-              指定负责人和时间，这条结论就会出现在待办中心，直到被处理掉。
+              {t("act.convert.desc")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>事项</Label>
+              <Label>{t("act.field.title")}</Label>
               <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>背景说明</Label>
+              <Label>{t("act.field.detail")}</Label>
               <Textarea
                 rows={3}
                 value={form.detail}
@@ -132,15 +135,15 @@ export function AddActionButton({
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2">
-                <Label>负责人</Label>
+                <Label>{t("act.field.owner")}</Label>
                 <Input
-                  placeholder="选填"
+                  placeholder={t("act.field.owner.optional")}
                   value={form.owner}
                   onChange={(e) => setForm({ ...form, owner: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label>截止日期</Label>
+                <Label>{t("act.field.dueDate")}</Label>
                 <Input
                   type="date"
                   value={form.due_on}
@@ -148,16 +151,16 @@ export function AddActionButton({
                 />
               </div>
               <div className="space-y-2">
-                <Label>优先级</Label>
+                <Label>{t("act.field.priority")}</Label>
                 <Select
                   value={form.priority}
                   onValueChange={(v) => setForm({ ...form, priority: v as ActionPriority })}
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="high">高</SelectItem>
-                    <SelectItem value="normal">中</SelectItem>
-                    <SelectItem value="low">低</SelectItem>
+                    <SelectItem value="high">{t("act.priority.high")}</SelectItem>
+                    <SelectItem value="normal">{t("act.priority.normal")}</SelectItem>
+                    <SelectItem value="low">{t("act.priority.low")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -168,7 +171,7 @@ export function AddActionButton({
               onClick={() => create.mutate()}
               disabled={!form.title.trim() || create.isPending}
             >
-              加入待办
+              {t("act.addToActions")}
             </Button>
           </DialogFooter>
         </DialogContent>

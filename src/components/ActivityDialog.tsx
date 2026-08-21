@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useI18n } from "@/lib/i18n";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,6 +53,7 @@ export function ActivityDialog({
   people: Person[];
   participantIds: string[];
 }) {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const [form, setForm] = useState(empty);
   const [picked, setPicked] = useState<string[]>([]);
@@ -79,7 +81,7 @@ export function ActivityDialog({
 
   const save = useMutation({
     mutationFn: async () => {
-      if (!form.title.trim()) throw new Error("请填写活动标题");
+      if (!form.title.trim()) throw new Error(t("sheet.activity.titleRequired"));
       const payload = {
         kind: form.kind,
         title: form.title.trim(),
@@ -121,7 +123,7 @@ export function ActivityDialog({
       }
     },
     onSuccess: () => {
-      toast.success(activity ? "已更新活动" : "已记录活动");
+      toast.success(activity ? t("sheet.activity.updated") : t("sheet.activity.recorded"));
       qc.invalidateQueries({ queryKey: ["org-building"] });
       onOpenChange(false);
     },
@@ -133,13 +135,13 @@ export function ActivityDialog({
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle className="font-display">
-            {activity ? "编辑组织建设活动" : "记录一次组织建设活动"}
+            {activity ? t("sheet.activity.editTitle") : t("sheet.activity.recordTitle")}
           </DialogTitle>
         </DialogHeader>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label>活动类型</Label>
+            <Label>{t("sheet.activity.kind")}</Label>
             <Select value={form.kind} onValueChange={(v) => setForm((f) => ({ ...f, kind: v }))}>
               <SelectTrigger>
                 <SelectValue />
@@ -154,7 +156,7 @@ export function ActivityDialog({
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label>日期</Label>
+            <Label>{t("sheet.activity.date")}</Label>
             <Input
               type="date"
               value={form.happened_on}
@@ -162,22 +164,22 @@ export function ActivityDialog({
             />
           </div>
           <div className="space-y-1.5 sm:col-span-2">
-            <Label>标题</Label>
+            <Label>{t("sheet.activity.title")}</Label>
             <Input
               value={form.title}
-              placeholder="例：NPU 编译器调度策略内部分享"
+              placeholder={t("sheet.activity.titlePlaceholder")}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             />
           </div>
           <div className="space-y-1.5">
-            <Label>组织者 / 主讲</Label>
+            <Label>{t("sheet.activity.host")}</Label>
             <Input
               value={form.host}
               onChange={(e) => setForm((f) => ({ ...f, host: e.target.value }))}
             />
           </div>
           <div className="space-y-1.5">
-            <Label>时长（分钟）</Label>
+            <Label>{t("sheet.activity.durationMinutes")}</Label>
             <Input
               inputMode="numeric"
               value={form.duration_minutes}
@@ -185,7 +187,7 @@ export function ActivityDialog({
             />
           </div>
           <div className="space-y-1.5 sm:col-span-2">
-            <Label>所属方向</Label>
+            <Label>{t("sheet.activity.direction")}</Label>
             <Select
               value={form.direction_id}
               onValueChange={(v) => setForm((f) => ({ ...f, direction_id: v }))}
@@ -194,7 +196,7 @@ export function ActivityDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">不限 / 全组织</SelectItem>
+                <SelectItem value="none">{t("sheet.activity.unlimitedOrg")}</SelectItem>
                 {directions.map((d) => (
                   <SelectItem key={d.id} value={d.id}>
                     {d.title}
@@ -204,21 +206,21 @@ export function ActivityDialog({
             </Select>
           </div>
           <div className="space-y-1.5 sm:col-span-2">
-            <Label>关联能力标签</Label>
+            <Label>{t("sheet.activity.capabilityTags")}</Label>
             <Input
               value={form.capability_tags}
-              placeholder="用「、」分隔，例：NPU 架构、编译器优化"
+              placeholder={t("sheet.activity.capabilityTagsPlaceholder")}
               onChange={(e) => setForm((f) => ({ ...f, capability_tags: e.target.value }))}
             />
             <p className="text-xs text-muted-foreground">
-              填了标签后，能力清单上会标出「近期有内部建设」。
+              {t("sheet.activity.capabilityTagsHint")}
             </p>
           </div>
           <div className="space-y-1.5 sm:col-span-2">
-            <Label>参与人</Label>
+            <Label>{t("sheet.activity.participants")}</Label>
             <div className="flex flex-wrap gap-2 rounded-lg border border-border/60 p-3">
               {people.length === 0 && (
-                <span className="text-xs text-muted-foreground">还没有人员记录</span>
+                <span className="text-xs text-muted-foreground">{t("sheet.activity.noPeopleYet")}</span>
               )}
               {people.map((p) => {
                 const on = picked.includes(p.id);
@@ -244,7 +246,7 @@ export function ActivityDialog({
             </div>
           </div>
           <div className="space-y-1.5 sm:col-span-2">
-            <Label>纪要 / 材料链接</Label>
+            <Label>{t("sheet.activity.linkLabel")}</Label>
             <Input
               value={form.link}
               placeholder="https://"
@@ -252,7 +254,7 @@ export function ActivityDialog({
             />
           </div>
           <div className="space-y-1.5 sm:col-span-2">
-            <Label>备注</Label>
+            <Label>{t("sheet.activity.noteLabel")}</Label>
             <Textarea
               rows={3}
               value={form.note}
@@ -263,10 +265,10 @@ export function ActivityDialog({
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            取消
+            {t("sheet.cancel")}
           </Button>
           <Button onClick={() => save.mutate()} disabled={save.isPending}>
-            {save.isPending ? "保存中…" : "保存"}
+            {save.isPending ? t("sheet.activity.saving") : t("sheet.save")}
           </Button>
         </DialogFooter>
       </DialogContent>

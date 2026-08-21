@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useI18n } from "@/lib/i18n";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,8 +19,8 @@ import {
 export function ConfirmAction({
   title,
   description,
-  confirmLabel = "确认执行",
-  cancelLabel = "取消",
+  confirmLabel,
+  cancelLabel,
   onConfirm,
   children,
 }: {
@@ -30,6 +31,9 @@ export function ConfirmAction({
   onConfirm: () => void;
   children: ReactNode;
 }) {
+  const { t } = useI18n();
+  const resolvedConfirmLabel = confirmLabel ?? t("sheet.confirm.defaultConfirmLabel");
+  const resolvedCancelLabel = cancelLabel ?? t("sheet.confirm.defaultCancelLabel");
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild onClick={(e) => e.stopPropagation()}>
@@ -43,7 +47,7 @@ export function ConfirmAction({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
+          <AlertDialogCancel>{resolvedCancelLabel}</AlertDialogCancel>
           <AlertDialogAction
             className="bg-danger text-white hover:bg-danger/90"
             onClick={(e) => {
@@ -51,7 +55,7 @@ export function ConfirmAction({
               onConfirm();
             }}
           >
-            {confirmLabel}
+            {resolvedConfirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

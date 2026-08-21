@@ -14,6 +14,7 @@ import {
 } from "@/lib/talent";
 import { buildCapabilities, normalizeKey, levelRank } from "@/lib/capability";
 import { fetchOrgNodes } from "@/lib/org-tree";
+import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,23 +35,32 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const readinessLabel: Record<string, string> = {
-  ready: "Ready now",
-  ready_1y: "1 年内可上手",
-  ready_2y: "2 年内可上手",
-  unknown: "未评估",
-};
-const riskLabel: Record<string, string> = {
-  low: "低",
-  medium: "中",
-  high: "高",
-  unknown: "未评估",
-};
-const perfLabel: Record<string, string> = {
-  exceeds: "超出预期",
-  meets: "符合预期",
-  below: "低于预期",
-};
+function readinessLabelOf(t: (k: string) => string, key: string): string {
+  const map: Record<string, string> = {
+    ready: t("sheet.person.readyNow"),
+    ready_1y: t("sheet.person.ready1yFull"),
+    ready_2y: t("sheet.person.ready2yFull"),
+    unknown: t("sheet.person.notAssessed"),
+  };
+  return map[key] ?? key;
+}
+function riskLabelOf(t: (k: string) => string, key: string): string {
+  const map: Record<string, string> = {
+    low: t("sheet.person.riskLow"),
+    medium: t("sheet.person.riskMedium"),
+    high: t("sheet.person.riskHigh"),
+    unknown: t("sheet.person.notAssessed"),
+  };
+  return map[key] ?? key;
+}
+function perfLabelOf(t: (k: string) => string, key: string): string {
+  const map: Record<string, string> = {
+    exceeds: t("sheet.person.exceedsExpectation"),
+    meets: t("sheet.person.meetsExpectation"),
+    below: t("sheet.person.belowExpectation"),
+  };
+  return map[key] ?? key;
+}
 
 function Fact({ label, value, tone }: { label: string; value: string; tone?: "ok" | "warn" | "danger" | undefined }) {
   const toneCls =
@@ -94,6 +104,7 @@ export function PersonDetailSheet({
   onDone: () => void;
   onOpenRole?: (roleId: string) => void;
 }) {
+  const { t } = useI18n();
   const [editing, setEditing] = useState(false);
   const orgNodes = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
 
@@ -223,16 +234,16 @@ export function PersonDetailSheet({
       const nextNode = form.org_node_id === "none" ? null : form.org_node_id;
       if (nextNode !== (person!.org_node_id ?? null)) {
         const nameOf = (id: string | null) =>
-          id ? (orgNodes.data ?? []).find((n) => n.id === id)?.name ?? id : "未归属";
+          id ? (orgNodes.data ?? []).find((n) => n.id === id)?.name ?? id : t("sheet.person.unassigned");
         await supabase.from("audit_log").insert({
-          action: "组织调动",
-          entity: `人员 / ${person!.name}`,
+          action: t("sheet.person.orgMoveAction"),
+          entity: t("sheet.person.orgMoveEntity").replace("{name}", person!.name),
           detail: `${nameOf(person!.org_node_id ?? null)} → ${nameOf(nextNode)}`,
         });
       }
     },
     onSuccess: () => {
-      toast.success("已保存评估信息");
+      toast.success(t("sheet.person.assessmentSaved"));
       setEditing(false);
       onDone();
     },
@@ -247,39 +258,39 @@ export function PersonDetailSheet({
         <SheetHeader className="text-left">
           <SheetTitle className="font-display text-2xl">{person.name}</SheetTitle>
           <SheetDescription>
-            {role ? `${direction?.title ?? "未知方向"} · ${role.title}` : "未分配岗位"}
+            {role ? `${direction?.title ?? t("sheet.person.unknownDirection")} · ${role.title}` : t("sheet.person.unassignedRole")}
           </SheetDescription>
         </SheetHeader>
 
         <div className="mt-6 space-y-5 pb-10">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            <Fact label="职级" value={person.level != null ? `Level ${person.level}` : "—"} />
+            <Fact label={t("sheet.person.level")} value={person.level != null ? `Level ${person.level}` : "—"} />
             <Fact
-              label="状态"
-              value={person.status === "onboard" ? "在岗" : "候选人"}
+              label={t("sheet.person.status")}
+              value={person.status === "onboard" ? t("sheet.person.onboard") : t("sheet.person.candidate")}
               tone={person.status === "onboard" ? "ok" : "warn"}
             />
-            <Fact label="绩效" value={perfLabel[person.performance ?? ""] ?? "未评估"} />
-            <Fact label="合同类型" value={person.contract_type || "未填写"} />
+            <Fact label={t("sheet.person.performance")} value={perfLabelOf(t, person.performance ?? "") ?? t("sheet.person.notAssessed")} />
+            <Fact label={t("sheet.person.contractType")} value={person.contract_type || t("sheet.person.notFilled")} />
             <Fact
-              label="所属团队"
+              label={t("sheet.person.team")}
               value={
-                (orgNodes.data ?? []).find((n) => n.id === person.org_node_id)?.name ?? "未归属"
+                (orgNodes.data ?? []).find((n) => n.id === person.org_node_id)?.name ?? t("sheet.person.unassigned")
               }
               tone={person.org_node_id ? undefined : "warn"}
             />
             <Fact
-              label="司龄"
-              value={person.tenure_months != null ? `${person.tenure_months} 个月` : "—"}
+              label={t("sheet.person.tenure")}
+              value={person.tenure_months != null ? t("sheet.person.tenureMonths").replace("{n}", String(person.tenure_months)) : "—"}
             />
             <Fact
-              label="Readiness"
-              value={readinessLabel[person.readiness ?? "unknown"] ?? "未评估"}
+              label={t("sheet.person.readiness")}
+              value={readinessLabelOf(t, person.readiness ?? "unknown") ?? t("sheet.person.notAssessed")}
               tone={person.readiness === "ready" ? "ok" : undefined}
             />
             <Fact
-              label="流失风险"
-              value={riskLabel[person.attrition_risk ?? "unknown"] ?? "未评估"}
+              label={t("sheet.person.attritionRisk")}
+              value={riskLabelOf(t, person.attrition_risk ?? "unknown") ?? t("sheet.person.notAssessed")}
               tone={
                 person.attrition_risk === "high"
                   ? "danger"
@@ -305,16 +316,16 @@ export function PersonDetailSheet({
 
           {!editing && (
             <Button variant="outline" size="sm" className="gap-1.5" onClick={startEdit}>
-              <Pencil className="size-4" /> 编辑评估信息
+              <Pencil className="size-4" /> {t("sheet.person.editAssessment")}
             </Button>
           )}
 
           {editing && (
-            <Module title="编辑评估信息（HR / 主管填写）">
+            <Module title={t("sheet.person.editAssessmentTitle")}>
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className="space-y-2">
-                    <Label>职级</Label>
+                    <Label>{t("sheet.person.level")}</Label>
                     <Input
                       type="number"
                       value={form.level}
@@ -322,17 +333,17 @@ export function PersonDetailSheet({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>状态</Label>
+                    <Label>{t("sheet.person.status")}</Label>
                     <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="onboard">在岗</SelectItem>
-                        <SelectItem value="candidate">候选人</SelectItem>
+                        <SelectItem value="onboard">{t("sheet.person.onboard")}</SelectItem>
+                        <SelectItem value="candidate">{t("sheet.person.candidate")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>司龄（月）</Label>
+                    <Label>{t("sheet.person.tenureMonthsLabel")}</Label>
                     <Input
                       type="number"
                       value={form.tenure_months}
@@ -341,11 +352,11 @@ export function PersonDetailSheet({
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>所属岗位</Label>
+                  <Label>{t("sheet.person.assignedRole")}</Label>
                   <Select value={form.role_id} onValueChange={(v) => setForm({ ...form, role_id: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">未分配</SelectItem>
+                      <SelectItem value="none">{t("sheet.person.notAssigned")}</SelectItem>
                       {roles.map((r) => (
                         <SelectItem key={r.id} value={r.id}>{r.title}</SelectItem>
                       ))}
@@ -353,14 +364,14 @@ export function PersonDetailSheet({
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>所属团队（组织调动会记入审计日志）</Label>
+                  <Label>{t("sheet.person.assignedTeam")}</Label>
                   <Select
                     value={form.org_node_id}
                     onValueChange={(v) => setForm({ ...form, org_node_id: v })}
                   >
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">未归属</SelectItem>
+                      <SelectItem value="none">{t("sheet.person.unassigned")}</SelectItem>
                       {(orgNodes.data ?? [])
                         .filter((n) => n.type !== "VNRC")
                         .map((n) => (
@@ -373,17 +384,17 @@ export function PersonDetailSheet({
                 </div>
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className="space-y-2">
-                    <Label>绩效</Label>
+                    <Label>{t("sheet.person.performance")}</Label>
                     <Select
                       value={form.performance || "unset"}
                       onValueChange={(v) => setForm({ ...form, performance: v === "unset" ? "" : v })}
                     >
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="unset">未评估</SelectItem>
-                        <SelectItem value="exceeds">超出预期</SelectItem>
-                        <SelectItem value="meets">符合预期</SelectItem>
-                        <SelectItem value="below">低于预期</SelectItem>
+                        <SelectItem value="unset">{t("sheet.person.notAssessed")}</SelectItem>
+                        <SelectItem value="exceeds">{t("sheet.person.exceedsExpectation")}</SelectItem>
+                        <SelectItem value="meets">{t("sheet.person.meetsExpectation")}</SelectItem>
+                        <SelectItem value="below">{t("sheet.person.belowExpectation")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -392,56 +403,56 @@ export function PersonDetailSheet({
                     <Select value={form.readiness} onValueChange={(v) => setForm({ ...form, readiness: v })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="unknown">未评估</SelectItem>
-                        <SelectItem value="ready">Ready now</SelectItem>
-                        <SelectItem value="ready_1y">1 年内</SelectItem>
-                        <SelectItem value="ready_2y">2 年内</SelectItem>
+                        <SelectItem value="unknown">{t("sheet.person.notAssessed")}</SelectItem>
+                        <SelectItem value="ready">{t("sheet.person.readyNow")}</SelectItem>
+                        <SelectItem value="ready_1y">{t("sheet.person.ready1y")}</SelectItem>
+                        <SelectItem value="ready_2y">{t("sheet.person.ready2y")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>流失风险</Label>
+                    <Label>{t("sheet.person.attritionRisk")}</Label>
                     <Select
                       value={form.attrition_risk}
                       onValueChange={(v) => setForm({ ...form, attrition_risk: v })}
                     >
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="unknown">未评估</SelectItem>
-                        <SelectItem value="low">低</SelectItem>
-                        <SelectItem value="medium">中</SelectItem>
-                        <SelectItem value="high">高</SelectItem>
+                        <SelectItem value="unknown">{t("sheet.person.notAssessed")}</SelectItem>
+                        <SelectItem value="low">{t("sheet.person.riskLow")}</SelectItem>
+                        <SelectItem value="medium">{t("sheet.person.riskMedium")}</SelectItem>
+                        <SelectItem value="high">{t("sheet.person.riskHigh")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>合同类型</Label>
+                  <Label>{t("sheet.person.contractType")}</Label>
                   <Select
                     value={form.contract_type}
                     onValueChange={(v) => setForm({ ...form, contract_type: v })}
                   >
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="unset">未填写</SelectItem>
-                      <SelectItem value="正式员工">正式员工</SelectItem>
-                      <SelectItem value="外包">外包</SelectItem>
-                      <SelectItem value="实习生">实习生</SelectItem>
-                      <SelectItem value="外部顾问">外部顾问</SelectItem>
-                      <SelectItem value="访问学者">访问学者</SelectItem>
+                      <SelectItem value="unset">{t("sheet.person.notFilled")}</SelectItem>
+                      <SelectItem value="正式员工">{t("sheet.person.contractRegular")}</SelectItem>
+                      <SelectItem value="外包">{t("sheet.person.contractOutsourced")}</SelectItem>
+                      <SelectItem value="实习生">{t("sheet.person.contractIntern")}</SelectItem>
+                      <SelectItem value="外部顾问">{t("sheet.person.contractConsultant")}</SelectItem>
+                      <SelectItem value="访问学者">{t("sheet.person.contractVisitingScholar")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>标签（获奖、内部定位等，逗号分隔）</Label>
+                  <Label>{t("sheet.person.tagsLabel")}</Label>
                   <Input
                     value={form.tags}
                     onChange={(e) => setForm({ ...form, tags: e.target.value })}
-                    placeholder="最佳员工 2025, 技术骨干, 后备干部"
+                    placeholder={t("sheet.person.tagsPlaceholder")}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>已评估技能（每行「技能 | 等级」）</Label>
+                  <Label>{t("sheet.person.assessedSkillsLabel")}</Label>
                   <Textarea
                     rows={4}
                     value={form.assessed_skills}
@@ -450,7 +461,7 @@ export function PersonDetailSheet({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>过往经验（每行一条）</Label>
+                  <Label>{t("sheet.person.priorExperienceLabel")}</Label>
                   <Textarea
                     rows={3}
                     value={form.prior_experience}
@@ -458,7 +469,7 @@ export function PersonDetailSheet({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>备注</Label>
+                  <Label>{t("sheet.person.noteLabel")}</Label>
                   <Textarea
                     rows={2}
                     value={form.note}
@@ -466,15 +477,15 @@ export function PersonDetailSheet({
                   />
                 </div>
                 <div className="flex gap-2">
-                  <Button onClick={() => save.mutate()} disabled={save.isPending}>保存</Button>
-                  <Button variant="ghost" onClick={() => setEditing(false)}>取消</Button>
+                  <Button onClick={() => save.mutate()} disabled={save.isPending}>{t("sheet.save")}</Button>
+                  <Button variant="ghost" onClick={() => setEditing(false)}>{t("sheet.cancel")}</Button>
                 </div>
               </div>
             </Module>
           )}
 
           <Module
-            title="所在岗位"
+            title={t("sheet.person.currentRole")}
             actions={
               role && onOpenRole ? (
                 <Button
@@ -483,20 +494,20 @@ export function PersonDetailSheet({
                   className="gap-1.5"
                   onClick={() => onOpenRole(role.id)}
                 >
-                  <ExternalLink className="size-4" /> 查看岗位画像
+                  <ExternalLink className="size-4" /> {t("sheet.person.viewRoleProfile")}
                 </Button>
               ) : null
             }
           >
             {!role ? (
               <p className="text-sm text-muted-foreground">
-                该人员尚未分配岗位，可在「编辑评估信息」中指派。
+                {t("sheet.person.noRoleAssignedHint")}
               </p>
             ) : (
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   <span className="rounded-full border border-brand/40 bg-brand/10 px-2.5 py-1 text-foreground">
-                    {direction?.title ?? "未知方向"}
+                    {direction?.title ?? t("sheet.person.unknownDirection")}
                   </span>
                   <span className="rounded-full border border-border/70 px-2.5 py-1">
                     {criticalityLabel[role.criticality] ?? role.criticality}
@@ -508,9 +519,9 @@ export function PersonDetailSheet({
                 {cov && (
                   <div>
                     <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>岗位覆盖</span>
+                      <span>{t("sheet.person.roleCoverage")}</span>
                       <span className="tabular-nums">
-                        {cov.filled}/{role.target_count}（缺口 {cov.gap}）
+                        {t("sheet.person.coverageGap").replace("{filled}", String(cov.filled)).replace("{target}", String(role.target_count)).replace("{gap}", String(cov.gap))}
                       </span>
                     </div>
                     <Progress
@@ -520,10 +531,10 @@ export function PersonDetailSheet({
                   </div>
                 )}
                 <div>
-                  <p className="text-xs text-muted-foreground">同岗位其他人员</p>
+                  <p className="text-xs text-muted-foreground">{t("sheet.person.teammates")}</p>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {teammates.length === 0 && (
-                      <span className="text-xs text-danger">仅此一人承担该岗位</span>
+                      <span className="text-xs text-danger">{t("sheet.person.soleOwnerWarning")}</span>
                     )}
                     {teammates.map((t) => (
                       <span
@@ -540,9 +551,9 @@ export function PersonDetailSheet({
           </Module>
 
           {role && (
-            <Module title="技能对照（岗位要求 vs 已评估）">
+            <Module title={t("sheet.person.skillMatchTitle")}>
               {skillMatch.length === 0 ? (
-                <p className="text-sm text-muted-foreground">该岗位尚未定义技能要求。</p>
+                <p className="text-sm text-muted-foreground">{t("sheet.person.noSkillRequirements")}</p>
               ) : (
                 <ul className="space-y-2">
                   {skillMatch.map((s) => (
@@ -552,9 +563,9 @@ export function PersonDetailSheet({
                     >
                       <span className="text-sm">{s.skill}</span>
                       <span className="flex items-center gap-2 text-xs">
-                        <span className="text-muted-foreground">要求 {s.required}</span>
+                        <span className="text-muted-foreground">{t("sheet.person.required").replace("{level}", s.required)}</span>
                         <span className={s.ok ? "text-ok" : "text-warn"}>
-                          实际 {s.actual ?? "未评估"}
+                          {t("sheet.person.actual").replace("{level}", s.actual ?? t("sheet.person.notAssessed"))}
                         </span>
                         {s.ok ? (
                           <Check className="size-4 text-ok" />
@@ -570,9 +581,9 @@ export function PersonDetailSheet({
           )}
 
           {role && (
-            <Module title="承载的组织能力">
+            <Module title={t("sheet.person.carriedCapabilities")}>
               {carried.length === 0 ? (
-                <p className="text-sm text-muted-foreground">暂无关联能力。</p>
+                <p className="text-sm text-muted-foreground">{t("sheet.person.noRelatedCapabilities")}</p>
               ) : (
                 <div className="flex flex-wrap gap-1.5">
                   {carried.map((c) => (
@@ -583,26 +594,26 @@ export function PersonDetailSheet({
                           ? "border-danger/50 bg-danger/10 text-danger"
                           : "border-border/70 text-foreground"
                       }`}
-                      title={c.sole ? "组织内仅此一人承载（单点风险）" : undefined}
+                      title={c.sole ? t("sheet.person.solePointTitle") : undefined}
                     >
                       {c.label}
-                      {c.sole ? " · 单点" : ""}
+                      {c.sole ? t("sheet.person.solePointTag") : ""}
                     </span>
                   ))}
                 </div>
               )}
               <p className="mt-3 text-xs text-muted-foreground">
-                红色标记表示组织内仅此一人承载，该人员离开会直接造成能力空白。
+                {t("sheet.person.solePointFootnote")}
               </p>
             </Module>
           )}
 
-          <Module title="AI 人岗匹配记录">
+          <Module title={t("sheet.person.aiFitRecordsTitle")}>
             {fits.isLoading ? (
-              <p className="text-sm text-muted-foreground">加载中…</p>
+              <p className="text-sm text-muted-foreground">{t("sheet.loading")}</p>
             ) : (fits.data ?? []).length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                暂无匹配记录，可在岗位画像里运行「AI 人岗匹配分析」。
+                {t("sheet.person.noFitRecords")}
               </p>
             ) : (
               <ul className="space-y-2">
@@ -618,7 +629,7 @@ export function PersonDetailSheet({
                           className="text-left font-display text-sm font-semibold hover:text-brand"
                           onClick={() => r && onOpenRole?.(r.id)}
                         >
-                          {r?.title ?? "已删除岗位"}
+                          {r?.title ?? t("sheet.person.deletedRole")}
                         </button>
                         <span className="font-display text-sm tabular-nums text-brand">
                           {f.fit_score}
@@ -628,7 +639,7 @@ export function PersonDetailSheet({
                         <p className="mt-1 text-xs text-muted-foreground">{f.summary}</p>
                       )}
                       {f.recommendation && (
-                        <p className="mt-1 text-xs text-foreground/80">建议：{f.recommendation}</p>
+                        <p className="mt-1 text-xs text-foreground/80">{t("sheet.person.recommendationLabel").replace("{text}", f.recommendation)}</p>
                       )}
                     </li>
                   );
@@ -638,7 +649,7 @@ export function PersonDetailSheet({
           </Module>
 
           {(person.prior_experience ?? []).length > 0 && (
-            <Module title="过往经验">
+            <Module title={t("sheet.person.priorExperienceTitle")}>
               <ul className="space-y-1.5 text-sm text-foreground/85">
                 {(person.prior_experience ?? []).map((e) => (
                   <li key={e}>· {e}</li>
@@ -648,7 +659,7 @@ export function PersonDetailSheet({
           )}
 
           {person.note && (
-            <Module title="备注">
+            <Module title={t("sheet.person.noteTitle")}>
               <p className="text-sm text-foreground/85">{person.note}</p>
             </Module>
           )}

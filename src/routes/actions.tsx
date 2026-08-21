@@ -6,6 +6,7 @@ import { CalendarDays, CircleDot, Plus, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { StatTile } from "@/components/StatTile";
+import { useI18n } from "@/lib/i18n";
 import { fetchWorkspace } from "@/lib/talent";
 import { fetchOrgNodes } from "@/lib/org-tree";
 import {
@@ -75,6 +76,7 @@ function ActionsPage() {
 }
 
 function ActionsBoard() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const { data: actions } = useQuery({ queryKey: ["actions"], queryFn: fetchActions });
   const { data: ws } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
@@ -132,17 +134,17 @@ function ActionsBoard() {
 
       <section className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex gap-1.5">
-          {(["open", "done", "all"] as const).map((t) => (
+          {(["open", "done", "all"] as const).map((tabKey) => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
+              key={tabKey}
+              onClick={() => setTab(tabKey)}
               className={`rounded-full border px-3 py-1 text-xs transition-colors ${
-                tab === t
+                tab === tabKey
                   ? "border-brand bg-brand/15 text-foreground"
                   : "border-border text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t === "open" ? "进行中" : t === "done" ? "已完成" : "全部"}
+              {t(tabKey === "open" ? "act.tab.open" : tabKey === "done" ? "act.tab.done" : "act.tab.all")}
             </button>
           ))}
         </div>
@@ -162,7 +164,7 @@ function ActionsBoard() {
                 className={`mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border transition-colors ${
                   done ? "border-ok bg-ok/20 text-ok" : "border-border hover:border-brand"
                 }`}
-                aria-label={done ? "标记为未完成" : "标记为已完成"}
+                aria-label={done ? t("act.markUndone") : t("act.markDone")}
               >
                 {done && <CircleDot className="size-3" />}
               </button>
@@ -176,7 +178,7 @@ function ActionsBoard() {
                 )}
                 <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
                   <span className="rounded bg-muted/40 px-1.5 py-0.5">
-                    {sourceLabel[a.source_kind] ?? a.source_kind}
+                    {t(`act.source.${a.source_kind}`) !== `act.source.${a.source_kind}` ? t(`act.source.${a.source_kind}`) : a.source_kind}
                   </span>
                   <span
                     className={
@@ -187,14 +189,14 @@ function ActionsBoard() {
                           : "text-warn"
                     }
                   >
-                    优先级 {priorityLabel[a.priority] ?? a.priority}
+                    {t("act.priorityPrefix")} {t(`act.priority.${a.priority}`) !== `act.priority.${a.priority}` ? t(`act.priority.${a.priority}`) : a.priority}
                   </span>
-                  {a.owner && <span>负责人：{a.owner}</span>}
+                  {a.owner && <span>{t("act.ownerPrefix")}{a.owner}</span>}
                   {a.due_on && (
                     <span className={`inline-flex items-center gap-1 ${over ? "text-danger" : ""}`}>
                       <CalendarDays className="size-3" />
                       {a.due_on}
-                      {over && " · 已逾期"}
+                      {over && ` · ${t("act.overdueSuffix")}`}
                     </span>
                   )}
                   {context(a).map((c) => (
@@ -213,17 +215,17 @@ function ActionsBoard() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="todo">{statusLabel["todo"]}</SelectItem>
-                      <SelectItem value="doing">{statusLabel["doing"]}</SelectItem>
-                      <SelectItem value="done">{statusLabel["done"]}</SelectItem>
-                      <SelectItem value="cancelled">{statusLabel["cancelled"]}</SelectItem>
+                      <SelectItem value="todo">{t("act.status.todo")}</SelectItem>
+                      <SelectItem value="doing">{t("act.status.doing")}</SelectItem>
+                      <SelectItem value="done">{t("act.status.done")}</SelectItem>
+                      <SelectItem value="cancelled">{t("act.status.cancelled")}</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
                 <ConfirmAction
-                  title="确认删除这条待办？"
-                  description={<p>删除后无法恢复，跟进记录也会一并消失。</p>}
-                  confirmLabel="确认删除"
+                  title={t("act.delete.confirmTitle")}
+                  description={<p>{t("act.delete.desc")}</p>}
+                  confirmLabel={t("act.delete.confirmLabel")}
                   onConfirm={() => remove.mutate(a.id)}
                 >
                   <Button variant="ghost" size="sm" className="text-muted-foreground">
@@ -237,7 +239,7 @@ function ActionsBoard() {
 
         {shown.length === 0 && (
           <p className="px-5 py-10 text-center text-sm text-muted-foreground">
-            这里还没有事项。去「组织能力视图」或「组织 &amp; 人员视图」里，把分析结论转成待办。
+            {t("act.empty")}
           </p>
         )}
       </section>
@@ -246,6 +248,7 @@ function ActionsBoard() {
 }
 
 function NewActionDialog({ onDone }: { onDone: () => void }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     title: "",
@@ -267,7 +270,7 @@ function NewActionDialog({ onDone }: { onDone: () => void }) {
         priority: form.priority,
       }),
     onSuccess: () => {
-      toast.success("已新增待办");
+      toast.success(t("act.toast.added"));
       setOpen(false);
       setForm({ title: "", detail: "", owner: "", due_on: inDays(30), priority: "normal" });
       onDone();
@@ -279,20 +282,20 @@ function NewActionDialog({ onDone }: { onDone: () => void }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm" className="gap-1.5">
-          <Plus className="size-4" /> 新增待办
+          <Plus className="size-4" /> {t("act.add")}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>新增待办</DialogTitle>
+          <DialogTitle>{t("act.dialog.title")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>事项</Label>
+            <Label>{t("act.field.title")}</Label>
             <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
           </div>
           <div className="space-y-2">
-            <Label>背景说明</Label>
+            <Label>{t("act.field.detail")}</Label>
             <Textarea
               rows={3}
               value={form.detail}
@@ -301,11 +304,11 @@ function NewActionDialog({ onDone }: { onDone: () => void }) {
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
-              <Label>负责人</Label>
+              <Label>{t("act.field.owner")}</Label>
               <Input value={form.owner} onChange={(e) => setForm({ ...form, owner: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>截止日期</Label>
+              <Label>{t("act.field.dueDate")}</Label>
               <Input
                 type="date"
                 value={form.due_on}
@@ -313,16 +316,16 @@ function NewActionDialog({ onDone }: { onDone: () => void }) {
               />
             </div>
             <div className="space-y-2">
-              <Label>优先级</Label>
+              <Label>{t("act.field.priority")}</Label>
               <Select
                 value={form.priority}
                 onValueChange={(v) => setForm({ ...form, priority: v as ActionPriority })}
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="high">高</SelectItem>
-                  <SelectItem value="normal">中</SelectItem>
-                  <SelectItem value="low">低</SelectItem>
+                  <SelectItem value="high">{t("act.priority.high")}</SelectItem>
+                  <SelectItem value="normal">{t("act.priority.normal")}</SelectItem>
+                  <SelectItem value="low">{t("act.priority.low")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -330,7 +333,7 @@ function NewActionDialog({ onDone }: { onDone: () => void }) {
         </div>
         <DialogFooter>
           <Button onClick={() => create.mutate()} disabled={!form.title.trim() || create.isPending}>
-            保存
+            {t("act.save")}
           </Button>
         </DialogFooter>
       </DialogContent>

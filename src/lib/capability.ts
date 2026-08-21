@@ -78,8 +78,8 @@ export type Capability = {
   vacantRoleIds: string[];
   /** 重要度权重，用于排序与折叠低信号条目 */
   priority: number;
-  /** 下一步建议 */
-  suggestion: string;
+  /** 下一步建议的稳定 key，供 UI 层查表翻译 */
+  suggestionKey: "vacancy" | "blank" | "single" | "thin" | "depthGap" | "default";
 };
 
 type Bucket = {
@@ -215,18 +215,18 @@ export function buildCapabilities(roles: Role[], people: Person[]): Capability[]
       const priority =
         critWeight * 3 + statusWeight * 2 + b.requiredRank + Math.min(b.roles.length, 3);
 
-      const suggestion =
+      const suggestionKey: Capability["suggestionKey"] =
         rootCause === "vacancy"
-          ? "招到人即可解决，跟进招聘"
+          ? "vacancy"
           : status === "blank"
-            ? "现有人员没有这项能力：安排培训或外部引入"
+            ? "blank"
             : status === "single"
-              ? "指定第二承载人，并安排一次内部技术分享"
+              ? "single"
               : status === "thin"
-                ? "补充编制或交叉培养"
+                ? "thin"
                 : depthGap
-                  ? "深度不足：需要专家级培养或引进"
-                  : "保持现状，定期复核";
+                  ? "depthGap"
+                  : "default";
 
       return {
         key: b.key,
@@ -245,7 +245,7 @@ export function buildCapabilities(roles: Role[], people: Person[]): Capability[]
         rootCause,
         vacantRoleIds: vacantRoles.map((r) => r.id),
         priority,
-        suggestion,
+        suggestionKey,
       };
     })
     .sort(

@@ -12,18 +12,17 @@ import { fetchWorkspace, criticalityLabel } from "@/lib/talent";
 import {
   buildCapabilities,
   capabilityHealth,
-  kindLabel,
   vacancyClusters,
   type Capability,
 } from "@/lib/capability";
 import {
   activitiesForCapability,
-  activityKindLabel,
   buildingStats,
   fetchOrgBuilding,
   type Activity,
   type Participant,
 } from "@/lib/org-building";
+import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchOrgNodes, peopleInSubtree } from "@/lib/org-tree";
@@ -53,17 +52,16 @@ export const Route = createFileRoute("/capability")({
 });
 
 function CapabilityPage() {
+  const { t } = useI18n();
   return (
-    <AppShell
-      title="组织能力视图"
-      subtitle="两件事：我们的岗位要求的能力有没有人扛得起来，以及我们为建设这支队伍做了什么。"
-    >
+    <AppShell title={t("cap.title")} subtitle={t("cap.subtitle")}>
       <CapabilityBody />
     </AppShell>
   );
 }
 
 function CapabilityBody() {
+  const { t } = useI18n();
   const { data } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
   const { data: building } = useQuery({ queryKey: ["org-building"], queryFn: fetchOrgBuilding });
   const { data: nodes } = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
@@ -73,7 +71,7 @@ function CapabilityBody() {
   const setScope = (v: string) =>
     navigate({ search: { scope: v === "__all__" ? undefined : v }, replace: true });
 
-  if (!data) return <div className="text-sm text-muted-foreground">加载中…</div>;
+  if (!data) return <div className="text-sm text-muted-foreground">{t("cap.loading")}</div>;
 
   const allNodes = nodes ?? [];
   const scopedPeople =
@@ -87,7 +85,7 @@ function CapabilityBody() {
           people: scopedPeople,
           roles: data.roles.filter((r) => scopedRoleIds.has(r.id)),
         };
-  const scopeName = allNodes.find((n) => n.id === scope)?.name ?? "全组织";
+  const scopeName = allNodes.find((n) => n.id === scope)?.name ?? t("cap.scopeAll");
 
   const scopedPersonIds = new Set(scopedPeople.map((p) => p.id));
   const scopedBuilding = (() => {
@@ -105,13 +103,13 @@ function CapabilityBody() {
     <Tabs defaultValue="health" className="space-y-8">
       <div className="flex flex-wrap items-center gap-3">
         <TabsList>
-          <TabsTrigger value="health">能力体检</TabsTrigger>
-          <TabsTrigger value="building">组织建设</TabsTrigger>
-          <TabsTrigger value="trend">趋势</TabsTrigger>
+          <TabsTrigger value="health">{t("cap.tab.health")}</TabsTrigger>
+          <TabsTrigger value="building">{t("cap.tab.building")}</TabsTrigger>
+          <TabsTrigger value="trend">{t("cap.tab.trend")}</TabsTrigger>
         </TabsList>
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="mr-1 text-xs text-muted-foreground">范围</span>
-          {[{ id: "__all__", name: "全组织", type: "" }, ...allNodes].map((n) => {
+          <span className="mr-1 text-xs text-muted-foreground">{t("cap.scopeLabel")}</span>
+          {[{ id: "__all__", name: t("cap.scopeAll"), type: "" }, ...allNodes].map((n) => {
             const active = scope === n.id;
             return (
               <button
@@ -132,7 +130,7 @@ function CapabilityBody() {
       </div>
       {scope !== "__all__" && (
         <p className="-mt-4 text-xs text-muted-foreground">
-          仅统计 <b className="text-foreground">{scopeName}</b> 及其下级团队在岗人员所承担的岗位
+          {t("cap.scopeNotePrefix")} <b className="text-foreground">{scopeName}</b> {t("cap.scopeNoteSuffix")}
         </p>
       )}
       <TabsContent value="health">
@@ -153,6 +151,7 @@ function CapabilityBody() {
 type Workspace = NonNullable<Awaited<ReturnType<typeof fetchWorkspace>>>;
 
 function HealthPanel({ data, activities }: { data: Workspace; activities: Activity[] }) {
+  const { t } = useI18n();
   const [dirId, setDirId] = useState<string | null>(null);
   const caps = useMemo(() => buildCapabilities(data.roles, data.people), [data]);
 
@@ -173,13 +172,13 @@ function HealthPanel({ data, activities }: { data: Workspace; activities: Activi
   return (
     <div className="space-y-8">
       <section className="panel p-6 md:p-8">
-        <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">体检结论</p>
+        <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{t("cap.health.title")}</p>
         <p className="mt-3 max-w-3xl font-display text-xl leading-relaxed md:text-2xl">
-          {active?.title ?? "本方向"}的岗位共要求 <Num n={health.total} tone="brand" /> 项能力。其中{" "}
-          <Num n={health.vacancyDriven} tone="muted" /> 项是
-          <strong className="text-foreground">岗位还没招到人</strong>造成的（招到人就解决）；真正需要
-          现有团队补的是 <Num n={gaps.length + singles.length + thins.length} tone="warn" /> 项；已经
-          站稳 <Num n={covered.length} tone="ok" /> 项。
+          {active?.title ?? t("cap.health.defaultDirection")}{t("cap.health.summary1")} <Num n={health.total} tone="brand" /> {t("cap.health.summary2")}{" "}
+          <Num n={health.vacancyDriven} tone="muted" /> {t("cap.health.summary3")}
+          <strong className="text-foreground">{t("cap.health.summaryStrong")}</strong>{t("cap.health.summary4")}{" "}
+          <Num n={gaps.length + singles.length + thins.length} tone="warn" /> {t("cap.health.summary5")}{" "}
+          <Num n={covered.length} tone="ok" /> {t("cap.health.summary6")}
         </p>
 
         <div className="mt-6 h-3 w-full overflow-hidden rounded-full bg-muted/30">
@@ -191,10 +190,10 @@ function HealthPanel({ data, activities }: { data: Workspace; activities: Activi
           </div>
         </div>
         <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground">
-          <Legend className="bg-muted-foreground/50" label={`等招聘 ${health.vacancyDriven}`} />
-          <Legend className="bg-danger" label={`人在能力不在 ${gaps.length}`} />
-          <Legend className="bg-warn" label={`人手不足 ${singles.length + thins.length}`} />
-          <Legend className="bg-ok" label={`已覆盖 ${covered.length}`} />
+          <Legend className="bg-muted-foreground/50" label={`${t("cap.legend.vacancy")} ${health.vacancyDriven}`} />
+          <Legend className="bg-danger" label={`${t("cap.legend.gap")} ${gaps.length}`} />
+          <Legend className="bg-warn" label={`${t("cap.legend.short")} ${singles.length + thins.length}`} />
+          <Legend className="bg-ok" label={`${t("cap.legend.covered")} ${covered.length}`} />
         </div>
       </section>
 
@@ -218,7 +217,7 @@ function HealthPanel({ data, activities }: { data: Workspace; activities: Activi
               >
                 <span className="block font-medium">{d.title}</span>
                 <span className="mt-0.5 block text-xs text-muted-foreground">
-                  {list.length} 项能力 · {risky} 项要现有团队补
+                  {list.length} {t("cap.dir.capCount")} · {risky} {t("cap.dir.needCover")}
                 </span>
               </button>
             );
@@ -229,10 +228,8 @@ function HealthPanel({ data, activities }: { data: Workspace; activities: Activi
         {clusters.length > 0 && (
           <div className="panel overflow-hidden">
             <div className="border-b border-border/50 px-5 py-4">
-              <h3 className="font-display text-base font-semibold">因为岗位还没到岗</h3>
-              <p className="mt-1 text-xs text-muted-foreground">
-                这些能力目前挂在空缺岗位上，是同一个原因造成的，不必逐条焦虑——推进招聘即可。
-              </p>
+              <h3 className="font-display text-base font-semibold">{t("cap.vacancy.title")}</h3>
+              <p className="mt-1 text-xs text-muted-foreground">{t("cap.vacancy.desc")}</p>
             </div>
             <ul className="divide-y divide-border/40">
               {clusters.map((c) => (
@@ -250,39 +247,40 @@ function HealthPanel({ data, activities }: { data: Workspace; activities: Activi
 
         {/* 根因二：人在但能力不在 */}
         <Group
-          title="人在，但这项能力没人扛"
-          desc="岗位上有人，却没有人被评估具备这项能力——这是培养或引进要解决的"
+          title={t("cap.group.gapTitle")}
+          desc={t("cap.group.gapDesc")}
           tone="text-danger"
           list={gaps}
           activities={activities}
         />
         <Group
-          title="只靠 1 人"
-          desc="他一走，这项能力就断了"
+          title={t("cap.group.singleTitle")}
+          desc={t("cap.group.singleDesc")}
           tone="text-warn"
           list={singles}
           activities={activities}
         />
         <Group
-          title="人手偏少"
-          desc="有人承载，但少于岗位编制需求"
+          title={t("cap.group.thinTitle")}
+          desc={t("cap.group.thinDesc")}
           tone="text-warn"
           list={thins}
           activities={activities}
         />
-        <Collapsed title={`已覆盖 ${covered.length} 项`} list={covered} activities={activities} />
+        <Collapsed
+          title={`${t("cap.group.coveredLabel")} ${covered.length} ${t("cap.group.items")}`}
+          list={covered}
+          activities={activities}
+        />
 
         {dirCaps.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            这个方向的岗位还没有填写画像信息，先去「战略岗位视图」补齐或用 AI 生成。
-          </p>
+          <p className="text-sm text-muted-foreground">{t("cap.group.noProfile")}</p>
         )}
       </section>
 
       <p className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
         <Info className="mt-0.5 size-3.5 shrink-0" />
-        能力项由岗位画像自动汇总（近义写法已合并），承载人来自任岗关系；「近期有建设」来自组织建设里
-        记录的技术分享 / 培训 / 复盘 / 跨团队交流。岗位画像一改，这里就跟着变。
+        {t("cap.footer.info")}
       </p>
     </div>
   );
@@ -299,6 +297,7 @@ function VacancyRow({
   caps: Capability[];
   roleId: string;
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   return (
     <li className="px-5 py-4">
@@ -307,11 +306,11 @@ function VacancyRow({
         className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 text-left"
       >
         <UserPlus className="size-4 text-muted-foreground" />
-        <span className="text-sm font-medium">岗位「{title}」尚未到岗</span>
+        <span className="text-sm font-medium">{t("cap.vacancyRow.prefix")}{title}{t("cap.vacancyRow.suffix")}</span>
         <span className="rounded bg-muted/40 px-1.5 py-0.5 text-[10px] text-muted-foreground">
           {criticalityLabel[crit] ?? crit}
         </span>
-        <span className="text-xs text-muted-foreground">影响 {caps.length} 项能力</span>
+        <span className="text-xs text-muted-foreground">{t("cap.vacancyRow.impactPrefix")} {caps.length} {t("cap.vacancyRow.impactSuffix")}</span>
         <ChevronDown
           className={`ml-auto size-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
         />
@@ -321,10 +320,10 @@ function VacancyRow({
           sourceKind="vacancy"
           sourceKey={`vacancy:${roleId}`}
           roleId={roleId}
-          defaultTitle={`推进「${title}」岗位招聘`}
-          defaultDetail={`该岗位空缺影响 ${caps.length} 项能力：${caps.map((c) => c.label).join("、")}`}
+          defaultTitle={`${t("cap.vacancyRow.actionTitlePrefix")}${title}${t("cap.vacancyRow.actionTitleSuffix")}`}
+          defaultDetail={`${t("cap.vacancyRow.detailPrefix")} ${caps.length} ${t("cap.vacancyRow.detailMid")}${caps.map((c) => c.label).join("、")}`}
           defaultPriority="high"
-          label="转为招聘待办"
+          label={t("cap.vacancyRow.actionLabel")}
         />
       </div>
       {open && (
@@ -356,6 +355,7 @@ function Group({
   list: Capability[];
   activities: Activity[];
 }) {
+  const { t } = useI18n();
   const [showAll, setShowAll] = useState(false);
   if (!list.length) return null;
   const visible = showAll ? list : list.slice(0, 6);
@@ -365,7 +365,7 @@ function Group({
         <span className={`size-2 rounded-full ${tone.replace("text-", "bg-")}`} />
         <h3 className={`font-display text-base font-semibold ${tone}`}>{title}</h3>
         <span className="font-display text-sm tabular-nums text-muted-foreground">
-          {list.length} 项
+          {list.length} {t("cap.group.items")}
         </span>
         <p className="w-full text-xs text-muted-foreground sm:w-auto">{desc}</p>
       </div>
@@ -379,7 +379,7 @@ function Group({
           onClick={() => setShowAll((v) => !v)}
           className="w-full border-t border-border/40 px-5 py-2.5 text-xs text-muted-foreground hover:text-foreground"
         >
-          {showAll ? "收起" : `展开其余 ${list.length - 6} 项（重要度较低）`}
+          {showAll ? t("cap.group.collapse") : `${t("cap.group.expandPrefix")} ${list.length - 6} ${t("cap.group.expandSuffix")}`}
         </button>
       )}
     </div>
@@ -421,44 +421,46 @@ function Collapsed({
 }
 
 function CapRow({ cap, activities }: { cap: Capability; activities: Activity[] }) {
+  const { t } = useI18n();
   const built = activitiesForCapability(activities, cap.label);
+  const suggestion = t(`cap.suggestion.${cap.suggestionKey}`);
   return (
     <li className="space-y-1.5 px-5 py-3 text-sm">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className="font-medium">{cap.label}</span>
         <span className="rounded bg-muted/40 px-1.5 py-0.5 text-[10px] text-muted-foreground">
-          {kindLabel[cap.kind]}
+          {t(`cap.kind.${cap.kind}`)}
         </span>
         {cap.aliases.length > 0 && (
           <span className="text-[10px] text-muted-foreground">
-            已合并：{cap.aliases.join("、")}
+            {t("cap.caprow.merged")}{cap.aliases.join("、")}
           </span>
         )}
         {built.length > 0 && (
           <span className="rounded bg-ok/15 px-1.5 py-0.5 text-[10px] text-ok">
-            近期有建设 · {built.length} 次
+            {t("cap.caprow.built")} · {built.length} {t("cap.caprow.times")}
           </span>
         )}
         <span className="ml-auto text-xs text-muted-foreground">
           {cap.carriers.length
             ? cap.carriers.map((c) => c.person.name).join("、")
-            : "暂无人选"}
+            : t("cap.caprow.noCarrier")}
         </span>
       </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-        <span>来自 {cap.roleTitles.join(" / ")}</span>
-        <span className="text-brand">下一步：{cap.suggestion}</span>
+        <span>{t("cap.caprow.from")} {cap.roleTitles.join(" / ")}</span>
+        <span className="text-brand">{t("cap.caprow.nextStep")}{suggestion}</span>
         {cap.status !== "covered" && (
           <AddActionButton
             sourceKind="capability"
             sourceKey={`capability:${cap.key}`}
             roleId={cap.roleIds[0] ?? null}
-            defaultTitle={`${cap.label}：${cap.suggestion}`}
-            defaultDetail={`能力「${cap.label}」当前状态：${
-              cap.status === "blank" ? "无人承载" : cap.status === "single" ? "只靠 1 人" : "人手偏少"
-            }。来自岗位 ${cap.roleTitles.join(" / ")}；现有承载人：${
-              cap.carriers.map((c) => c.person.name).join("、") || "无"
-            }。`}
+            defaultTitle={`${cap.label}：${suggestion}`}
+            defaultDetail={`${t("cap.caprow.detail1")}${cap.label}${t("cap.caprow.detail2")}${
+              cap.status === "blank" ? t("cap.status.blank") : cap.status === "single" ? t("cap.group.singleTitle") : t("cap.group.thinTitle")
+            }${t("cap.caprow.detail3")} ${cap.roleTitles.join(" / ")}${t("cap.caprow.detail4")}${
+              cap.carriers.map((c) => c.person.name).join("、") || t("cap.common.none")
+            }${t("cap.caprow.detail5")}`}
             defaultPriority={cap.status === "blank" ? "high" : "normal"}
           />
         )}
@@ -477,6 +479,7 @@ function BuildingPanel({
   building: { activities: Activity[]; participants: Participant[] } | null;
 }) {
   const qc = useQueryClient();
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Activity | null>(null);
 
@@ -496,7 +499,7 @@ function BuildingPanel({
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("已删除活动记录");
+      toast.success(t("cap.records.deleteToast"));
       qc.invalidateQueries({ queryKey: ["org-building"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -507,21 +510,21 @@ function BuildingPanel({
   return (
     <div className="space-y-8">
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Tile label="近 90 天活动" value={stats.recentCount} unit="场" />
-        <Tile label="参与覆盖率" value={stats.participationRate} unit="%" />
-        <Tile label="人均参与" value={stats.perPersonAvg} unit="次" />
-        <Tile label="90 天未参与" value={stats.dormant.length} unit="人" tone={stats.dormant.length ? "warn" : "ok"} />
+        <Tile label={t("cap.tile.recentActivities")} value={stats.recentCount} unit={t("cap.unit.session")} />
+        <Tile label={t("cap.tile.participation")} value={stats.participationRate} unit={t("cap.unit.percent")} />
+        <Tile label={t("cap.tile.avgParticipation")} value={stats.perPersonAvg} unit={t("cap.unit.times")} />
+        <Tile label={t("cap.tile.dormant")} value={stats.dormant.length} unit={t("cap.unit.people")} tone={stats.dormant.length ? "warn" : "ok"} />
       </section>
 
       <section className="grid gap-6 lg:grid-cols-3">
         <div className="panel p-5 lg:col-span-2">
-          <h3 className="font-display text-base font-semibold">活动结构</h3>
+          <h3 className="font-display text-base font-semibold">{t("cap.structure.title")}</h3>
           <p className="mt-1 text-xs text-muted-foreground">
-            氛围类（团建）和能力类（分享 / 培训）都需要，只有一种说明组织建设是偏的。
+            {t("cap.structure.desc")}
           </p>
           <div className="mt-4 space-y-2">
             {stats.byKind.length === 0 && (
-              <p className="text-sm text-muted-foreground">近 90 天还没有活动记录。</p>
+              <p className="text-sm text-muted-foreground">{t("cap.structure.empty")}</p>
             )}
             {stats.byKind.map((k) => (
               <div key={k.kind} className="flex items-center gap-3 text-sm">
@@ -540,23 +543,23 @@ function BuildingPanel({
 
         <div className="panel space-y-4 p-5">
           <div>
-            <h3 className="font-display text-base font-semibold">氛围信号</h3>
-            <p className="mt-1 text-xs text-muted-foreground">谁在参与，谁被落下了。</p>
+            <h3 className="font-display text-base font-semibold">{t("cap.vibe.title")}</h3>
+            <p className="mt-1 text-xs text-muted-foreground">{t("cap.vibe.desc")}</p>
           </div>
           <div className="space-y-1 text-sm">
             {stats.topPeople.map(({ person, count }) => (
               <div key={person.id} className="flex justify-between">
                 <span>{person.name}</span>
-                <span className="tabular-nums text-muted-foreground">{count} 次</span>
+                <span className="tabular-nums text-muted-foreground">{count} {t("cap.unit.times")}</span>
               </div>
             ))}
             {stats.topPeople.length === 0 && (
-              <p className="text-xs text-muted-foreground">暂无参与记录。</p>
+              <p className="text-xs text-muted-foreground">{t("cap.vibe.empty")}</p>
             )}
           </div>
           {stats.dormant.length > 0 && (
             <div className="rounded-lg border border-warn/40 bg-warn/10 p-3 text-xs">
-              <p className="font-medium text-warn">90 天内没参加过任何活动</p>
+              <p className="font-medium text-warn">{t("cap.vibe.dormantTitle")}</p>
               <p className="mt-1 text-muted-foreground">
                 {stats.dormant.map((p) => p.name).join("、")}
               </p>
@@ -567,9 +570,9 @@ function BuildingPanel({
 
       {singleRisk.length > 0 && (
         <section className="panel p-5">
-          <h3 className="font-display text-base font-semibold">建议安排的建设动作</h3>
+          <h3 className="font-display text-base font-semibold">{t("cap.suggestBuild.title")}</h3>
           <p className="mt-1 text-xs text-muted-foreground">
-            以下能力目前只靠 1 个人，安排一次内部分享是成本最低的扩散方式。
+            {t("cap.suggestBuild.desc")}
           </p>
           <div className="mt-4 space-y-2">
             {singleRisk.map((c) => (
@@ -579,7 +582,7 @@ function BuildingPanel({
               >
                 <span className="font-medium">{c.label}</span>
                 <span className="text-xs text-muted-foreground">
-                  仅 {c.carriers.map((x) => x.person.name).join("、")} 承载
+                  {t("cap.suggestBuild.carriedPrefix")} {c.carriers.map((x) => x.person.name).join("、")} {t("cap.suggestBuild.carriedSuffix")}
                 </span>
                 <Button
                   size="sm"
@@ -591,7 +594,7 @@ function BuildingPanel({
                   }}
                 >
                   <Plus className="size-3.5" />
-                  安排分享
+                  {t("cap.suggestBuild.action")}
                 </Button>
               </div>
             ))}
@@ -602,7 +605,7 @@ function BuildingPanel({
       <section className="panel overflow-hidden">
         <div className="flex flex-wrap items-center gap-3 border-b border-border/50 px-5 py-4">
           <CalendarDays className="size-4 text-muted-foreground" />
-          <h3 className="font-display text-base font-semibold">活动记录</h3>
+          <h3 className="font-display text-base font-semibold">{t("cap.records.title")}</h3>
           <Button
             size="sm"
             className="ml-auto gap-1.5"
@@ -612,13 +615,13 @@ function BuildingPanel({
             }}
           >
             <Plus className="size-4" />
-            记录活动
+            {t("cap.records.add")}
           </Button>
         </div>
         <ul className="divide-y divide-border/40">
           {activities.length === 0 && (
             <li className="px-5 py-8 text-center text-sm text-muted-foreground">
-              还没有记录。把团建、技术分享、例会、培训记下来，组织建设才看得见。
+              {t("cap.records.empty")}
             </li>
           )}
           {activities.map((a) => {
@@ -630,7 +633,7 @@ function BuildingPanel({
               <li key={a.id} className="space-y-1.5 px-5 py-4 text-sm">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                   <span className="rounded bg-brand/15 px-1.5 py-0.5 text-[10px] text-brand">
-                    {activityKindLabel[a.kind] ?? a.kind}
+                    {t(`cap.activityKind.${a.kind}`)}
                   </span>
                   <span className="font-medium">{a.title}</span>
                   <span className="text-xs tabular-nums text-muted-foreground">{a.happened_on}</span>
@@ -647,9 +650,9 @@ function BuildingPanel({
                       <Pencil className="size-3.5" />
                     </Button>
                     <ConfirmAction
-                      title="删除这条活动记录？"
-                      description="删除后，这场活动的参与人记录也会一并移除，且无法恢复。"
-                      confirmLabel="确认删除"
+                      title={t("cap.records.deleteTitle")}
+                      description={t("cap.records.deleteDesc")}
+                      confirmLabel={t("cap.records.deleteConfirm")}
                       onConfirm={() => remove.mutate(a.id)}
                     >
                       <Button size="icon" variant="ghost" className="size-8 text-danger">
@@ -659,15 +662,15 @@ function BuildingPanel({
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                  {a.host && <span>组织者 {a.host}</span>}
-                  {a.duration_minutes && <span>{a.duration_minutes} 分钟</span>}
-                  {joined.length > 0 && <span>参与 {joined.length} 人：{joined.join("、")}</span>}
+                  {a.host && <span>{t("cap.records.hostPrefix")} {a.host}</span>}
+                  {a.duration_minutes && <span>{a.duration_minutes} {t("cap.unit.minutes")}</span>}
+                  {joined.length > 0 && <span>{t("cap.records.joinedPrefix")} {joined.length} {t("cap.records.joinedMid")}{joined.join("、")}</span>}
                   {(a.capability_tags ?? []).length > 0 && (
-                    <span className="text-ok">能力：{a.capability_tags.join("、")}</span>
+                    <span className="text-ok">{t("cap.records.capabilitiesPrefix")}{a.capability_tags.join("、")}</span>
                   )}
                   {a.link && (
                     <a href={a.link} target="_blank" rel="noreferrer" className="text-brand underline">
-                      纪要
+                      {t("cap.records.notes")}
                     </a>
                   )}
                 </div>
@@ -747,6 +750,7 @@ function Legend({ className, label }: { className: string; label: string }) {
 /* ----------------------------------- 趋势 ---------------------------------- */
 
 function TrendPanel({ data, activities }: { data: Workspace; activities: Activity[] }) {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const { data: snaps } = useQuery({ queryKey: ["snapshots"], queryFn: fetchSnapshots });
 
@@ -771,7 +775,7 @@ function TrendPanel({ data, activities }: { data: Workspace; activities: Activit
         activities_90d: acts90,
       }),
     onSuccess: () => {
-      toast.success("已记录本期快照");
+      toast.success(t("cap.trend.saveToast"));
       qc.invalidateQueries({ queryKey: ["snapshots"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -786,36 +790,35 @@ function TrendPanel({ data, activities }: { data: Workspace; activities: Activit
       <section className="panel p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h3 className="font-display text-base font-semibold">组织能力趋势</h3>
+            <h3 className="font-display text-base font-semibold">{t("cap.trend.title")}</h3>
             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
-              系统里的数据都是「当前快照」。每周（或每次盘点后）记一次，就能看到覆盖率、在岗人数与建设
-              活动的变化曲线。
+              {t("cap.trend.desc")}
             </p>
           </div>
           <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending}>
-            <Plus className="size-4" /> 记录本期快照
+            <Plus className="size-4" /> {t("cap.trend.save")}
           </Button>
         </div>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-4">
-          <TrendTile label="能力覆盖率" value={`${health.coverageRate}%`} delta={first ? health.coverageRate - first.coverage_rate : null} unit="%" />
-          <TrendTile label="在岗人数" value={String(onboard)} delta={first ? onboard - first.onboard_people : null} />
-          <TrendTile label="无人承载" value={String(health.blank)} delta={first ? health.blank - first.blank_caps : null} invert />
-          <TrendTile label="90 天活动" value={String(acts90)} delta={first ? acts90 - first.activities_90d : null} />
+          <TrendTile label={t("cap.trend.coverageRate")} value={`${health.coverageRate}%`} delta={first ? health.coverageRate - first.coverage_rate : null} unit="%" />
+          <TrendTile label={t("cap.trend.onboard")} value={String(onboard)} delta={first ? onboard - first.onboard_people : null} />
+          <TrendTile label={t("cap.trend.blank")} value={String(health.blank)} delta={first ? health.blank - first.blank_caps : null} invert />
+          <TrendTile label={t("cap.trend.activities90d")} value={String(acts90)} delta={first ? acts90 - first.activities_90d : null} />
         </div>
       </section>
 
       {list.length >= 2 ? (
         <section className="panel p-6">
-          <h3 className="font-display text-base font-semibold">覆盖率曲线</h3>
+          <h3 className="font-display text-base font-semibold">{t("cap.trend.curveTitle")}</h3>
           <Sparkline snaps={list} />
           <p className="mt-2 text-xs text-muted-foreground">
-            {first?.taken_on} → {last?.taken_on}，共 {list.length} 期
+            {first?.taken_on} → {last?.taken_on}{t("cap.trend.periodMid")}{list.length} {t("cap.trend.periodSuffix")}
           </p>
         </section>
       ) : (
         <p className="text-sm text-muted-foreground">
-          至少记录 2 期快照后，这里会显示趋势曲线。
+          {t("cap.trend.needTwo")}
         </p>
       )}
 
@@ -824,12 +827,12 @@ function TrendPanel({ data, activities }: { data: Workspace; activities: Activit
           <table className="w-full text-sm">
             <thead className="border-b border-border/50 text-left text-xs text-muted-foreground">
               <tr>
-                <th className="px-4 py-2.5 font-normal">日期</th>
-                <th className="px-4 py-2.5 font-normal">覆盖率</th>
-                <th className="px-4 py-2.5 font-normal">无人承载</th>
-                <th className="px-4 py-2.5 font-normal">只靠 1 人</th>
-                <th className="px-4 py-2.5 font-normal">在岗 / 编制</th>
-                <th className="px-4 py-2.5 font-normal">90 天活动</th>
+                <th className="px-4 py-2.5 font-normal">{t("cap.table.date")}</th>
+                <th className="px-4 py-2.5 font-normal">{t("cap.table.coverageRate")}</th>
+                <th className="px-4 py-2.5 font-normal">{t("cap.table.blank")}</th>
+                <th className="px-4 py-2.5 font-normal">{t("cap.table.single")}</th>
+                <th className="px-4 py-2.5 font-normal">{t("cap.table.onboardVsTarget")}</th>
+                <th className="px-4 py-2.5 font-normal">{t("cap.table.activities90d")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/40">
@@ -866,6 +869,7 @@ function TrendTile({
   unit?: string;
   invert?: boolean;
 }) {
+  const { t } = useI18n();
   const good = delta == null ? null : invert ? delta <= 0 : delta >= 0;
   return (
     <div className="rounded-lg border border-border/70 bg-surface-raised/60 px-4 py-3">
@@ -875,7 +879,7 @@ function TrendTile({
         <p className={`mt-0.5 text-xs tabular-nums ${good ? "text-ok" : "text-warn"}`}>
           {delta > 0 ? "+" : ""}
           {delta}
-          {unit} 自首期
+          {unit} {t("cap.trend.sinceFirst")}
         </p>
       )}
     </div>
@@ -883,6 +887,7 @@ function TrendTile({
 }
 
 function Sparkline({ snaps }: { snaps: Snapshot[] }) {
+  const { t } = useI18n();
   const w = 600;
   const h = 120;
   const pts = snaps.map((s, i) => {
@@ -891,7 +896,7 @@ function Sparkline({ snaps }: { snaps: Snapshot[] }) {
     return `${x},${y}`;
   });
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="mt-4 w-full" role="img" aria-label="能力覆盖率趋势">
+    <svg viewBox={`0 0 ${w} ${h}`} className="mt-4 w-full" role="img" aria-label={t("cap.trend.curveAriaLabel")}>
       <polyline
         points={pts.join(" ")}
         fill="none"

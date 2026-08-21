@@ -12,6 +12,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { useI18n } from "@/lib/i18n";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { StatTile } from "@/components/StatTile";
 import { RoleDetailSheet } from "@/components/RoleDetailSheet";
@@ -80,10 +81,11 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const { t } = useI18n();
   return (
     <AppShell
-      title="战略岗位视图"
-      subtitle="从未来战略出发，定义关键研究 / 工作方向和目标岗位架构，并识别现实人才覆盖、Gap 与风险。"
+      title={t("nav.index")}
+      subtitle={t("idx.subtitle")}
     >
       <StrategyBoard />
     </AppShell>
@@ -91,6 +93,7 @@ function Index() {
 }
 
 function StrategyBoard() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
   const orgNodes = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
@@ -110,13 +113,13 @@ function StrategyBoard() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("岗位已归档");
+      toast.success(t("idx.roleArchived"));
       invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  if (!data) return <div className="text-sm text-muted-foreground">加载中…</div>;
+  if (!data) return <div className="text-sm text-muted-foreground">{t("common.loading")}</div>;
 
   const { org, directions, roles, people } = data;
   const active = directions.find((d) => d.id === activeId) ?? directions[0] ?? null;
@@ -145,7 +148,7 @@ function StrategyBoard() {
           <div>
             <div className="flex items-center gap-2">
               <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-                {org?.tagline ?? "战略组织"}
+                {org?.tagline ?? t("idx.orgTaglineDefault")}
               </p>
               {org && <EditOrgDialog org={org} onDone={invalidate} />}
             </div>
@@ -168,20 +171,20 @@ function StrategyBoard() {
           </div>
           <div className="self-start">
             <div className="grid grid-cols-2 gap-3">
-              <StatTile label="关键方向" value={directions.length} />
-              <StatTile label="目标岗位类型" value={roles.length} />
-              <StatTile label="目标 Seat" value={totalSeats} />
-              <StatTile label="当前 Gap" value={totalGap} tone={totalGap ? "danger" : "ok"} />
+              <StatTile label={t("idx.statDirections")} value={directions.length} />
+              <StatTile label={t("idx.statRoleTypes")} value={roles.length} />
+              <StatTile label={t("idx.statTargetSeats")} value={totalSeats} />
+              <StatTile label={t("idx.statCurrentGap")} value={totalGap} tone={totalGap ? "danger" : "ok"} />
             </div>
             <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
               <Link to="/org" className="text-brand hover:underline">
-                编制与团队结构 →
+                {t("idx.linkOrg")}
               </Link>
               <Link to="/capability" search={{ scope: undefined }} className="text-brand hover:underline">
-                能力覆盖与缺口 →
+                {t("idx.linkCapability")}
               </Link>
               <Link to="/people" className="text-brand hover:underline">
-                全员名单 →
+                {t("idx.linkPeople")}
               </Link>
             </div>
           </div>
@@ -192,8 +195,8 @@ function StrategyBoard() {
       <section>
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="font-display text-xl font-semibold">关键研究 / 工作方向</h2>
-            <p className="mt-1 text-sm text-muted-foreground">点击方向进入对应目标岗位架构。</p>
+            <h2 className="font-display text-xl font-semibold">{t("idx.directionsHeading")}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{t("idx.directionsHint")}</p>
           </div>
           {org && <NewDirectionDialog orgId={org.id} onDone={invalidate} />}
         </div>
@@ -215,14 +218,14 @@ function StrategyBoard() {
                 >
                   <div className="flex items-center gap-2 text-[11px]">
                     <span className="rounded-md bg-surface-raised px-2 py-1 text-muted-foreground">
-                      {s.count} 岗位类型
+                      {t("idx.roleTypesCount").replace("{count}", String(s.count))}
                     </span>
                     <span
                       className={`rounded-md px-2 py-1 font-medium ${
                         s.gap ? "bg-danger/12 text-danger" : "bg-ok/12 text-ok"
                       }`}
                     >
-                      {s.gap ? `${s.gap} Critical Gap` : "全覆盖"}
+                      {s.gap ? t("idx.criticalGapCount").replace("{count}", String(s.gap)) : t("idx.fullCoverage")}
                     </span>
                   </div>
                   <h3 className="mt-3 pr-7 font-display text-base font-semibold">{d.title}</h3>
@@ -242,7 +245,7 @@ function StrategyBoard() {
         <section>
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <h2 className="font-display text-xl font-semibold">目标岗位架构</h2>
+              <h2 className="font-display text-xl font-semibold">{t("idx.rolesHeading")}</h2>
               <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
                 {active.title} · {active.description}
               </p>
@@ -275,7 +278,7 @@ function StrategyBoard() {
               />
             ))}
             {activeRoles.length === 0 && (
-              <p className="text-sm text-muted-foreground">该方向下还没有目标岗位。</p>
+              <p className="text-sm text-muted-foreground">{t("idx.noRolesInDirection")}</p>
             )}
           </div>
         </section>
@@ -300,6 +303,7 @@ function ActionStrip({ list }: { list: ActionItem[] }) {
 }
 
 function EditOrgDialog({ org, onDone }: { org: Org; onDone: () => void }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(org.name);
   const [tagline, setTagline] = useState(org.tagline ?? "");
@@ -323,7 +327,7 @@ function EditOrgDialog({ org, onDone }: { org: Org; onDone: () => void }) {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("组织信息已更新");
+      toast.success(t("idx.orgUpdated"));
       setOpen(false);
       onDone();
     },
@@ -349,28 +353,28 @@ function EditOrgDialog({ org, onDone }: { org: Org; onDone: () => void }) {
           size="sm"
           className="h-6 gap-1 px-2 text-[11px] text-muted-foreground hover:text-foreground"
         >
-          <Pencil className="size-3" /> 编辑
+          <Pencil className="size-3" /> {t("idx.edit")}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>编辑战略组织</DialogTitle>
+          <DialogTitle>{t("idx.editOrgTitle")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>组织名称</Label>
+            <Label>{t("idx.orgName")}</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label>副标题</Label>
+            <Label>{t("idx.tagline")}</Label>
             <Input
               value={tagline}
               onChange={(e) => setTagline(e.target.value)}
-              placeholder="例如：战略组织"
+              placeholder={t("idx.taglinePlaceholder")}
             />
           </div>
           <div className="space-y-2">
-            <Label>组织使命 / 描述</Label>
+            <Label>{t("idx.orgMission")}</Label>
             <Textarea
               rows={3}
               value={description}
@@ -378,7 +382,7 @@ function EditOrgDialog({ org, onDone }: { org: Org; onDone: () => void }) {
             />
           </div>
           <div className="space-y-2">
-            <Label>标签（用、或逗号分隔）</Label>
+            <Label>{t("idx.tagsLabel")}</Label>
             <Input value={tags} onChange={(e) => setTags(e.target.value)} />
           </div>
         </div>
@@ -387,7 +391,7 @@ function EditOrgDialog({ org, onDone }: { org: Org; onDone: () => void }) {
             onClick={() => save.mutate()}
             disabled={save.isPending || !name.trim()}
           >
-            保存
+            {t("idx.save")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -396,6 +400,7 @@ function EditOrgDialog({ org, onDone }: { org: Org; onDone: () => void }) {
 }
 
 function ActionStripInner({ list }: { list: ActionItem[] }) {
+  const { t } = useI18n();
   const s = actionSummary(list);
   const top = list
     .filter((a) => a.status === "todo" || a.status === "doing")
@@ -412,15 +417,19 @@ function ActionStripInner({ list }: { list: ActionItem[] }) {
     <section className="panel p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-display text-lg font-semibold">需要跟进</h2>
+          <h2 className="font-display text-lg font-semibold">{t("idx.needFollowUp")}</h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            {s.open} 项进行中
-            {s.overdue > 0 && <span className="text-danger"> · {s.overdue} 项已逾期</span>}
-            {s.high > 0 && <span className="text-warn"> · {s.high} 项高优先级</span>}
+            {t("idx.openCount").replace("{count}", String(s.open))}
+            {s.overdue > 0 && (
+              <span className="text-danger"> · {t("idx.overdueCount").replace("{count}", String(s.overdue))}</span>
+            )}
+            {s.high > 0 && (
+              <span className="text-warn"> · {t("idx.highPriorityCount").replace("{count}", String(s.high))}</span>
+            )}
           </p>
         </div>
         <Link to="/actions" className="text-xs text-brand hover:underline">
-          待办中心 →
+          {t("idx.actionCenterLink")}
         </Link>
       </div>
       <ul className="mt-4 space-y-2">
@@ -434,8 +443,8 @@ function ActionStripInner({ list }: { list: ActionItem[] }) {
             <span
               className={`text-xs ${isOverdue(a) ? "text-danger" : "text-muted-foreground"}`}
             >
-              {a.due_on ?? "无期限"}
-              {isOverdue(a) && " · 逾期"}
+              {a.due_on ?? t("idx.noDeadline")}
+              {isOverdue(a) && ` · ${t("idx.overdueSuffix")}`}
             </span>
             <span className="rounded bg-muted/40 px-1.5 py-0.5 text-[10px] text-muted-foreground">
               {priorityLabel[a.priority] ?? a.priority}
@@ -466,6 +475,7 @@ function RoleCard({
   onOpen: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useI18n();
   const pct = Math.min(100, Math.round((filled / Math.max(1, role.target_count)) * 100));
   const state = gap === 0 ? "full" : filled === 0 ? "empty" : "partial";
   const stateStyle =
@@ -492,9 +502,9 @@ function RoleCard({
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{role.description}</p>
 
       <div className="mt-5 grid grid-cols-2 gap-2 text-xs">
-        <Cell label="目标级别" value={`${role.level_min}–${role.level_max}`} />
-        <Cell label="目标人数" value={role.target_count} />
-        <Cell label="当前覆盖" value={`${filled}/${role.target_count}`} />
+        <Cell label={t("idx.targetLevel")} value={`${role.level_min}–${role.level_max}`} />
+        <Cell label={t("idx.targetHeadcount")} value={role.target_count} />
+        <Cell label={t("idx.currentCoverage")} value={`${filled}/${role.target_count}`} />
         <Cell label="Gap" value={gap} danger={gap > 0} />
       </div>
 
@@ -505,7 +515,7 @@ function RoleCard({
       {teams.length > 0 && (
         <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
           <Building2 className="size-3.5" />
-          承载团队：{teams.join("、")}
+          {t("idx.teamsLabel")}{teams.join("、")}
         </p>
       )}
 
@@ -518,7 +528,7 @@ function RoleCard({
 
       <div className="mt-auto flex items-center justify-between gap-2 pt-5">
         <Button size="sm" variant="outline" className="gap-1.5" onClick={onOpen}>
-          查看岗位画像 <ArrowUpRight className="size-3.5" />
+          {t("idx.viewRoleProfile")} <ArrowUpRight className="size-3.5" />
         </Button>
       </div>
     </article>
@@ -534,6 +544,7 @@ function RoleMenu({
   onArchive: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useI18n();
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(role.title);
   const [description, setDescription] = useState(role.description ?? "");
@@ -567,7 +578,7 @@ function RoleMenu({
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("岗位已更新");
+      toast.success(t("idx.roleUpdated"));
       setEditing(false);
       onSaved();
     },
@@ -584,7 +595,7 @@ function RoleMenu({
             className="absolute right-2 top-2 size-7 text-muted-foreground opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100"
           >
             <MoreHorizontal className="size-4" />
-            <span className="sr-only">岗位操作</span>
+            <span className="sr-only">{t("idx.roleActionsSr")}</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
@@ -594,23 +605,21 @@ function RoleMenu({
               setEditing(true);
             }}
           >
-            <Pencil className="size-3.5" /> 编辑岗位
+            <Pencil className="size-3.5" /> {t("idx.editRole")}
           </DropdownMenuItem>
           <ConfirmAction
-            title={`确认归档岗位「${role.title}」？`}
+            title={t("idx.confirmArchiveRoleTitle").replace("{title}", role.title)}
             description={
               <>
-                <p>
-                  归档后该岗位会从战略岗位视图和组织能力视图中移除，其画像所承载的能力将不再计入覆盖统计。
-                </p>
-                <p>已归属该岗位的人员不会被删除，但会显示为未分配岗位。</p>
+                <p>{t("idx.archiveRoleDesc1")}</p>
+                <p>{t("idx.archiveRoleDesc2")}</p>
               </>
             }
-            confirmLabel="确认归档"
+            confirmLabel={t("idx.confirmArchive")}
             onConfirm={onArchive}
           >
             <DropdownMenuItem className="text-danger" onSelect={(e) => e.preventDefault()}>
-              <Archive className="size-3.5" /> 归档岗位
+              <Archive className="size-3.5" /> {t("idx.archiveRole")}
             </DropdownMenuItem>
           </ConfirmAction>
         </DropdownMenuContent>
@@ -619,15 +628,15 @@ function RoleMenu({
       <Dialog open={editing} onOpenChange={setEditing}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>编辑目标岗位</DialogTitle>
+            <DialogTitle>{t("idx.editRoleTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>岗位名称</Label>
+              <Label>{t("idx.roleName")}</Label>
               <Input value={title} onChange={(e) => setTitle(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>岗位描述</Label>
+              <Label>{t("idx.roleDescription")}</Label>
               <Textarea
                 rows={3}
                 value={description}
@@ -636,7 +645,7 @@ function RoleMenu({
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-2">
-                <Label>级别下限</Label>
+                <Label>{t("idx.levelMin")}</Label>
                 <Input
                   type="number"
                   value={levelMin}
@@ -644,7 +653,7 @@ function RoleMenu({
                 />
               </div>
               <div className="space-y-2">
-                <Label>级别上限</Label>
+                <Label>{t("idx.levelMax")}</Label>
                 <Input
                   type="number"
                   value={levelMax}
@@ -652,7 +661,7 @@ function RoleMenu({
                 />
               </div>
               <div className="space-y-2">
-                <Label>目标人数</Label>
+                <Label>{t("idx.targetHeadcount")}</Label>
                 <Input
                   type="number"
                   min={1}
@@ -662,7 +671,7 @@ function RoleMenu({
               </div>
             </div>
             <div className="space-y-2">
-              <Label>关键度</Label>
+              <Label>{t("idx.criticality")}</Label>
               <Select value={criticality} onValueChange={setCriticality}>
                 <SelectTrigger>
                   <SelectValue />
@@ -677,12 +686,12 @@ function RoleMenu({
               </Select>
             </div>
             <p className="text-xs text-muted-foreground">
-              专业领域、关键知识、技能矩阵等画像内容请在「查看岗位画像」中编辑。
+              {t("idx.roleProfileHint")}
             </p>
           </div>
           <DialogFooter>
             <Button onClick={() => save.mutate()} disabled={!title.trim() || save.isPending}>
-              保存
+              {t("idx.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -721,6 +730,7 @@ function DirectionMenu({
   roleCount: number;
   onDone: () => void;
 }) {
+  const { t } = useI18n();
   const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [title, setTitle] = useState(direction.title);
@@ -735,7 +745,7 @@ function DirectionMenu({
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("方向已更新");
+      toast.success(t("idx.directionUpdated"));
       setEditing(false);
       onDone();
     },
@@ -751,7 +761,7 @@ function DirectionMenu({
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("方向已归档");
+      toast.success(t("idx.directionArchived"));
       setConfirming(false);
       onDone();
     },
@@ -768,7 +778,7 @@ function DirectionMenu({
             className="absolute right-2 top-2 size-7 text-muted-foreground opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100"
           >
             <MoreHorizontal className="size-4" />
-            <span className="sr-only">方向操作</span>
+            <span className="sr-only">{t("idx.directionActionsSr")}</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
@@ -779,10 +789,10 @@ function DirectionMenu({
               setEditing(true);
             }}
           >
-            <Pencil className="size-3.5" /> 编辑方向
+            <Pencil className="size-3.5" /> {t("idx.editDirection")}
           </DropdownMenuItem>
           <DropdownMenuItem className="text-danger" onSelect={() => setConfirming(true)}>
-            <Archive className="size-3.5" /> 归档方向
+            <Archive className="size-3.5" /> {t("idx.archiveDirection")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -790,15 +800,15 @@ function DirectionMenu({
       <Dialog open={editing} onOpenChange={setEditing}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>编辑研究 / 工作方向</DialogTitle>
+            <DialogTitle>{t("idx.editDirectionTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>方向名称</Label>
+              <Label>{t("idx.directionName")}</Label>
               <Input value={title} onChange={(e) => setTitle(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>方向描述</Label>
+              <Label>{t("idx.directionDescription")}</Label>
               <Textarea
                 rows={3}
                 value={description}
@@ -808,7 +818,7 @@ function DirectionMenu({
           </div>
           <DialogFooter>
             <Button onClick={() => save.mutate()} disabled={!title.trim() || save.isPending}>
-              保存
+              {t("idx.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -817,26 +827,26 @@ function DirectionMenu({
       <Dialog open={confirming} onOpenChange={setConfirming}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>归档「{direction.title}」？</DialogTitle>
+            <DialogTitle>{t("idx.archiveDirectionConfirmTitle").replace("{title}", direction.title)}</DialogTitle>
           </DialogHeader>
           <div className="space-y-2 text-sm text-muted-foreground">
-            <p>归档后该方向会从战略岗位视图与能力视图中消失。</p>
+            <p>{t("idx.archiveDirectionDesc1")}</p>
             {roleCount > 0 && (
               <p className="text-danger">
-                该方向下仍挂着 {roleCount} 个目标岗位类型，它们将一并不再展示。
+                {t("idx.archiveDirectionDesc2").replace("{count}", String(roleCount))}
               </p>
             )}
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setConfirming(false)}>
-              取消
+              {t("idx.cancel")}
             </Button>
             <Button
               className="bg-danger text-white hover:bg-danger/90"
               onClick={() => archive.mutate()}
               disabled={archive.isPending}
             >
-              确认归档
+              {t("idx.confirmArchive")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -846,6 +856,7 @@ function DirectionMenu({
 }
 
 function NewDirectionDialog({ orgId, onDone }: { orgId: string; onDone: () => void }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -858,7 +869,7 @@ function NewDirectionDialog({ orgId, onDone }: { orgId: string; onDone: () => vo
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("已新增研究方向");
+      toast.success(t("idx.directionCreated"));
       setOpen(false);
       setTitle("");
       setDescription("");
@@ -871,20 +882,20 @@ function NewDirectionDialog({ orgId, onDone }: { orgId: string; onDone: () => vo
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
-          <Plus className="size-4" /> 新增研究方向
+          <Plus className="size-4" /> {t("idx.newDirection")}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>新增研究 / 工作方向</DialogTitle>
+          <DialogTitle>{t("idx.newDirectionTitle")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>方向名称</Label>
+            <Label>{t("idx.directionName")}</Label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label>方向描述</Label>
+            <Label>{t("idx.directionDescription")}</Label>
             <Textarea
               rows={3}
               value={description}
@@ -894,7 +905,7 @@ function NewDirectionDialog({ orgId, onDone }: { orgId: string; onDone: () => vo
         </div>
         <DialogFooter>
           <Button onClick={() => create.mutate()} disabled={!title.trim() || create.isPending}>
-            保存
+            {t("idx.save")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -903,6 +914,7 @@ function NewDirectionDialog({ orgId, onDone }: { orgId: string; onDone: () => vo
 }
 
 function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: () => void }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     title: "",
@@ -927,7 +939,7 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("已新增战略岗位");
+      toast.success(t("idx.roleCreated"));
       setOpen(false);
       setForm({
         title: "",
@@ -946,23 +958,23 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm" className="gap-1.5">
-          <Plus className="size-4" /> 新增战略岗位
+          <Plus className="size-4" /> {t("idx.newRole")}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>新增战略岗位</DialogTitle>
+          <DialogTitle>{t("idx.newRole")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>岗位名称</Label>
+            <Label>{t("idx.roleName")}</Label>
             <Input
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
             />
           </div>
           <div className="space-y-2">
-            <Label>岗位描述</Label>
+            <Label>{t("idx.roleDescription")}</Label>
             <Textarea
               rows={3}
               value={form.description}
@@ -971,7 +983,7 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-2">
-              <Label>最低级别</Label>
+              <Label>{t("idx.lowestLevel")}</Label>
               <Input
                 type="number"
                 value={form.level_min}
@@ -979,7 +991,7 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
               />
             </div>
             <div className="space-y-2">
-              <Label>最高级别</Label>
+              <Label>{t("idx.highestLevel")}</Label>
               <Input
                 type="number"
                 value={form.level_max}
@@ -987,7 +999,7 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
               />
             </div>
             <div className="space-y-2">
-              <Label>目标人数</Label>
+              <Label>{t("idx.targetHeadcount")}</Label>
               <Input
                 type="number"
                 value={form.target_count}
@@ -996,7 +1008,7 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
             </div>
           </div>
           <div className="space-y-2">
-            <Label>关键度</Label>
+            <Label>{t("idx.criticality")}</Label>
             <Select
               value={form.criticality}
               onValueChange={(v) => setForm({ ...form, criticality: v })}
@@ -1014,7 +1026,7 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
         </div>
         <DialogFooter>
           <Button onClick={() => create.mutate()} disabled={!form.title.trim() || create.isPending}>
-            保存
+            {t("idx.save")}
           </Button>
         </DialogFooter>
       </DialogContent>
