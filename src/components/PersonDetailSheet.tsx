@@ -616,27 +616,81 @@ export function PersonDetailSheet({
               {skillMatch.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("sheet.person.noSkillRequirements")}</p>
               ) : (
-                <ul className="space-y-2">
-                  {skillMatch.map((s) => (
-                    <li
-                      key={s.skill}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/60 bg-surface-raised/40 px-3 py-2"
-                    >
-                      <span className="text-sm">{s.skill}</span>
-                      <span className="flex items-center gap-2 text-xs">
-                        <span className="text-muted-foreground">{t("sheet.person.required").replace("{level}", s.required)}</span>
-                        <span className={s.ok ? "text-ok" : "text-warn"}>
-                          {t("sheet.person.actual").replace("{level}", s.actual ?? t("sheet.person.notAssessed"))}
-                        </span>
-                        {s.ok ? (
-                          <Check className="size-4 text-ok" />
-                        ) : (
-                          <AlertTriangle className="size-4 text-warn" />
-                        )}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <p className="mb-3 text-xs text-muted-foreground">
+                    {t("sheet.person.skillSummary")
+                      .replace("{total}", String(skillSummary.total))
+                      .replace("{ok}", String(skillSummary.ok))
+                      .replace("{minor}", String(skillSummary.minor))
+                      .replace("{major}", String(skillSummary.major))
+                      .replace("{none}", String(skillSummary.none))}
+                  </p>
+                  <ul className="space-y-2">
+                    {skillMatch.map((s) => {
+                      const tone =
+                        s.state === "met"
+                          ? "text-ok"
+                          : s.state === "none"
+                            ? "text-muted-foreground"
+                            : s.state === "minor"
+                              ? "text-warn"
+                              : "text-danger";
+                      const stateLabel =
+                        s.state === "met"
+                          ? t("sheet.person.gapMet")
+                          : s.state === "minor"
+                            ? t("sheet.person.gapMinor")
+                            : s.state === "major"
+                              ? t("sheet.person.gapMajor")
+                              : t("sheet.person.gapNone");
+                      return (
+                        <li
+                          key={s.skill}
+                          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/60 bg-surface-raised/40 px-3 py-2"
+                        >
+                          <span className="flex items-center gap-2 text-sm">
+                            {s.skill}
+                            {s.fuzzy && (
+                              <span className="rounded-full border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                                {t("sheet.person.fuzzyMatch")}
+                              </span>
+                            )}
+                          </span>
+                          <span className="flex items-center gap-2 text-xs">
+                            <LevelScale required={s.required} actual={s.actual} />
+                            <span className={tone}>{stateLabel}</span>
+                            {s.state === "met" ? (
+                              <Check className="size-4 text-ok" />
+                            ) : (
+                              <AlertTriangle className={`size-4 ${tone}`} />
+                            )}
+                            <Select
+                              value={s.actual ? String(s.actual) : "none"}
+                              onValueChange={(v) =>
+                                setSkillLevel.mutate({
+                                  skill: s.skill,
+                                  level: v === "none" ? null : v,
+                                })
+                              }
+                            >
+                              <SelectTrigger className="h-7 w-32 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">{t("sheet.person.gapNone")}</SelectItem>
+                                {SKILL_LEVELS.map((lv) => (
+                                  <SelectItem key={lv} value={lv}>
+                                    {lv}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </>
               )}
             </Module>
           )}
@@ -646,28 +700,41 @@ export function PersonDetailSheet({
               {carried.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("sheet.person.noRelatedCapabilities")}</p>
               ) : (
-                <div className="flex flex-wrap gap-1.5">
-                  {carried.map((c) => (
-                    <span
-                      key={`${c.kind}-${c.label}`}
-                      className={`rounded-full border px-2.5 py-1 text-xs ${
-                        c.sole
-                          ? "border-danger/50 bg-danger/10 text-danger"
-                          : "border-border/70 text-foreground"
-                      }`}
-                      title={c.sole ? t("sheet.person.solePointTitle") : undefined}
-                    >
-                      {c.label}
-                      {c.sole ? t("sheet.person.solePointTag") : ""}
-                    </span>
-                  ))}
-                </div>
+                <>
+                  <div className="flex flex-wrap gap-1.5">
+                    {carried
+                      .filter((c) => c.tier !== "normal")
+                      .map((c) => (
+                        <span
+                          key={`${c.kind}-${c.label}`}
+                          className={`rounded-full border px-2.5 py-1 text-xs ${
+                            c.tier === "critical"
+                              ? "border-danger/50 bg-danger/10 text-danger"
+                              : "border-warn/50 bg-warn/10 text-warn"
+                          }`}
+                          title={
+                            c.tier === "critical"
+                              ? t("sheet.person.suggestBackup")
+                              : t("sheet.person.suggestShare")
+                          }
+                        >
+                          {c.label} ·{" "}
+                          {c.tier === "critical"
+                            ? t("sheet.person.riskCritical")
+                            : t("sheet.person.riskWatch")}
+                        </span>
+                      ))}
+                  </div>
+                  <CollapsedRest
+                    items={carried.filter((c) => c.tier === "normal").map((c) => c.label)}
+                    label={t("sheet.person.otherCarried")}
+                  />
+                </>
               )}
-              <p className="mt-3 text-xs text-muted-foreground">
-                {t("sheet.person.solePointFootnote")}
-              </p>
+              <p className="mt-3 text-xs text-muted-foreground">{t("sheet.person.riskFootnote")}</p>
             </Module>
           )}
+
 
           <Module title={t("sheet.person.aiFitRecordsTitle")}>
             {fits.isLoading ? (
