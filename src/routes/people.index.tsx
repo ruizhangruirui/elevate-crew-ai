@@ -8,6 +8,8 @@ import { useI18n } from "@/lib/i18n";
 import { contractLabel } from "@/lib/contract";
 import { effectiveImportance, IMPORTANCE_TONE } from "@/lib/importance";
 import { ConfirmAction } from "@/components/ConfirmAction";
+import { ImportPeopleDialog } from "@/components/ImportPeopleDialog";
+
 import { ArchivePersonDialog } from "@/components/ArchivePersonDialog";
 import { fetchArchivedPeople, fetchLifecycleEvents, recordJoin, restorePerson } from "@/lib/lifecycle";
 import { completeness } from "@/lib/org-tree";
@@ -153,7 +155,10 @@ function PeopleBody() {
               </Link>
             </p>
           </div>
+          <div className="flex items-center gap-2">
+          <ImportPeopleDialog />
           <Dialog open={open} onOpenChange={setOpen}>
+
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1.5">
                 <Plus className="size-4" /> {t("ppl.add")}
@@ -226,7 +231,9 @@ function PeopleBody() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
+
 
         <div className="divide-y divide-border/50">
           {data.people.map((p) => (
