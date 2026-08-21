@@ -102,7 +102,7 @@ export function RoleDetailSheet({
 
   const aiProfile = useMutation({
     mutationFn: async () => {
-      const draft = await runProfile({ data: { roleId: role!.id } });
+      const draft = await runProfile({ data: { roleId: role!.id, lang } });
       const { error } = await supabase
         .from("roles")
         .update({
@@ -125,7 +125,7 @@ export function RoleDetailSheet({
   });
 
   const aiFit = useMutation({
-    mutationFn: () => runFit({ data: { roleId: role!.id } }),
+    mutationFn: () => runFit({ data: { roleId: role!.id, lang } }),
     onSuccess: (rows) => {
       setFits(rows);
       toast.success(t("sheet.role.fitAnalysisDone").replace("{n}", String(rows.length)));
