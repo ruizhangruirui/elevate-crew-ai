@@ -397,43 +397,13 @@ export function PersonProfile({
       );
   }, [person, role, roles, people]);
 
-  const skillMatch = useMemo(() => {
-    if (!role) return [];
-    const own = (person.assessed_skills ?? []) as Skill[];
-    return (role.skills ?? []).map((req) => {
-      const k = normalizeKey(req.skill);
-      const exact = own.find((s) => normalizeKey(s.skill ?? "") === k);
-      const fuzzy =
-        exact ??
-        own.find((s) => {
-          const sk = normalizeKey(s.skill ?? "");
-          return sk && (sk.includes(k) || k.includes(sk));
-        });
-      const hit = fuzzy ?? null;
-      const gap = hit ? levelRank(req.level) - levelRank(hit.level) : null;
-      const state: "met" | "minor" | "major" | "none" =
-        gap == null ? "none" : gap <= 0 ? "met" : gap === 1 ? "minor" : "major";
-      return {
-        skill: req.skill,
-        required: req.level,
-        actual: hit?.level ?? null,
-        fuzzy: !!hit && !exact,
-        gap,
-        state,
-      };
-    });
-  }, [role, person]);
-
-  const skillSummary = useMemo(
-    () => ({
-      total: skillMatch.length,
-      ok: skillMatch.filter((s) => s.state === "met").length,
-      minor: skillMatch.filter((s) => s.state === "minor").length,
-      major: skillMatch.filter((s) => s.state === "major").length,
-      none: skillMatch.filter((s) => s.state === "none").length,
-    }),
-    [skillMatch],
+  const ownSkills = useMemo(
+    () => ((person.assessed_skills ?? []) as Skill[]).filter((s) => !!s?.skill),
+    [person],
   );
+  const [skillOpen, setSkillOpen] = useState(false);
+  const [newSkill, setNewSkill] = useState({ skill: "", level: "Proficient" });
+
 
   const setSkillLevel = useMutation({
     mutationFn: async ({ skill, level }: { skill: string; level: string | null }) => {
