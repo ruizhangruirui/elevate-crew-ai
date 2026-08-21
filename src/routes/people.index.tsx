@@ -2,12 +2,14 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2 } from "lucide-react";
+import { LogOut, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/lib/i18n";
 import { contractLabel } from "@/lib/contract";
 import { effectiveImportance, IMPORTANCE_TONE } from "@/lib/importance";
 import { ConfirmAction } from "@/components/ConfirmAction";
+import { ArchivePersonDialog } from "@/components/ArchivePersonDialog";
+import { fetchArchivedPeople, fetchLifecycleEvents, recordJoin, restorePerson } from "@/lib/lifecycle";
 import { completeness } from "@/lib/org-tree";
 import { Link } from "@tanstack/react-router";
 import { StatTile } from "@/components/StatTile";
@@ -62,6 +64,9 @@ function PeopleBody() {
   const { t } = useI18n();
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
+  const { data: archived } = useQuery({ queryKey: ["archived-people"], queryFn: fetchArchivedPeople });
+  const { data: lifecycle } = useQuery({ queryKey: ["lifecycle"], queryFn: fetchLifecycleEvents });
+  const [showArchived, setShowArchived] = useState(false);
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const openPerson = (id: string) =>
@@ -71,14 +76,21 @@ function PeopleBody() {
   const addPerson = useMutation({
     mutationFn: async () => {
       if (!data?.org) throw new Error(t("ppl.error.orgNotInit"));
-      const { error } = await supabase.from("people").insert({
-        org_id: data.org.id,
-        name: form.name,
-        level: Number(form.level) || null,
-        role_id: form.role_id === "none" ? null : form.role_id,
-        status: form.status,
-      });
+      const { data: inserted, error } = await supabase
+        .from("people")
+        .insert({
+          org_id: data.org.id,
+          name: form.name,
+          level: Number(form.level) || null,
+          role_id: form.role_id === "none" ? null : form.role_id,
+          status: form.status,
+        })
+        .select("id")
+        .single();
       if (error) throw error;
+      if (form.status === "onboard" && inserted?.id) {
+        await recordJoin(inserted.id, { reason: "new_hire" });
+      }
     },
     onSuccess: () => {
       toast.success(t("ppl.toast.added"));
@@ -89,13 +101,22 @@ function PeopleBody() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const removePerson = useMutation({
+  const purgePerson = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("people").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success(t("ppl.toast.removed"));
+      qc.invalidateQueries({ refetchType: "all" });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const restore = useMutation({
+    mutationFn: (id: string) => restorePerson(id),
+    onSuccess: () => {
+      toast.success(t("lc.archived.restored"));
       qc.invalidateQueries({ refetchType: "all" });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -274,32 +295,92 @@ function PeopleBody() {
                   {t("ppl.incomplete")} {incomplete.get(p.id)} {t("ppl.incomplete.items")}
                 </span>
               )}
-              <ConfirmAction
-                title={t("ppl.remove.confirmTitle").replace("{name}", p.name)}
-                description={
-                  <>
-                    <p>{t("ppl.remove.desc1")}</p>
-                    <p>{t("ppl.remove.desc2")}</p>
-                  </>
-                }
-                confirmLabel={t("ppl.remove.confirmLabel")}
-                onConfirm={() => removePerson.mutate(p.id)}
-              >
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-muted-foreground hover:text-danger"
-                  aria-label={`${t("ppl.remove.label")} ${p.name}`}
-                >
-                  <Trash2 className="size-4" />
-                </Button>
-              </ConfirmAction>
+              <div onClick={(e) => e.stopPropagation()}>
+                <ArchivePersonDialog personId={p.id} personName={p.name}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-danger"
+                    aria-label={`${t("lc.archive.action")} ${p.name}`}
+                    title={t("lc.archive.action")}
+                  >
+                    <LogOut className="size-4" />
+                  </Button>
+                </ArchivePersonDialog>
+              </div>
             </div>
           ))}
           {data.people.length === 0 && (
             <p className="px-6 py-10 text-center text-sm text-muted-foreground">{t("ppl.empty")}</p>
           )}
         </div>
+      </div>
+
+      <div className="panel overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowArchived((v) => !v)}
+          className="flex w-full items-center justify-between px-6 py-4 text-left"
+        >
+          <span className="font-display text-sm font-semibold">
+            {t("lc.archived.title")}
+            <span className="ml-2 rounded bg-muted/40 px-1.5 py-0.5 text-[11px] font-normal text-muted-foreground">
+              {archived?.length ?? 0}
+            </span>
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {showArchived ? t("lc.archived.hide") : t("lc.archived.show")}
+          </span>
+        </button>
+        {showArchived && (
+          <div className="divide-y divide-border/50 border-t border-border/60">
+            {(archived ?? []).map((a) => {
+              const exit = (lifecycle ?? []).find(
+                (e) => e.person_id === a.id && e.event_type === "exit",
+              );
+              return (
+                <div key={a.id} className="flex flex-wrap items-center gap-4 px-6 py-3">
+                  <div className="min-w-40 flex-1">
+                    <p className="font-display text-sm font-semibold">{a.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {exit
+                        ? `${exit.effective_on} · ${t(`lc.reason.${exit.reason ?? "other"}`)}${exit.detail ? ` · ${exit.detail}` : ""}`
+                        : "—"}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1.5 text-xs"
+                    onClick={() => restore.mutate(a.id)}
+                  >
+                    <RotateCcw className="size-3.5" /> {t("lc.archived.restore")}
+                  </Button>
+                  <ConfirmAction
+                    title={t("lc.archived.purgeTitle").replace("{name}", a.name)}
+                    description={<p>{t("lc.archived.purgeDesc")}</p>}
+                    confirmLabel={t("ppl.remove.confirmLabel")}
+                    onConfirm={() => purgePerson.mutate(a.id)}
+                  >
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground hover:text-danger"
+                      aria-label={`${t("lc.archived.purge")} ${a.name}`}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </ConfirmAction>
+                </div>
+              );
+            })}
+            {(archived ?? []).length === 0 && (
+              <p className="px-6 py-6 text-center text-sm text-muted-foreground">
+                {t("lc.archived.empty")}
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
