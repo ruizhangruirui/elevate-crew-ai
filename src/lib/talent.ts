@@ -61,6 +61,8 @@ export type Person = {
   prior_experience?: string[];
   readiness?: string;
   attrition_risk?: string;
+  archived?: boolean | null;
+  archived_at?: string | null;
 };
 
 export const criticalityLabel: Record<string, string> = {
@@ -74,7 +76,7 @@ export async function fetchWorkspace() {
     supabase.from("orgs").select("*").limit(1),
     supabase.from("directions").select("*").eq("archived", false).order("sort_order"),
     supabase.from("roles").select("*").eq("archived", false).order("sort_order"),
-    supabase.from("people").select("*").order("created_at"),
+    supabase.from("people").select("*").eq("archived", false).order("created_at"),
   ]);
 
   const err = orgs.error || directions.error || roles.error || people.error;
