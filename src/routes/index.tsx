@@ -30,7 +30,7 @@ import {
   actionSummary,
   fetchActions,
   isOverdue,
-  priorityLabel,
+  priorityKey,
   type ActionItem,
 } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
@@ -447,7 +447,7 @@ function ActionStripInner({ list }: { list: ActionItem[] }) {
               {isOverdue(a) && ` · ${t("idx.overdueSuffix")}`}
             </span>
             <span className="rounded bg-muted/40 px-1.5 py-0.5 text-[10px] text-muted-foreground">
-              {priorityLabel[a.priority] ?? a.priority}
+              {t(priorityKey[a.priority] ?? a.priority)}
             </span>
           </li>
         ))}
