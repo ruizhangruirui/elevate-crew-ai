@@ -126,18 +126,28 @@ export function PersonDetailSheet({
     },
   });
 
-  // 该人员承载的组织能力（来自其岗位画像），并标注是否为单点承载
+  // 该人员承载的组织能力（来自其岗位画像），按「能力关键度 × 人员可替代性」分级
   const carried = useMemo(() => {
     if (!person || !role) return [];
     const caps = buildCapabilities(roles, people);
     return caps
       .filter((c) => c.roleIds.includes(role.id))
-      .map((c) => ({
-        label: c.label,
-        kind: c.kind,
-        sole: c.carriers.length === 1 && c.carriers[0]?.person.id === person.id,
-        assessed: c.carriers.find((x) => x.person.id === person.id)?.assessed ?? false,
-      }));
+      .map((c) => {
+        const sole = c.carriers.length === 1 && c.carriers[0]?.person.id === person.id;
+        const risk = sole ? carrierRiskTier(c, person, people, roles).tier : "normal";
+        return {
+          label: c.label,
+          kind: c.kind,
+          sole,
+          tier: sole ? risk : ("normal" as const),
+          assessed: c.carriers.find((x) => x.person.id === person.id)?.assessed ?? false,
+        };
+      })
+      .sort(
+        (a, b) =>
+          (b.tier === "critical" ? 2 : b.tier === "watch" ? 1 : 0) -
+          (a.tier === "critical" ? 2 : a.tier === "watch" ? 1 : 0),
+      );
   }, [person, role, roles, people]);
 
   const skillMatch = useMemo(() => {
@@ -145,14 +155,64 @@ export function PersonDetailSheet({
     const own = (person?.assessed_skills ?? []) as Skill[];
     return (role.skills ?? []).map((req) => {
       const k = normalizeKey(req.skill);
-      const hit = own.find((s) => {
-        const sk = normalizeKey(s.skill ?? "");
-        return sk && (sk === k || sk.includes(k) || k.includes(sk));
-      });
-      const ok = !!hit && levelRank(hit.level) >= levelRank(req.level);
-      return { skill: req.skill, required: req.level, actual: hit?.level ?? null, ok };
+      const exact = own.find((s) => normalizeKey(s.skill ?? "") === k);
+      const fuzzy =
+        exact ??
+        own.find((s) => {
+          const sk = normalizeKey(s.skill ?? "");
+          return sk && (sk.includes(k) || k.includes(sk));
+        });
+      const hit = fuzzy ?? null;
+      const gap = hit ? levelRank(req.level) - levelRank(hit.level) : null;
+      const state: "met" | "minor" | "major" | "none" =
+        gap == null ? "none" : gap <= 0 ? "met" : gap === 1 ? "minor" : "major";
+      return {
+        skill: req.skill,
+        required: req.level,
+        actual: hit?.level ?? null,
+        fuzzy: !!hit && !exact,
+        gap,
+        state,
+      };
     });
   }, [role, person]);
+
+  const skillSummary = useMemo(
+    () => ({
+      total: skillMatch.length,
+      ok: skillMatch.filter((s) => s.state === "met").length,
+      minor: skillMatch.filter((s) => s.state === "minor").length,
+      major: skillMatch.filter((s) => s.state === "major").length,
+      none: skillMatch.filter((s) => s.state === "none").length,
+    }),
+    [skillMatch],
+  );
+
+  const setSkillLevel = useMutation({
+    mutationFn: async ({ skill, level }: { skill: string; level: string | null }) => {
+      const own = [...((person?.assessed_skills ?? []) as Skill[])];
+      const k = normalizeKey(skill);
+      const idx = own.findIndex((s) => normalizeKey(s.skill ?? "") === k);
+      if (level === null) {
+        if (idx >= 0) own.splice(idx, 1);
+      } else if (idx >= 0) {
+        own[idx] = { skill: own[idx]!.skill, level };
+      } else {
+        own.push({ skill, level });
+      }
+      const { error } = await supabase
+        .from("people")
+        .update({ assessed_skills: own as unknown as never, assessed_at: new Date().toISOString() })
+        .eq("id", person!.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(t("sheet.person.levelSaved"));
+      onDone();
+    },
+    onError: (e: unknown) => toast.error(String((e as Error)?.message ?? e)),
+  });
+
 
   const teammates = role
     ? people.filter((p) => p.role_id === role.id && p.id !== person?.id)
