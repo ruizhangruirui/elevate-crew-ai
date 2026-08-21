@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
-import { PersonDetailSheet } from "@/components/PersonDetailSheet";
 import { RoleDetailSheet } from "@/components/RoleDetailSheet";
 import { StatTile } from "@/components/StatTile";
 import { Badge } from "@/components/ui/badge";
@@ -55,7 +54,6 @@ export const Route = createFileRoute("/org")({
   component: OrgPage,
 });
 
-
 function OrgPage() {
   const { t } = useI18n();
   return (
@@ -92,7 +90,9 @@ function PersonRow({
       type="button"
       onClick={onOpen}
       className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors hover:border-brand/50 hover:bg-surface-raised/60 ${
-        muted ? "border-dashed border-border/60 bg-background/20" : "border-border/50 bg-background/40"
+        muted
+          ? "border-dashed border-border/60 bg-background/20"
+          : "border-border/50 bg-background/40"
       }`}
     >
       <span className="grid size-7 shrink-0 place-items-center rounded-full bg-brand/15 text-[11px] font-semibold text-brand">
@@ -139,7 +139,10 @@ function OrgTreeBody() {
   const { t } = useI18n();
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [personId, setPersonId] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const setPersonId = (id: string | null) => {
+    if (id) navigate({ to: "/people/$personId", params: { personId: id } });
+  };
   const [roleId, setRoleId] = useState<string | null>(null);
 
   const nodes = useMemo(() => (tree.data ?? []).filter((n) => !n.archived), [tree.data]);
@@ -224,7 +227,9 @@ function OrgTreeBody() {
     const kids = childrenOf.get(node.id) ?? [];
     const members = peopleOf.get(node.id) ?? [];
     const nodeRoles = rolePlacement.byNode.get(node.id) ?? [];
-    const roleless = members.filter((p) => !p.role_id || !nodeRoles.some((r) => r.id === p.role_id));
+    const roleless = members.filter(
+      (p) => !p.role_id || !nodeRoles.some((r) => r.id === p.role_id),
+    );
     const isOpen = expanded[node.id] ?? depth < 1;
     const total = countIn(node.id);
     const Icon = node.type === "Team" ? Users : Building2;
@@ -238,20 +243,22 @@ function OrgTreeBody() {
             onClick={() => setExpanded((s) => ({ ...s, [node.id]: !isOpen }))}
             className="flex min-w-0 flex-1 items-center gap-3 text-left"
           >
-          <ChevronRight
-            className={`size-4 shrink-0 text-muted-foreground transition-transform ${isOpen ? "rotate-90" : ""}`}
-          />
-          <Icon className="size-4 shrink-0 text-brand" />
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-display text-sm font-semibold">{node.name}</p>
-            {node.mission && (
-              <p className="truncate text-xs text-muted-foreground">{node.mission}</p>
-            )}
-          </div>
-          <Badge variant="outline" className="shrink-0 text-[10px]">
-            {node.type}
-          </Badge>
-          <span className="shrink-0 text-xs text-muted-foreground">{total} {t("common.people")}</span>
+            <ChevronRight
+              className={`size-4 shrink-0 text-muted-foreground transition-transform ${isOpen ? "rotate-90" : ""}`}
+            />
+            <Icon className="size-4 shrink-0 text-brand" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-display text-sm font-semibold">{node.name}</p>
+              {node.mission && (
+                <p className="truncate text-xs text-muted-foreground">{node.mission}</p>
+              )}
+            </div>
+            <Badge variant="outline" className="shrink-0 text-[10px]">
+              {node.type}
+            </Badge>
+            <span className="shrink-0 text-xs text-muted-foreground">
+              {total} {t("common.people")}
+            </span>
           </button>
           <Button
             variant="ghost"
@@ -266,8 +273,8 @@ function OrgTreeBody() {
         {total > 0 && (
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border/40 px-4 py-2 text-[11px] text-muted-foreground">
             <span>
-              {t("org.onboard")} <b className="text-foreground tabular-nums">{st.onboard}</b> / {t("org.target")}{" "}
-              <b className="tabular-nums">{st.targetSeats}</b>
+              {t("org.onboard")} <b className="text-foreground tabular-nums">{st.onboard}</b> /{" "}
+              {t("org.target")} <b className="tabular-nums">{st.targetSeats}</b>
             </span>
             <span>
               {t("org.avgLevel")}{" "}
@@ -337,7 +344,12 @@ function OrgTreeBody() {
                   {rOpen && (
                     <div className="space-y-1.5 border-t border-border/40 px-3 py-2 pl-7">
                       {holders.map((p) => (
-                        <PersonRow key={p.id} person={p} roles={roles} onOpen={() => setPersonId(p.id)} />
+                        <PersonRow
+                          key={p.id}
+                          person={p}
+                          roles={roles}
+                          onOpen={() => setPersonId(p.id)}
+                        />
                       ))}
                       {Array.from({ length: vacancies }).map((_, i) => (
                         <div
@@ -345,7 +357,9 @@ function OrgTreeBody() {
                           className="flex items-center gap-3 rounded-lg border border-dashed border-warn/50 bg-warn/5 px-3 py-2 text-xs text-warn"
                         >
                           <UserPlus className="size-4 shrink-0" />
-                          <span className="flex-1">{t("common.vacantSeat")} (L{r.level_min}–{r.level_max})</span>
+                          <span className="flex-1">
+                            {t("common.vacantSeat")} (L{r.level_min}–{r.level_max})
+                          </span>
                         </div>
                       ))}
                       {holders.length === 0 && vacancies === 0 && (
@@ -358,7 +372,13 @@ function OrgTreeBody() {
             })}
 
             {roleless.map((p) => (
-              <PersonRow key={p.id} person={p} roles={roles} onOpen={() => setPersonId(p.id)} muted />
+              <PersonRow
+                key={p.id}
+                person={p}
+                roles={roles}
+                onOpen={() => setPersonId(p.id)}
+                muted
+              />
             ))}
 
             {kids.length === 0 && members.length === 0 && nodeRoles.length === 0 && (
@@ -378,7 +398,10 @@ function OrgTreeBody() {
     <div className="space-y-6">
       <div className="grid gap-3 sm:grid-cols-3">
         <StatTile label={t("org.stat.nodes")} value={nodes.length} />
-        <StatTile label={t("org.stat.assigned")} value={`${people.length - unassigned.length} / ${people.length}`} />
+        <StatTile
+          label={t("org.stat.assigned")}
+          value={`${people.length - unassigned.length} / ${people.length}`}
+        />
         <StatTile
           label={t("org.stat.unassigned")}
           value={unassigned.length}
@@ -393,7 +416,9 @@ function OrgTreeBody() {
             type="button"
             onClick={() => setView(v)}
             className={`rounded-md px-3 py-1 text-xs transition-colors ${
-              view === v ? "bg-surface-raised font-medium text-foreground" : "text-muted-foreground hover:text-foreground"
+              view === v
+                ? "bg-surface-raised font-medium text-foreground"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             {v === "chart" ? t("common.chartView") : t("common.listView")}
@@ -404,9 +429,7 @@ function OrgTreeBody() {
       {roots.length === 0 ? (
         <div className="rounded-xl border border-border/60 bg-surface-raised/40 p-8 text-center">
           <FolderTree className="mx-auto size-6 text-muted-foreground" />
-          <p className="mt-3 text-sm text-muted-foreground">
-            {t("org.emptyTree")}
-          </p>
+          <p className="mt-3 text-sm text-muted-foreground">{t("org.emptyTree")}</p>
         </div>
       ) : view === "chart" ? (
         <OrgChart
@@ -424,9 +447,7 @@ function OrgTreeBody() {
       {rolePlacement.unplaced.length > 0 && (
         <section className="rounded-xl border border-border/60 bg-surface-raised/40 p-4">
           <h2 className="font-display text-sm font-semibold">{t("org.unplacedRoles")}</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {t("org.unplacedRolesHint")}
-          </p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("org.unplacedRolesHint")}</p>
           <div className="mt-3 space-y-2">
             {rolePlacement.unplaced.map((r) => (
               <div
@@ -467,9 +488,7 @@ function OrgTreeBody() {
       {unassigned.length > 0 && (
         <section className="rounded-xl border border-warn/40 bg-surface-raised/40 p-4">
           <h2 className="font-display text-sm font-semibold">{t("org.unassignedTitle")}</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {t("org.unassignedHint")}
-          </p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("org.unassignedHint")}</p>
           <div className="mt-3 space-y-2">
             {unassigned.map((p) => (
               <div
@@ -527,25 +546,12 @@ function OrgTreeBody() {
         onOpenChange={(v) => !v && setDiagNode(null)}
       />
 
-      <PersonDetailSheet
-        person={people.find((p) => p.id === personId) ?? null}
-        people={people}
-        roles={roles}
-        directions={directions}
-        open={!!personId}
-        onOpenChange={(v) => !v && setPersonId(null)}
-        onDone={() => qc.invalidateQueries({ refetchType: "all" })}
-        onOpenRole={(rid) => {
-          setPersonId(null);
-          setRoleId(rid);
-        }}
-      />
-
       <RoleDetailSheet
         role={roles.find((r) => r.id === roleId) ?? null}
         people={people}
         directionTitle={
-          directions.find((d) => d.id === roles.find((r) => r.id === roleId)?.direction_id)?.title ?? ""
+          directions.find((d) => d.id === roles.find((r) => r.id === roleId)?.direction_id)
+            ?.title ?? ""
         }
         open={!!roleId}
         onOpenChange={(v) => !v && setRoleId(null)}
@@ -554,4 +560,3 @@ function OrgTreeBody() {
     </div>
   );
 }
-

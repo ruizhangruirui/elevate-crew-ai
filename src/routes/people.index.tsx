@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -8,10 +8,8 @@ import { useI18n } from "@/lib/i18n";
 import { contractLabel } from "@/lib/contract";
 import { effectiveImportance, IMPORTANCE_TONE } from "@/lib/importance";
 import { ConfirmAction } from "@/components/ConfirmAction";
-import { PersonDetailSheet } from "@/components/PersonDetailSheet";
 import { completeness } from "@/lib/org-tree";
 import { Link } from "@tanstack/react-router";
-import { RoleDetailSheet } from "@/components/RoleDetailSheet";
 import { StatTile } from "@/components/StatTile";
 import { fetchWorkspace, type Person } from "@/lib/talent";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,7 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export const Route = createFileRoute("/people")({
+export const Route = createFileRoute("/people/")({
   head: () => ({
     meta: [
       { title: "人员视图 · 战略岗位与人才管理系统" },
@@ -65,8 +63,9 @@ function PeopleBody() {
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
   const [open, setOpen] = useState(false);
-  const [activePersonId, setActivePersonId] = useState<string | null>(null);
-  const [activeRoleId, setActiveRoleId] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const openPerson = (id: string) =>
+    navigate({ to: "/people/$personId", params: { personId: id } });
   const [form, setForm] = useState({ name: "", level: "15", role_id: "none", status: "onboard" });
 
   const addPerson = useMutation({
@@ -214,11 +213,11 @@ function PeopleBody() {
               key={p.id}
               role="button"
               tabIndex={0}
-              onClick={() => setActivePersonId(p.id)}
+              onClick={() => openPerson(p.id)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
-                  setActivePersonId(p.id);
+                  openPerson(p.id);
                 }
               }}
               className="flex cursor-pointer flex-wrap items-center gap-4 px-6 py-4 transition-colors hover:bg-surface-raised/50"
@@ -240,7 +239,9 @@ function PeopleBody() {
                   </span>
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {[roleName(p.role_id), contractLabel(t, p.contract_type)].filter(Boolean).join(" · ")}
+                  {[roleName(p.role_id), contractLabel(t, p.contract_type)]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </p>
                 {(p.tags ?? []).length > 0 && (
                   <div className="mt-1 flex flex-wrap gap-1">
@@ -260,9 +261,7 @@ function PeopleBody() {
               </span>
               <span
                 className={`rounded-md px-2 py-1 text-xs font-medium ${
-                  p.status === "onboard"
-                    ? "bg-ok/12 text-ok"
-                    : "bg-warn/12 text-warn"
+                  p.status === "onboard" ? "bg-ok/12 text-ok" : "bg-warn/12 text-warn"
                 }`}
               >
                 {p.status === "onboard" ? t("ppl.status.onboard") : t("ppl.status.candidate")}
@@ -302,33 +301,6 @@ function PeopleBody() {
           )}
         </div>
       </div>
-
-      <PersonDetailSheet
-        person={data.people.find((p) => p.id === activePersonId) ?? null}
-        people={data.people}
-        roles={data.roles}
-        directions={data.directions}
-        open={!!activePersonId}
-        onOpenChange={(v) => !v && setActivePersonId(null)}
-        onDone={() => qc.invalidateQueries({ refetchType: "all" })}
-        onOpenRole={(roleId) => {
-          setActivePersonId(null);
-          setActiveRoleId(roleId);
-        }}
-      />
-
-      <RoleDetailSheet
-        role={data.roles.find((r) => r.id === activeRoleId) ?? null}
-        people={data.people}
-        directionTitle={
-          data.directions.find(
-            (d) => d.id === data.roles.find((r) => r.id === activeRoleId)?.direction_id,
-          )?.title ?? ""
-        }
-        open={!!activeRoleId}
-        onOpenChange={(v) => !v && setActiveRoleId(null)}
-        onDone={() => qc.invalidateQueries({ refetchType: "all" })}
-      />
     </div>
   );
 }

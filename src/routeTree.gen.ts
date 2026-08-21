@@ -14,8 +14,9 @@ import { Route as ActionsRouteImport } from './routes/actions'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CapabilityRouteImport } from './routes/capability'
 import { Route as OrgRouteImport } from './routes/org'
-import { Route as PeopleRouteImport } from './routes/people'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as PeopleIndexRouteImport } from './routes/people.index'
+import { Route as PeoplePersonIdRouteImport } from './routes/people.$personId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -42,14 +43,19 @@ const OrgRoute = OrgRouteImport.update({
   path: '/org',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PeopleRoute = PeopleRouteImport.update({
-  id: '/people',
-  path: '/people',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PeopleIndexRoute = PeopleIndexRouteImport.update({
+  id: '/people/',
+  path: '/people/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PeoplePersonIdRoute = PeoplePersonIdRouteImport.update({
+  id: '/people/$personId',
+  path: '/people/$personId',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -59,8 +65,9 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/capability': typeof CapabilityRoute
   '/org': typeof OrgRoute
-  '/people': typeof PeopleRoute
   '/settings': typeof SettingsRoute
+  '/people/$personId': typeof PeoplePersonIdRoute
+  '/people/': typeof PeopleIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -68,8 +75,9 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/capability': typeof CapabilityRoute
   '/org': typeof OrgRoute
-  '/people': typeof PeopleRoute
   '/settings': typeof SettingsRoute
+  '/people/$personId': typeof PeoplePersonIdRoute
+  '/people': typeof PeopleIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -78,8 +86,9 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/capability': typeof CapabilityRoute
   '/org': typeof OrgRoute
-  '/people': typeof PeopleRoute
   '/settings': typeof SettingsRoute
+  '/people/$personId': typeof PeoplePersonIdRoute
+  '/people/': typeof PeopleIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -89,8 +98,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/capability'
     | '/org'
-    | '/people'
     | '/settings'
+    | '/people/$personId'
+    | '/people/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -98,8 +108,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/capability'
     | '/org'
-    | '/people'
     | '/settings'
+    | '/people/$personId'
+    | '/people'
   id:
     | '__root__'
     | '/'
@@ -107,8 +118,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/capability'
     | '/org'
-    | '/people'
     | '/settings'
+    | '/people/$personId'
+    | '/people/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -117,8 +129,9 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   CapabilityRoute: typeof CapabilityRoute
   OrgRoute: typeof OrgRoute
-  PeopleRoute: typeof PeopleRoute
   SettingsRoute: typeof SettingsRoute
+  PeoplePersonIdRoute: typeof PeoplePersonIdRoute
+  PeopleIndexRoute: typeof PeopleIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -158,18 +171,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/people': {
-      id: '/people'
-      path: '/people'
-      fullPath: '/people'
-      preLoaderRoute: typeof PeopleRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/settings': {
       id: '/settings'
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/people/': {
+      id: '/people/'
+      path: '/people'
+      fullPath: '/people/'
+      preLoaderRoute: typeof PeopleIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/people/$personId': {
+      id: '/people/$personId'
+      path: '/people/$personId'
+      fullPath: '/people/$personId'
+      preLoaderRoute: typeof PeoplePersonIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -181,8 +201,9 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   CapabilityRoute: CapabilityRoute,
   OrgRoute: OrgRoute,
-  PeopleRoute: PeopleRoute,
   SettingsRoute: SettingsRoute,
+  PeoplePersonIdRoute: PeoplePersonIdRoute,
+  PeopleIndexRoute: PeopleIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -1,8 +1,18 @@
 import { useMemo, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Pencil, ExternalLink, AlertTriangle, Check, ChevronRight, Plus, History } from "lucide-react";
+import {
+  Pencil,
+  ExternalLink,
+  AlertTriangle,
+  Check,
+  ChevronRight,
+  Plus,
+  History,
+  Trash2,
+  Award,
+  TrendingUp,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   coverageOf,
@@ -17,18 +27,13 @@ import { fetchOrgNodes } from "@/lib/org-tree";
 import { useI18n } from "@/lib/i18n";
 import { contractLabel } from "@/lib/contract";
 import { effectiveImportance } from "@/lib/importance";
+import { ConfirmAction } from "@/components/ConfirmAction";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -66,7 +71,6 @@ function perfLabelOf(t: (k: string) => string, key: string): string {
 
 const SKILL_LEVELS = ["Proficient", "Advanced", "Expert"] as const;
 
-/** 等级刻度：空心=要求，实心=实际 */
 function LevelScale({ required, actual }: { required: string; actual: string | null }) {
   const req = levelRank(required);
   const act = levelRank(actual);
@@ -90,7 +94,6 @@ function LevelScale({ required, actual }: { required: string; actual: string | n
   );
 }
 
-/** 折叠展示低信号条目 */
 function CollapsedRest({ items, label }: { items: string[]; label: string }) {
   const [open, setOpen] = useState(false);
   if (items.length === 0) return null;
@@ -116,10 +119,23 @@ function CollapsedRest({ items, label }: { items: string[]; label: string }) {
   );
 }
 
-function Fact({ label, value, tone }: { label: string; value: string; tone?: "ok" | "warn" | "danger" | undefined }) {
-
+function Fact({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "ok" | "warn" | "danger" | undefined;
+}) {
   const toneCls =
-    tone === "ok" ? "text-ok" : tone === "warn" ? "text-warn" : tone === "danger" ? "text-danger" : "";
+    tone === "ok"
+      ? "text-ok"
+      : tone === "warn"
+        ? "text-warn"
+        : tone === "danger"
+          ? "text-danger"
+          : "";
   return (
     <div className="rounded-lg border border-border/60 bg-surface-raised/50 px-3 py-2">
       <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
@@ -172,41 +188,36 @@ function Module({
   );
 }
 
-
-export function PersonDetailSheet({
+export function PersonProfile({
   person,
   people,
   roles,
   directions,
-  open,
-  onOpenChange,
   onDone,
   onOpenRole,
 }: {
-  person: Person | null;
+  person: Person;
   people: Person[];
   roles: Role[];
   directions: Direction[];
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
   onDone: () => void;
   onOpenRole?: (roleId: string) => void;
 }) {
   const { t } = useI18n();
-  const [editing, setEditing] = useState(false);
+  const [editingHr, setEditingHr] = useState(false);
+  const [editingMgr, setEditingMgr] = useState(false);
   const orgNodes = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
 
-  const role = person?.role_id ? roles.find((r) => r.id === person.role_id) ?? null : null;
-  const direction = role ? directions.find((d) => d.id === role.direction_id) ?? null : null;
+  const role = person.role_id ? (roles.find((r) => r.id === person.role_id) ?? null) : null;
+  const direction = role ? (directions.find((d) => d.id === role.direction_id) ?? null) : null;
 
   const fits = useQuery({
-    queryKey: ["person-fit", person?.id],
-    enabled: !!person && open,
+    queryKey: ["person-fit", person.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("person_role_fit")
         .select("*")
-        .eq("person_id", person!.id)
+        .eq("person_id", person.id)
         .order("fit_score", { ascending: false });
       if (error) throw error;
       return data ?? [];
@@ -214,27 +225,38 @@ export function PersonDetailSheet({
   });
 
   const perfRecords = useQuery({
-    queryKey: ["person-perf", person?.id],
-    enabled: !!person && open,
+    queryKey: ["person-perf", person.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("performance_records")
         .select("*")
-        .eq("person_id", person!.id)
+        .eq("person_id", person.id)
         .order("recorded_on", { ascending: false });
       if (error) throw error;
       return data ?? [];
     },
   });
 
+  const milestones = useQuery({
+    queryKey: ["person-milestones", person.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("person_milestones")
+        .select("*")
+        .eq("person_id", person.id)
+        .order("effective_on", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const history = useQuery({
-    queryKey: ["person-audit", person?.id],
-    enabled: !!person && open,
+    queryKey: ["person-audit", person.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("audit_log")
         .select("*")
-        .eq("person_id", person!.id)
+        .eq("person_id", person.id)
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
@@ -255,7 +277,7 @@ export function PersonDetailSheet({
   const addPerf = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("performance_records").insert({
-        person_id: person!.id,
+        person_id: person.id,
         period: perfForm.period.trim() || new Date().getFullYear().toString(),
         rating: perfForm.rating,
         summary: perfForm.summary || null,
@@ -265,27 +287,92 @@ export function PersonDetailSheet({
       });
       if (error) throw error;
       await supabase.from("audit_log").insert({
-        person_id: person!.id,
+        person_id: person.id,
         action: t("sheet.person.perfAddAction"),
-        entity: person!.name,
+        entity: person.name,
         detail: `${perfForm.period} · ${perfLabelOf(t, perfForm.rating)}`,
       });
     },
     onSuccess: () => {
       toast.success(t("sheet.person.perfSaved"));
       setPerfOpen(false);
-      setPerfForm({ period: "", rating: "meets", summary: "", highlights: "", improvements: "", reviewer: "" });
+      setPerfForm({
+        period: "",
+        rating: "meets",
+        summary: "",
+        highlights: "",
+        improvements: "",
+        reviewer: "",
+      });
       perfRecords.refetch();
       history.refetch();
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const [msOpen, setMsOpen] = useState(false);
+  const [msForm, setMsForm] = useState({
+    kind: "award",
+    title: "",
+    detail: "",
+    effective_on: new Date().toISOString().slice(0, 10),
+    issuer: "",
+    from_level: "",
+    to_level: "",
+  });
 
+  const addMilestone = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("person_milestones").insert({
+        person_id: person.id,
+        kind: msForm.kind,
+        title: msForm.title.trim(),
+        detail: msForm.detail || null,
+        effective_on: msForm.effective_on,
+        issuer: msForm.issuer || null,
+        from_level: msForm.from_level ? Number(msForm.from_level) : null,
+        to_level: msForm.to_level ? Number(msForm.to_level) : null,
+      });
+      if (error) throw error;
+      await supabase.from("audit_log").insert({
+        person_id: person.id,
+        action: t("pp.ms.action"),
+        entity: person.name,
+        detail: `${t(`pp.ms.kind.${msForm.kind}`)} · ${msForm.title}`,
+      });
+    },
+    onSuccess: () => {
+      toast.success(t("pp.ms.saved"));
+      setMsOpen(false);
+      setMsForm({
+        kind: "award",
+        title: "",
+        detail: "",
+        effective_on: new Date().toISOString().slice(0, 10),
+        issuer: "",
+        from_level: "",
+        to_level: "",
+      });
+      milestones.refetch();
+      history.refetch();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
-  // 该人员承载的组织能力（来自其岗位画像），按「能力关键度 × 人员可替代性」分级
+  const removeMilestone = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("person_milestones").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(t("pp.ms.removed"));
+      milestones.refetch();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const carried = useMemo(() => {
-    if (!person || !role) return [];
+    if (!role) return [];
     const caps = buildCapabilities(roles, people);
     return caps
       .filter((c) => c.roleIds.includes(role.id))
@@ -309,7 +396,7 @@ export function PersonDetailSheet({
 
   const skillMatch = useMemo(() => {
     if (!role) return [];
-    const own = (person?.assessed_skills ?? []) as Skill[];
+    const own = (person.assessed_skills ?? []) as Skill[];
     return (role.skills ?? []).map((req) => {
       const k = normalizeKey(req.skill);
       const exact = own.find((s) => normalizeKey(s.skill ?? "") === k);
@@ -347,7 +434,7 @@ export function PersonDetailSheet({
 
   const setSkillLevel = useMutation({
     mutationFn: async ({ skill, level }: { skill: string; level: string | null }) => {
-      const own = [...((person?.assessed_skills ?? []) as Skill[])];
+      const own = [...((person.assessed_skills ?? []) as Skill[])];
       const k = normalizeKey(skill);
       const idx = own.findIndex((s) => normalizeKey(s.skill ?? "") === k);
       if (level === null) {
@@ -360,12 +447,12 @@ export function PersonDetailSheet({
       const { error } = await supabase
         .from("people")
         .update({ assessed_skills: own as unknown as never, assessed_at: new Date().toISOString() })
-        .eq("id", person!.id);
+        .eq("id", person.id);
       if (error) throw error;
       await supabase.from("audit_log").insert({
-        person_id: person!.id,
+        person_id: person.id,
         action: t("sheet.person.skillChangeAction"),
-        entity: person!.name,
+        entity: person.name,
         detail: `${skill}: ${level ?? "—"}`,
       });
     },
@@ -375,13 +462,9 @@ export function PersonDetailSheet({
       onDone();
     },
     onError: (e: unknown) => toast.error(String((e as Error)?.message ?? e)),
-
   });
 
-
-  const teammates = role
-    ? people.filter((p) => p.role_id === role.id && p.id !== person?.id)
-    : [];
+  const teammates = role ? people.filter((p) => p.role_id === role.id && p.id !== person.id) : [];
   const cov = role ? coverageOf(role, people) : null;
 
   const [form, setForm] = useState({
@@ -402,8 +485,7 @@ export function PersonDetailSheet({
     status: "onboard",
   });
 
-  function startEdit() {
-    if (!person) return;
+  function resetForm() {
     setForm({
       performance: person.performance ?? "",
       tenure_months: person.tenure_months != null ? String(person.tenure_months) : "",
@@ -423,7 +505,6 @@ export function PersonDetailSheet({
       level: person.level != null ? String(person.level) : "",
       status: person.status ?? "onboard",
     });
-    setEditing(true);
   }
 
   const save = useMutation({
@@ -451,7 +532,10 @@ export function PersonDetailSheet({
             .filter(Boolean),
           readiness: form.readiness,
           attrition_risk: form.attrition_risk,
-          prior_experience: form.prior_experience.split("\n").map((s) => s.trim()).filter(Boolean),
+          prior_experience: form.prior_experience
+            .split("\n")
+            .map((s) => s.trim())
+            .filter(Boolean),
           assessed_skills: skills as unknown as never,
           note: form.note || null,
           role_id: form.role_id === "none" ? null : form.role_id,
@@ -460,129 +544,190 @@ export function PersonDetailSheet({
           status: form.status,
           assessed_at: new Date().toISOString(),
         })
-        .eq("id", person!.id);
+        .eq("id", person.id);
       if (error) throw error;
 
       const nextNode = form.org_node_id === "none" ? null : form.org_node_id;
-      if (nextNode !== (person!.org_node_id ?? null)) {
+      if (nextNode !== (person.org_node_id ?? null)) {
         const nameOf = (id: string | null) =>
-          id ? (orgNodes.data ?? []).find((n) => n.id === id)?.name ?? id : t("sheet.person.unassigned");
+          id
+            ? ((orgNodes.data ?? []).find((n) => n.id === id)?.name ?? id)
+            : t("sheet.person.unassigned");
         await supabase.from("audit_log").insert({
-          person_id: person!.id,
+          person_id: person.id,
           action: t("sheet.person.orgMoveAction"),
-          entity: t("sheet.person.orgMoveEntity").replace("{name}", person!.name),
-          detail: `${nameOf(person!.org_node_id ?? null)} → ${nameOf(nextNode)}`,
+          entity: t("sheet.person.orgMoveEntity").replace("{name}", person.name),
+          detail: `${nameOf(person.org_node_id ?? null)} → ${nameOf(nextNode)}`,
         });
       }
 
       const diffs: string[] = [];
       const cmp = (label: string, before: string, after: string) => {
-        if ((before || "—") !== (after || "—")) diffs.push(`${label}: ${before || "—"} → ${after || "—"}`);
+        if ((before || "—") !== (after || "—"))
+          diffs.push(`${label}: ${before || "—"} → ${after || "—"}`);
       };
-      cmp(t("sheet.person.performance"), perfLabelOf(t, person!.performance ?? ""), perfLabelOf(t, form.performance));
-      cmp(t("sheet.person.level"), person!.level != null ? String(person!.level) : "", form.level);
-      cmp(t("sheet.person.status"), person!.status ?? "", form.status);
-      cmp(t("sheet.person.readiness"), readinessLabelOf(t, person!.readiness ?? "unknown"), readinessLabelOf(t, form.readiness));
-      cmp(t("sheet.person.attritionRisk"), riskLabelOf(t, person!.attrition_risk ?? "unknown"), riskLabelOf(t, form.attrition_risk));
-      cmp(t("sheet.person.contractType"), person!.contract_type ?? "", form.contract_type === "unset" ? "" : form.contract_type);
-      cmp(t("importance.label"), person!.importance ?? "auto", form.importance);
-      cmp(t("importance.isLeader"), person!.is_leader ? t("common.yes") : t("common.no"), form.is_leader ? t("common.yes") : t("common.no"));
-      cmp(t("sheet.person.tags"), (person!.tags ?? []).join(", "), form.tags);
+      cmp(
+        t("sheet.person.performance"),
+        perfLabelOf(t, person.performance ?? ""),
+        perfLabelOf(t, form.performance),
+      );
+      cmp(t("sheet.person.level"), person.level != null ? String(person.level) : "", form.level);
+      cmp(t("sheet.person.status"), person.status ?? "", form.status);
+      cmp(
+        t("sheet.person.readiness"),
+        readinessLabelOf(t, person.readiness ?? "unknown"),
+        readinessLabelOf(t, form.readiness),
+      );
+      cmp(
+        t("sheet.person.attritionRisk"),
+        riskLabelOf(t, person.attrition_risk ?? "unknown"),
+        riskLabelOf(t, form.attrition_risk),
+      );
+      cmp(
+        t("sheet.person.contractType"),
+        person.contract_type ?? "",
+        form.contract_type === "unset" ? "" : form.contract_type,
+      );
+      cmp(t("importance.label"), person.importance ?? "auto", form.importance);
+      cmp(
+        t("importance.isLeader"),
+        person.is_leader ? t("common.yes") : t("common.no"),
+        form.is_leader ? t("common.yes") : t("common.no"),
+      );
+      cmp(t("sheet.person.tags"), (person.tags ?? []).join(", "), form.tags);
       if (diffs.length > 0) {
         await supabase.from("audit_log").insert({
-          person_id: person!.id,
+          person_id: person.id,
           action: t("sheet.person.profileUpdateAction"),
-          entity: person!.name,
+          entity: person.name,
           detail: diffs.join(" · "),
         });
       }
     },
     onSuccess: () => {
       toast.success(t("sheet.person.assessmentSaved"));
-      setEditing(false);
+      setEditingHr(false);
+      setEditingMgr(false);
       history.refetch();
       onDone();
     },
-
     onError: (e: Error) => toast.error(e.message),
   });
 
-  if (!person) return null;
+  const saveBar = (
+    <div className="flex gap-2">
+      <Button onClick={() => save.mutate()} disabled={save.isPending}>
+        {t("sheet.save")}
+      </Button>
+      <Button
+        variant="ghost"
+        onClick={() => {
+          setEditingHr(false);
+          setEditingMgr(false);
+        }}
+      >
+        {t("sheet.cancel")}
+      </Button>
+    </div>
+  );
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
-        <SheetHeader className="text-left">
-          <SheetTitle className="font-display text-2xl">{person.name}</SheetTitle>
-          <SheetDescription>
-            {role ? `${direction?.title ?? t("sheet.person.unknownDirection")} · ${role.title}` : t("sheet.person.unassignedRole")}
-          </SheetDescription>
-        </SheetHeader>
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+        <Fact
+          label={t("sheet.person.level")}
+          value={person.level != null ? `Level ${person.level}` : "—"}
+        />
+        <Fact
+          label={t("sheet.person.status")}
+          value={
+            person.status === "onboard" ? t("sheet.person.onboard") : t("sheet.person.candidate")
+          }
+          tone={person.status === "onboard" ? "ok" : "warn"}
+        />
+        <Fact
+          label={t("sheet.person.performance")}
+          value={perfLabelOf(t, person.performance ?? "") || t("sheet.person.notAssessed")}
+        />
+        <Fact
+          label={t("sheet.person.contractType")}
+          value={contractLabel(t, person.contract_type) || t("sheet.person.notFilled")}
+        />
+        <Fact
+          label={t("importance.label")}
+          value={`${t(`importance.${effectiveImportance(person, roles)}`)}${person.is_leader ? ` · ${t("importance.leaderBadge")}` : ""}`}
+        />
+        <Fact
+          label={t("sheet.person.team")}
+          value={
+            (orgNodes.data ?? []).find((n) => n.id === person.org_node_id)?.name ??
+            t("sheet.person.unassigned")
+          }
+          tone={person.org_node_id ? undefined : "warn"}
+        />
+        <Fact
+          label={t("sheet.person.tenure")}
+          value={
+            person.tenure_months != null
+              ? t("sheet.person.tenureMonths").replace("{n}", String(person.tenure_months))
+              : "—"
+          }
+        />
+        <Fact
+          label={t("sheet.person.readiness")}
+          value={readinessLabelOf(t, person.readiness ?? "unknown")}
+          tone={person.readiness === "ready" ? "ok" : undefined}
+        />
+        <Fact
+          label={t("sheet.person.attritionRisk")}
+          value={riskLabelOf(t, person.attrition_risk ?? "unknown")}
+          tone={
+            person.attrition_risk === "high"
+              ? "danger"
+              : person.attrition_risk === "medium"
+                ? "warn"
+                : undefined
+          }
+        />
+      </div>
 
-        <div className="mt-6 space-y-5 pb-10">
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            <Fact label={t("sheet.person.level")} value={person.level != null ? `Level ${person.level}` : "—"} />
-            <Fact
-              label={t("sheet.person.status")}
-              value={person.status === "onboard" ? t("sheet.person.onboard") : t("sheet.person.candidate")}
-              tone={person.status === "onboard" ? "ok" : "warn"}
-            />
-            <Fact label={t("sheet.person.performance")} value={perfLabelOf(t, person.performance ?? "") ?? t("sheet.person.notAssessed")} />
-            <Fact label={t("sheet.person.contractType")} value={contractLabel(t, person.contract_type) || t("sheet.person.notFilled")} />
-            <Fact
-              label={t("importance.label")}
-              value={`${t(`importance.${effectiveImportance(person, roles)}`)}${person.is_leader ? ` · ${t("importance.leaderBadge")}` : ""}`}
-            />
-            <Fact
-              label={t("sheet.person.team")}
-              value={
-                (orgNodes.data ?? []).find((n) => n.id === person.org_node_id)?.name ?? t("sheet.person.unassigned")
-              }
-              tone={person.org_node_id ? undefined : "warn"}
-            />
-            <Fact
-              label={t("sheet.person.tenure")}
-              value={person.tenure_months != null ? t("sheet.person.tenureMonths").replace("{n}", String(person.tenure_months)) : "—"}
-            />
-            <Fact
-              label={t("sheet.person.readiness")}
-              value={readinessLabelOf(t, person.readiness ?? "unknown") ?? t("sheet.person.notAssessed")}
-              tone={person.readiness === "ready" ? "ok" : undefined}
-            />
-            <Fact
-              label={t("sheet.person.attritionRisk")}
-              value={riskLabelOf(t, person.attrition_risk ?? "unknown") ?? t("sheet.person.notAssessed")}
-              tone={
-                person.attrition_risk === "high"
-                  ? "danger"
-                  : person.attrition_risk === "medium"
-                    ? "warn"
-                    : undefined
-              }
-            />
-          </div>
+      {(person.tags ?? []).length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {(person.tags ?? []).map((tag) => (
+            <span
+              key={tag}
+              className="rounded-md border border-brand/40 bg-brand/10 px-2 py-0.5 text-xs text-brand"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
 
-          {(person.tags ?? []).length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {(person.tags ?? []).map((t) => (
-                <span
-                  key={t}
-                  className="rounded-md border border-brand/40 bg-brand/10 px-2 py-0.5 text-xs text-brand"
-                >
-                  {t}
-                </span>
-              ))}
-            </div>
-          )}
+      <Tabs defaultValue="hr">
+        <TabsList>
+          <TabsTrigger value="hr">{t("pp.tab.hr")}</TabsTrigger>
+          <TabsTrigger value="manager">{t("pp.tab.manager")}</TabsTrigger>
+        </TabsList>
 
-          {!editing && (
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={startEdit}>
-              <Pencil className="size-4" /> {t("sheet.person.editAssessment")}
+        {/* ---------------- HR ---------------- */}
+        <TabsContent value="hr" className="mt-5 space-y-5">
+          <p className="text-xs text-muted-foreground">{t("pp.hr.hint")}</p>
+
+          {!editingHr ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => {
+                resetForm();
+                setEditingHr(true);
+              }}
+            >
+              <Pencil className="size-4" /> {t("pp.hr.edit")}
             </Button>
-          )}
-
-          {editing && (
-            <Module title={t("sheet.person.editAssessmentTitle")}>
+          ) : (
+            <Module title={t("pp.hr.editTitle")}>
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className="space-y-2">
@@ -595,8 +740,13 @@ export function PersonDetailSheet({
                   </div>
                   <div className="space-y-2">
                     <Label>{t("sheet.person.status")}</Label>
-                    <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                    <Select
+                      value={form.status}
+                      onValueChange={(v) => setForm({ ...form, status: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="onboard">{t("sheet.person.onboard")}</SelectItem>
                         <SelectItem value="candidate">{t("sheet.person.candidate")}</SelectItem>
@@ -612,77 +762,44 @@ export function PersonDetailSheet({
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>{t("sheet.person.assignedRole")}</Label>
-                  <Select value={form.role_id} onValueChange={(v) => setForm({ ...form, role_id: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">{t("sheet.person.notAssigned")}</SelectItem>
-                      {roles.map((r) => (
-                        <SelectItem key={r.id} value={r.id}>{r.title}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>{t("sheet.person.assignedTeam")}</Label>
-                  <Select
-                    value={form.org_node_id}
-                    onValueChange={(v) => setForm({ ...form, org_node_id: v })}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">{t("sheet.person.unassigned")}</SelectItem>
-                      {(orgNodes.data ?? [])
-                        .filter((n) => n.type !== "VNRC")
-                        .map((n) => (
-                          <SelectItem key={n.id} value={n.id}>
-                            {n.name}（{n.type}）
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>{t("sheet.person.assignedRole")}</Label>
+                    <Select
+                      value={form.role_id}
+                      onValueChange={(v) => setForm({ ...form, role_id: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">{t("sheet.person.notAssigned")}</SelectItem>
+                        {roles.map((r) => (
+                          <SelectItem key={r.id} value={r.id}>
+                            {r.title}
                           </SelectItem>
                         ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label>{t("sheet.person.performance")}</Label>
-                    <Select
-                      value={form.performance || "unset"}
-                      onValueChange={(v) => setForm({ ...form, performance: v === "unset" ? "" : v })}
-                    >
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="unset">{t("sheet.person.notAssessed")}</SelectItem>
-                        <SelectItem value="exceeds">{t("sheet.person.exceedsExpectation")}</SelectItem>
-                        <SelectItem value="meets">{t("sheet.person.meetsExpectation")}</SelectItem>
-                        <SelectItem value="below">{t("sheet.person.belowExpectation")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Readiness</Label>
-                    <Select value={form.readiness} onValueChange={(v) => setForm({ ...form, readiness: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="unknown">{t("sheet.person.notAssessed")}</SelectItem>
-                        <SelectItem value="ready">{t("sheet.person.readyNow")}</SelectItem>
-                        <SelectItem value="ready_1y">{t("sheet.person.ready1y")}</SelectItem>
-                        <SelectItem value="ready_2y">{t("sheet.person.ready2y")}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{t("sheet.person.attritionRisk")}</Label>
+                    <Label>{t("sheet.person.assignedTeam")}</Label>
                     <Select
-                      value={form.attrition_risk}
-                      onValueChange={(v) => setForm({ ...form, attrition_risk: v })}
+                      value={form.org_node_id}
+                      onValueChange={(v) => setForm({ ...form, org_node_id: v })}
                     >
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="unknown">{t("sheet.person.notAssessed")}</SelectItem>
-                        <SelectItem value="low">{t("sheet.person.riskLow")}</SelectItem>
-                        <SelectItem value="medium">{t("sheet.person.riskMedium")}</SelectItem>
-                        <SelectItem value="high">{t("sheet.person.riskHigh")}</SelectItem>
+                        <SelectItem value="none">{t("sheet.person.unassigned")}</SelectItem>
+                        {(orgNodes.data ?? [])
+                          .filter((n) => n.type !== "VNRC")
+                          .map((n) => (
+                            <SelectItem key={n.id} value={n.id}>
+                              {n.name}（{n.type}）
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -693,22 +810,33 @@ export function PersonDetailSheet({
                     value={form.contract_type}
                     onValueChange={(v) => setForm({ ...form, contract_type: v })}
                   >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="unset">{t("sheet.person.notFilled")}</SelectItem>
                       <SelectItem value="正式员工">{t("sheet.person.contractRegular")}</SelectItem>
                       <SelectItem value="外包">{t("sheet.person.contractOutsourced")}</SelectItem>
                       <SelectItem value="实习生">{t("sheet.person.contractIntern")}</SelectItem>
-                      <SelectItem value="外部顾问">{t("sheet.person.contractConsultant")}</SelectItem>
-                      <SelectItem value="访问学者">{t("sheet.person.contractVisitingScholar")}</SelectItem>
+                      <SelectItem value="外部顾问">
+                        {t("sheet.person.contractConsultant")}
+                      </SelectItem>
+                      <SelectItem value="访问学者">
+                        {t("sheet.person.contractVisitingScholar")}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label>{t("importance.label")}</Label>
-                    <Select value={form.importance} onValueChange={(v) => setForm({ ...form, importance: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                    <Select
+                      value={form.importance}
+                      onValueChange={(v) => setForm({ ...form, importance: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="auto">{t("importance.auto")}</SelectItem>
                         <SelectItem value="core">{t("importance.core")}</SelectItem>
@@ -725,7 +853,9 @@ export function PersonDetailSheet({
                       value={form.is_leader ? "yes" : "no"}
                       onValueChange={(v) => setForm({ ...form, is_leader: v === "yes" })}
                     >
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="no">{t("common.no")}</SelectItem>
                         <SelectItem value="yes">{t("common.yes")}</SelectItem>
@@ -739,15 +869,6 @@ export function PersonDetailSheet({
                     value={form.tags}
                     onChange={(e) => setForm({ ...form, tags: e.target.value })}
                     placeholder={t("sheet.person.tagsPlaceholder")}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t("sheet.person.assessedSkillsLabel")}</Label>
-                  <Textarea
-                    rows={4}
-                    value={form.assessed_skills}
-                    onChange={(e) => setForm({ ...form, assessed_skills: e.target.value })}
-                    placeholder={"RTL Design | Expert\nNPU Architecture | Working"}
                   />
                 </div>
                 <div className="space-y-2">
@@ -766,21 +887,315 @@ export function PersonDetailSheet({
                     onChange={(e) => setForm({ ...form, note: e.target.value })}
                   />
                 </div>
+                {saveBar}
+              </div>
+            </Module>
+          )}
+
+          <Module
+            title={t("pp.ms.title")}
+            badge={String((milestones.data ?? []).length)}
+            actions={
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setMsOpen((v) => !v)}
+              >
+                <Plus className="size-4" /> {t("pp.ms.add")}
+              </Button>
+            }
+          >
+            {msOpen && (
+              <div className="mb-4 space-y-3 rounded-lg border border-border/60 bg-surface-raised/40 p-3">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="space-y-1.5">
+                    <Label>{t("pp.ms.kind")}</Label>
+                    <Select
+                      value={msForm.kind}
+                      onValueChange={(v) => setMsForm({ ...msForm, kind: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="promotion">{t("pp.ms.kind.promotion")}</SelectItem>
+                        <SelectItem value="award">{t("pp.ms.kind.award")}</SelectItem>
+                        <SelectItem value="certification">
+                          {t("pp.ms.kind.certification")}
+                        </SelectItem>
+                        <SelectItem value="other">{t("pp.ms.kind.other")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>{t("pp.ms.date")}</Label>
+                    <Input
+                      type="date"
+                      value={msForm.effective_on}
+                      onChange={(e) => setMsForm({ ...msForm, effective_on: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>{t("pp.ms.issuer")}</Label>
+                    <Input
+                      value={msForm.issuer}
+                      onChange={(e) => setMsForm({ ...msForm, issuer: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>{t("pp.ms.titleField")}</Label>
+                  <Input
+                    value={msForm.title}
+                    onChange={(e) => setMsForm({ ...msForm, title: e.target.value })}
+                  />
+                </div>
+                {msForm.kind === "promotion" && (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label>{t("pp.ms.fromLevel")}</Label>
+                      <Input
+                        type="number"
+                        value={msForm.from_level}
+                        onChange={(e) => setMsForm({ ...msForm, from_level: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>{t("pp.ms.toLevel")}</Label>
+                      <Input
+                        type="number"
+                        value={msForm.to_level}
+                        onChange={(e) => setMsForm({ ...msForm, to_level: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                )}
+                <div className="space-y-1.5">
+                  <Label>{t("pp.ms.detail")}</Label>
+                  <Textarea
+                    rows={2}
+                    value={msForm.detail}
+                    onChange={(e) => setMsForm({ ...msForm, detail: e.target.value })}
+                  />
+                </div>
                 <div className="flex gap-2">
-                  <Button onClick={() => save.mutate()} disabled={save.isPending}>{t("sheet.save")}</Button>
-                  <Button variant="ghost" onClick={() => setEditing(false)}>{t("sheet.cancel")}</Button>
+                  <Button
+                    size="sm"
+                    onClick={() => addMilestone.mutate()}
+                    disabled={!msForm.title.trim() || addMilestone.isPending}
+                  >
+                    {t("sheet.save")}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setMsOpen(false)}>
+                    {t("sheet.cancel")}
+                  </Button>
                 </div>
               </div>
+            )}
+            {milestones.isLoading ? (
+              <p className="text-sm text-muted-foreground">{t("sheet.loading")}</p>
+            ) : (milestones.data ?? []).length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("pp.ms.empty")}</p>
+            ) : (
+              <ul className="space-y-2">
+                {(milestones.data ?? []).map((m) => (
+                  <li
+                    key={m.id}
+                    className="flex items-start gap-3 rounded-lg border border-border/60 bg-surface-raised/40 p-3"
+                  >
+                    {m.kind === "promotion" ? (
+                      <TrendingUp className="mt-0.5 size-4 shrink-0 text-brand" />
+                    ) : (
+                      <Award className="mt-0.5 size-4 shrink-0 text-brand" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="flex flex-wrap items-center gap-2 font-display text-sm font-semibold">
+                        {m.title}
+                        <span className="rounded-full border border-border/70 px-2 py-0.5 text-[10px] font-normal text-muted-foreground">
+                          {t(`pp.ms.kind.${m.kind}`)}
+                        </span>
+                        {m.from_level != null && m.to_level != null && (
+                          <span className="rounded-full border border-ok/50 bg-ok/10 px-2 py-0.5 text-[10px] font-normal text-ok">
+                            L{m.from_level} → L{m.to_level}
+                          </span>
+                        )}
+                      </p>
+                      {m.detail && <p className="mt-1 text-xs text-foreground/85">{m.detail}</p>}
+                      <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                        {m.effective_on}
+                        {m.issuer ? ` · ${m.issuer}` : ""}
+                      </p>
+                    </div>
+                    <ConfirmAction
+                      title={t("pp.ms.removeTitle")}
+                      description={<p>{t("pp.ms.removeDesc")}</p>}
+                      confirmLabel={t("ppl.remove.confirmLabel")}
+                      onConfirm={() => removeMilestone.mutate(m.id)}
+                    >
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-danger"
+                        aria-label={t("ppl.remove.label")}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </ConfirmAction>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Module>
+
+          {(person.prior_experience ?? []).length > 0 && (
+            <Module collapsible defaultOpen={false} title={t("sheet.person.priorExperienceTitle")}>
+              <ul className="space-y-1.5 text-sm text-foreground/85">
+                {(person.prior_experience ?? []).map((e) => (
+                  <li key={e}>· {e}</li>
+                ))}
+              </ul>
+            </Module>
+          )}
+
+          {person.note && (
+            <Module collapsible defaultOpen={false} title={t("sheet.person.noteTitle")}>
+              <p className="text-sm text-foreground/85">{person.note}</p>
             </Module>
           )}
 
           <Module
             collapsible
             defaultOpen={false}
+            badge={String((history.data ?? []).length)}
+            title={t("sheet.person.historyTitle")}
+          >
+            {history.isLoading ? (
+              <p className="text-sm text-muted-foreground">{t("sheet.loading")}</p>
+            ) : (history.data ?? []).length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("sheet.person.noHistory")}</p>
+            ) : (
+              <ul className="space-y-2">
+                {(history.data ?? []).map((h) => (
+                  <li
+                    key={h.id}
+                    className="flex gap-2 rounded-lg border border-border/60 bg-surface-raised/40 px-3 py-2"
+                  >
+                    <History className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+                    <div className="min-w-0">
+                      <p className="text-sm">{h.action}</p>
+                      {h.detail && <p className="text-xs text-muted-foreground">{h.detail}</p>}
+                      <p className="mt-0.5 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                        {new Date(h.created_at).toLocaleString()} · {h.actor}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Module>
+        </TabsContent>
+
+        {/* ---------------- Manager ---------------- */}
+        <TabsContent value="manager" className="mt-5 space-y-5">
+          <p className="text-xs text-muted-foreground">{t("pp.mgr.hint")}</p>
+
+          {!editingMgr ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => {
+                resetForm();
+                setEditingMgr(true);
+              }}
+            >
+              <Pencil className="size-4" /> {t("pp.mgr.edit")}
+            </Button>
+          ) : (
+            <Module title={t("pp.mgr.editTitle")}>
+              <div className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label>{t("sheet.person.performance")}</Label>
+                    <Select
+                      value={form.performance || "unset"}
+                      onValueChange={(v) =>
+                        setForm({ ...form, performance: v === "unset" ? "" : v })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unset">{t("sheet.person.notAssessed")}</SelectItem>
+                        <SelectItem value="exceeds">
+                          {t("sheet.person.exceedsExpectation")}
+                        </SelectItem>
+                        <SelectItem value="meets">{t("sheet.person.meetsExpectation")}</SelectItem>
+                        <SelectItem value="below">{t("sheet.person.belowExpectation")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Readiness</Label>
+                    <Select
+                      value={form.readiness}
+                      onValueChange={(v) => setForm({ ...form, readiness: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unknown">{t("sheet.person.notAssessed")}</SelectItem>
+                        <SelectItem value="ready">{t("sheet.person.readyNow")}</SelectItem>
+                        <SelectItem value="ready_1y">{t("sheet.person.ready1y")}</SelectItem>
+                        <SelectItem value="ready_2y">{t("sheet.person.ready2y")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("sheet.person.attritionRisk")}</Label>
+                    <Select
+                      value={form.attrition_risk}
+                      onValueChange={(v) => setForm({ ...form, attrition_risk: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unknown">{t("sheet.person.notAssessed")}</SelectItem>
+                        <SelectItem value="low">{t("sheet.person.riskLow")}</SelectItem>
+                        <SelectItem value="medium">{t("sheet.person.riskMedium")}</SelectItem>
+                        <SelectItem value="high">{t("sheet.person.riskHigh")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("sheet.person.assessedSkillsLabel")}</Label>
+                  <Textarea
+                    rows={4}
+                    value={form.assessed_skills}
+                    onChange={(e) => setForm({ ...form, assessed_skills: e.target.value })}
+                    placeholder={"RTL Design | Expert\nNPU Architecture | Working"}
+                  />
+                </div>
+                {saveBar}
+              </div>
+            </Module>
+          )}
+
+          <Module
             badge={String((perfRecords.data ?? []).length)}
             title={t("sheet.person.perfRecordTitle")}
             actions={
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setPerfOpen((v) => !v)}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setPerfOpen((v) => !v)}
+              >
                 <Plus className="size-4" /> {t("sheet.person.perfAdd")}
               </Button>
             }
@@ -798,10 +1213,17 @@ export function PersonDetailSheet({
                   </div>
                   <div className="space-y-1.5">
                     <Label>{t("sheet.person.perfRating")}</Label>
-                    <Select value={perfForm.rating} onValueChange={(v) => setPerfForm({ ...perfForm, rating: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                    <Select
+                      value={perfForm.rating}
+                      onValueChange={(v) => setPerfForm({ ...perfForm, rating: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="exceeds">{t("sheet.person.exceedsExpectation")}</SelectItem>
+                        <SelectItem value="exceeds">
+                          {t("sheet.person.exceedsExpectation")}
+                        </SelectItem>
                         <SelectItem value="meets">{t("sheet.person.meetsExpectation")}</SelectItem>
                         <SelectItem value="below">{t("sheet.person.belowExpectation")}</SelectItem>
                       </SelectContent>
@@ -858,7 +1280,10 @@ export function PersonDetailSheet({
             ) : (
               <ul className="space-y-2">
                 {(perfRecords.data ?? []).map((r) => (
-                  <li key={r.id} className="rounded-lg border border-border/60 bg-surface-raised/40 p-3">
+                  <li
+                    key={r.id}
+                    className="rounded-lg border border-border/60 bg-surface-raised/40 p-3"
+                  >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="font-display text-sm font-semibold">{r.period}</span>
                       <span
@@ -874,12 +1299,8 @@ export function PersonDetailSheet({
                       </span>
                     </div>
                     {r.summary && <p className="mt-1 text-xs text-foreground/85">{r.summary}</p>}
-                    {r.highlights && (
-                      <p className="mt-1 text-xs text-ok">+ {r.highlights}</p>
-                    )}
-                    {r.improvements && (
-                      <p className="mt-1 text-xs text-warn">△ {r.improvements}</p>
-                    )}
+                    {r.highlights && <p className="mt-1 text-xs text-ok">+ {r.highlights}</p>}
+                    {r.improvements && <p className="mt-1 text-xs text-warn">△ {r.improvements}</p>}
                     <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
                       {new Date(r.created_at).toLocaleString()}
                       {r.reviewer ? ` · ${r.reviewer}` : ""}
@@ -890,108 +1311,12 @@ export function PersonDetailSheet({
             )}
           </Module>
 
-          <Module
-            collapsible
-            defaultOpen={false}
-            badge={String((history.data ?? []).length)}
-            title={t("sheet.person.historyTitle")}
-          >
-            {history.isLoading ? (
-              <p className="text-sm text-muted-foreground">{t("sheet.loading")}</p>
-            ) : (history.data ?? []).length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("sheet.person.noHistory")}</p>
-            ) : (
-              <ul className="space-y-2">
-                {(history.data ?? []).map((h) => (
-                  <li key={h.id} className="flex gap-2 rounded-lg border border-border/60 bg-surface-raised/40 px-3 py-2">
-                    <History className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-                    <div className="min-w-0">
-                      <p className="text-sm">{h.action}</p>
-                      {h.detail && <p className="text-xs text-muted-foreground">{h.detail}</p>}
-                      <p className="mt-0.5 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                        {new Date(h.created_at).toLocaleString()} · {h.actor}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Module>
-
-
-
-          <Module
-            collapsible
-            defaultOpen={false}
-            title={t("sheet.person.currentRole")}
-            actions={
-              role && onOpenRole ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() => onOpenRole(role.id)}
-                >
-                  <ExternalLink className="size-4" /> {t("sheet.person.viewRoleProfile")}
-                </Button>
-              ) : null
-            }
-          >
-            {!role ? (
-              <p className="text-sm text-muted-foreground">
-                {t("sheet.person.noRoleAssignedHint")}
-              </p>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <span className="rounded-full border border-brand/40 bg-brand/10 px-2.5 py-1 text-foreground">
-                    {direction?.title ?? t("sheet.person.unknownDirection")}
-                  </span>
-                  <span className="rounded-full border border-border/70 px-2.5 py-1">
-                    {criticalityLabel[role.criticality] ?? role.criticality}
-                  </span>
-                  <span className="rounded-full border border-border/70 px-2.5 py-1">
-                    Level {role.level_min}–{role.level_max}
-                  </span>
-                </div>
-                {cov && (
-                  <div>
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>{t("sheet.person.roleCoverage")}</span>
-                      <span className="tabular-nums">
-                        {t("sheet.person.coverageGap").replace("{filled}", String(cov.filled)).replace("{target}", String(role.target_count)).replace("{gap}", String(cov.gap))}
-                      </span>
-                    </div>
-                    <Progress
-                      className="mt-2"
-                      value={Math.min(100, (cov.filled / Math.max(1, role.target_count)) * 100)}
-                    />
-                  </div>
-                )}
-                <div>
-                  <p className="text-xs text-muted-foreground">{t("sheet.person.teammates")}</p>
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {teammates.length === 0 && (
-                      <span className="text-xs text-danger">{t("sheet.person.soleOwnerWarning")}</span>
-                    )}
-                    {teammates.map((t) => (
-                      <span
-                        key={t.id}
-                        className="rounded-full border border-border/70 px-2.5 py-1 text-xs"
-                      >
-                        {t.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </Module>
-
           {role && (
-            <Module collapsible defaultOpen={false} badge={String(skillMatch.length)} title={t("sheet.person.skillMatchTitle")}>
+            <Module badge={String(skillMatch.length)} title={t("sheet.person.skillMatchTitle")}>
               {skillMatch.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t("sheet.person.noSkillRequirements")}</p>
+                <p className="text-sm text-muted-foreground">
+                  {t("sheet.person.noSkillRequirements")}
+                </p>
               ) : (
                 <>
                   <p className="mb-3 text-xs text-muted-foreground">
@@ -1073,9 +1398,11 @@ export function PersonDetailSheet({
           )}
 
           {role && (
-            <Module collapsible defaultOpen={false} title={t("sheet.person.carriedCapabilities")}>
+            <Module title={t("sheet.person.carriedCapabilities")}>
               {carried.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t("sheet.person.noRelatedCapabilities")}</p>
+                <p className="text-sm text-muted-foreground">
+                  {t("sheet.person.noRelatedCapabilities")}
+                </p>
               ) : (
                 <>
                   <div className="flex flex-wrap gap-1.5">
@@ -1112,14 +1439,89 @@ export function PersonDetailSheet({
             </Module>
           )}
 
+          <Module
+            collapsible
+            defaultOpen={false}
+            title={t("sheet.person.currentRole")}
+            actions={
+              role && onOpenRole ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => onOpenRole(role.id)}
+                >
+                  <ExternalLink className="size-4" /> {t("sheet.person.viewRoleProfile")}
+                </Button>
+              ) : null
+            }
+          >
+            {!role ? (
+              <p className="text-sm text-muted-foreground">
+                {t("sheet.person.noRoleAssignedHint")}
+              </p>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <span className="rounded-full border border-brand/40 bg-brand/10 px-2.5 py-1 text-foreground">
+                    {direction?.title ?? t("sheet.person.unknownDirection")}
+                  </span>
+                  <span className="rounded-full border border-border/70 px-2.5 py-1">
+                    {criticalityLabel[role.criticality] ?? role.criticality}
+                  </span>
+                  <span className="rounded-full border border-border/70 px-2.5 py-1">
+                    Level {role.level_min}–{role.level_max}
+                  </span>
+                </div>
+                {cov && (
+                  <div>
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>{t("sheet.person.roleCoverage")}</span>
+                      <span className="tabular-nums">
+                        {t("sheet.person.coverageGap")
+                          .replace("{filled}", String(cov.filled))
+                          .replace("{target}", String(role.target_count))
+                          .replace("{gap}", String(cov.gap))}
+                      </span>
+                    </div>
+                    <Progress
+                      className="mt-2"
+                      value={Math.min(100, (cov.filled / Math.max(1, role.target_count)) * 100)}
+                    />
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs text-muted-foreground">{t("sheet.person.teammates")}</p>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {teammates.length === 0 && (
+                      <span className="text-xs text-danger">
+                        {t("sheet.person.soleOwnerWarning")}
+                      </span>
+                    )}
+                    {teammates.map((m) => (
+                      <span
+                        key={m.id}
+                        className="rounded-full border border-border/70 px-2.5 py-1 text-xs"
+                      >
+                        {m.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </Module>
 
-          <Module collapsible defaultOpen={false} badge={String((fits.data ?? []).length)} title={t("sheet.person.aiFitRecordsTitle")}>
+          <Module
+            collapsible
+            defaultOpen={false}
+            badge={String((fits.data ?? []).length)}
+            title={t("sheet.person.aiFitRecordsTitle")}
+          >
             {fits.isLoading ? (
               <p className="text-sm text-muted-foreground">{t("sheet.loading")}</p>
             ) : (fits.data ?? []).length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                {t("sheet.person.noFitRecords")}
-              </p>
+              <p className="text-sm text-muted-foreground">{t("sheet.person.noFitRecords")}</p>
             ) : (
               <ul className="space-y-2">
                 {(fits.data ?? []).map((f) => {
@@ -1144,7 +1546,12 @@ export function PersonDetailSheet({
                         <p className="mt-1 text-xs text-muted-foreground">{f.summary}</p>
                       )}
                       {f.recommendation && (
-                        <p className="mt-1 text-xs text-foreground/80">{t("sheet.person.recommendationLabel").replace("{text}", f.recommendation)}</p>
+                        <p className="mt-1 text-xs text-foreground/80">
+                          {t("sheet.person.recommendationLabel").replace(
+                            "{text}",
+                            f.recommendation,
+                          )}
+                        </p>
                       )}
                     </li>
                   );
@@ -1152,24 +1559,8 @@ export function PersonDetailSheet({
               </ul>
             )}
           </Module>
-
-          {(person.prior_experience ?? []).length > 0 && (
-            <Module collapsible defaultOpen={false} title={t("sheet.person.priorExperienceTitle")}>
-              <ul className="space-y-1.5 text-sm text-foreground/85">
-                {(person.prior_experience ?? []).map((e) => (
-                  <li key={e}>· {e}</li>
-                ))}
-              </ul>
-            </Module>
-          )}
-
-          {person.note && (
-            <Module collapsible defaultOpen={false} title={t("sheet.person.noteTitle")}>
-              <p className="text-sm text-foreground/85">{person.note}</p>
-            </Module>
-          )}
-        </div>
-      </SheetContent>
-    </Sheet>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
