@@ -560,7 +560,7 @@ function BuildingPanel({
     },
     onSuccess: () => {
       toast.success(t("cap.records.deleteToast"));
-      qc.invalidateQueries();
+      qc.invalidateQueries({ refetchType: "all" });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -836,7 +836,7 @@ function TrendPanel({ data, activities }: { data: Workspace; activities: Activit
       }),
     onSuccess: () => {
       toast.success(t("cap.trend.saveToast"));
-      qc.invalidateQueries();
+      qc.invalidateQueries({ refetchType: "all" });
     },
     onError: (e: Error) => toast.error(e.message),
   });

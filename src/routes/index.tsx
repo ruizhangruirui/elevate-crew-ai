@@ -105,7 +105,7 @@ function StrategyBoard() {
     if (data && !activeId && data.directions[0]) setActiveId(data.directions[0].id);
   }, [data, activeId]);
 
-  const invalidate = () => qc.invalidateQueries();
+  const invalidate = () => qc.invalidateQueries({ refetchType: "all" });
 
   const archiveRole = useMutation({
     mutationFn: async (id: string) => {
