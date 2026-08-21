@@ -6,6 +6,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/lib/i18n";
 import { contractLabel } from "@/lib/contract";
+import { effectiveImportance, IMPORTANCE_TONE } from "@/lib/importance";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { PersonDetailSheet } from "@/components/PersonDetailSheet";
 import { completeness } from "@/lib/org-tree";
@@ -229,7 +230,15 @@ function PeopleBody() {
                 {p.name.slice(0, 1)}
               </div>
               <div className="min-w-40 flex-1">
-                <p className="font-display font-semibold">{p.name}</p>
+                <p className="flex flex-wrap items-center gap-2 font-display font-semibold">
+                  {p.name}
+                  <span
+                    className={`rounded-md px-1.5 py-0.5 text-[10px] font-normal ${IMPORTANCE_TONE[effectiveImportance(p, data.roles)]}`}
+                  >
+                    {t(`importance.${effectiveImportance(p, data.roles)}`)}
+                    {p.is_leader ? ` · ${t("importance.leaderBadge")}` : ""}
+                  </span>
+                </p>
                 <p className="text-xs text-muted-foreground">
                   {[roleName(p.role_id), contractLabel(t, p.contract_type)].filter(Boolean).join(" · ")}
                 </p>
