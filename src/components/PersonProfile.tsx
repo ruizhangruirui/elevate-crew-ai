@@ -1521,53 +1521,6 @@ export function PersonProfile({
             )}
           </Module>
 
-          <Module
-            collapsible
-            defaultOpen={false}
-            badge={String((fits.data ?? []).length)}
-            title={t("sheet.person.aiFitRecordsTitle")}
-          >
-            {fits.isLoading ? (
-              <p className="text-sm text-muted-foreground">{t("sheet.loading")}</p>
-            ) : (fits.data ?? []).length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("sheet.person.noFitRecords")}</p>
-            ) : (
-              <ul className="space-y-2">
-                {(fits.data ?? []).map((f) => {
-                  const r = roles.find((x) => x.id === f.role_id);
-                  return (
-                    <li
-                      key={f.id}
-                      className="rounded-lg border border-border/60 bg-surface-raised/40 p-3"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <button
-                          className="text-left font-display text-sm font-semibold hover:text-brand"
-                          onClick={() => r && onOpenRole?.(r.id)}
-                        >
-                          {r?.title ?? t("sheet.person.deletedRole")}
-                        </button>
-                        <span className="font-display text-sm tabular-nums text-brand">
-                          {f.fit_score}
-                        </span>
-                      </div>
-                      {f.summary && (
-                        <p className="mt-1 text-xs text-muted-foreground">{f.summary}</p>
-                      )}
-                      {f.recommendation && (
-                        <p className="mt-1 text-xs text-foreground/80">
-                          {t("sheet.person.recommendationLabel").replace(
-                            "{text}",
-                            f.recommendation,
-                          )}
-                        </p>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </Module>
         </TabsContent>
       </Tabs>
     </div>
