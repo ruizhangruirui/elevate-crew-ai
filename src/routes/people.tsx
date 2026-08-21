@@ -85,7 +85,7 @@ function PeopleBody() {
       toast.success(t("ppl.toast.added"));
       setOpen(false);
       setForm({ name: "", level: "15", role_id: "none", status: "onboard" });
-      qc.invalidateQueries({ queryKey: ["workspace"] });
+      qc.invalidateQueries();
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -97,7 +97,7 @@ function PeopleBody() {
     },
     onSuccess: () => {
       toast.success(t("ppl.toast.removed"));
-      qc.invalidateQueries({ queryKey: ["workspace"] });
+      qc.invalidateQueries();
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -310,7 +310,7 @@ function PeopleBody() {
         directions={data.directions}
         open={!!activePersonId}
         onOpenChange={(v) => !v && setActivePersonId(null)}
-        onDone={() => qc.invalidateQueries({ queryKey: ["workspace"] })}
+        onDone={() => qc.invalidateQueries()}
         onOpenRole={(roleId) => {
           setActivePersonId(null);
           setActiveRoleId(roleId);
@@ -327,7 +327,7 @@ function PeopleBody() {
         }
         open={!!activeRoleId}
         onOpenChange={(v) => !v && setActiveRoleId(null)}
-        onDone={() => qc.invalidateQueries({ queryKey: ["workspace"] })}
+        onDone={() => qc.invalidateQueries()}
       />
     </div>
   );

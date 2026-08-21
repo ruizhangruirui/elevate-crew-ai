@@ -85,7 +85,7 @@ export function AddActionButton({
     onSuccess: () => {
       toast.success(t("act.toast.addedToAction"));
       setOpen(false);
-      qc.invalidateQueries({ queryKey: ["actions"] });
+      qc.invalidateQueries();
     },
     onError: (e: Error) => toast.error(e.message),
   });
