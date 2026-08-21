@@ -229,7 +229,9 @@ function PeopleBody() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
+
 
         <div className="divide-y divide-border/50">
           {data.people.map((p) => (
