@@ -86,7 +86,7 @@ export function AppShell({
               }}
             >
               <Icon className="size-4" />
-              {label}
+              {t(key)}
             </Link>
           ))}
         </nav>
@@ -103,7 +103,7 @@ export function AppShell({
             }}
           >
             <LogOut className="size-4" />
-            退出登录
+            {t("shell.signOut")}
           </Button>
         </div>
       </aside>
