@@ -26,13 +26,9 @@ import {
 } from "@/lib/talent";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchOrgNodes, type OrgNode } from "@/lib/org-tree";
-import {
-  actionSummary,
-  fetchActions,
-  isOverdue,
-  priorityKey,
-  type ActionItem,
-} from "@/lib/actions";
+import { ArchivedBinDialog } from "@/components/ArchivedBinDialog";
+import { FormActions } from "@/components/FormActions";
+import { toastError, toastSaved, toastUndoable } from "@/lib/ui-feedback";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -97,7 +93,6 @@ function StrategyBoard() {
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
   const orgNodes = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
-  const actions = useQuery({ queryKey: ["actions"], queryFn: fetchActions });
   const [activeId, setActiveId] = useState<string | null>(null);
   const [openRoleId, setOpenRoleId] = useState<string | null>(null);
 
@@ -112,11 +107,19 @@ function StrategyBoard() {
       const { error } = await supabase.from("roles").update({ archived: true }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      toast.success(t("idx.roleArchived"));
+    onSuccess: (_d, id) => {
+      toastUndoable(
+        t("idx.roleArchived"),
+        t("ui.undo"),
+        async () => {
+          await supabase.from("roles").update({ archived: false }).eq("id", id);
+          invalidate();
+        },
+        t("ui.undoHint"),
+      );
       invalidate();
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: toastError,
   });
 
   if (!data) return <div className="text-sm text-muted-foreground">{t("common.loading")}</div>;
@@ -151,8 +154,6 @@ function StrategyBoard() {
 
   return (
     <div className="space-y-10">
-      <ActionStrip list={actions.data ?? []} />
-
       {/* Org overview */}
       <section className="panel relative overflow-hidden p-8">
         <div
@@ -213,7 +214,10 @@ function StrategyBoard() {
             <h2 className="font-display text-xl font-semibold">{t("idx.directionsHeading")}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{t("idx.directionsHint")}</p>
           </div>
-          {org && <NewDirectionDialog orgId={org.id} onDone={invalidate} />}
+          <div className="flex items-center gap-1">
+            <ArchivedBinDialog />
+            {org && <NewDirectionDialog orgId={org.id} onDone={invalidate} />}
+          </div>
         </div>
 
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -317,10 +321,6 @@ function StrategyBoard() {
   );
 }
 
-function ActionStrip({ list }: { list: ActionItem[] }) {
-  return <ActionStripInner list={list} />;
-}
-
 function EditOrgDialog({ org, onDone }: { org: Org; onDone: () => void }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
@@ -346,7 +346,7 @@ function EditOrgDialog({ org, onDone }: { org: Org; onDone: () => void }) {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success(t("idx.orgUpdated"));
+      toastSaved(t("idx.orgUpdated"));
       setOpen(false);
       onDone();
     },
@@ -405,73 +405,14 @@ function EditOrgDialog({ org, onDone }: { org: Org; onDone: () => void }) {
             <Input value={tags} onChange={(e) => setTags(e.target.value)} />
           </div>
         </div>
-        <DialogFooter>
-          <Button
-            onClick={() => save.mutate()}
-            disabled={save.isPending || !name.trim()}
-          >
-            {t("idx.save")}
-          </Button>
-        </DialogFooter>
+        <FormActions
+          onCancel={() => setOpen(false)}
+          onSave={() => save.mutate()}
+          pending={save.isPending}
+          disabled={!name.trim()}
+        />
       </DialogContent>
     </Dialog>
-  );
-}
-
-function ActionStripInner({ list }: { list: ActionItem[] }) {
-  const { t } = useI18n();
-  const s = actionSummary(list);
-  const top = list
-    .filter((a) => a.status === "todo" || a.status === "doing")
-    .sort((a, b) => {
-      const rank = (x: ActionItem) =>
-        (isOverdue(x) ? 0 : 1) * 10 + (x.priority === "high" ? 0 : x.priority === "normal" ? 1 : 2);
-      return rank(a) - rank(b);
-    })
-    .slice(0, 4);
-
-  if (s.open === 0) return null;
-
-  return (
-    <section className="panel p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="font-display text-lg font-semibold">{t("idx.needFollowUp")}</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {t("idx.openCount").replace("{count}", String(s.open))}
-            {s.overdue > 0 && (
-              <span className="text-danger"> · {t("idx.overdueCount").replace("{count}", String(s.overdue))}</span>
-            )}
-            {s.high > 0 && (
-              <span className="text-warn"> · {t("idx.highPriorityCount").replace("{count}", String(s.high))}</span>
-            )}
-          </p>
-        </div>
-        <Link to="/actions" className="text-xs text-brand hover:underline">
-          {t("idx.actionCenterLink")}
-        </Link>
-      </div>
-      <ul className="mt-4 space-y-2">
-        {top.map((a) => (
-          <li
-            key={a.id}
-            className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border/60 bg-surface-raised/40 px-3 py-2 text-sm"
-          >
-            <span className="min-w-0 flex-1 truncate">{a.title}</span>
-            {a.owner && <span className="text-xs text-muted-foreground">{a.owner}</span>}
-            <span
-              className={`text-xs ${isOverdue(a) ? "text-danger" : "text-muted-foreground"}`}
-            >
-              {a.due_on ?? t("idx.noDeadline")}
-              {isOverdue(a) && ` · ${t("idx.overdueSuffix")}`}
-            </span>
-            <span className="rounded bg-muted/40 px-1.5 py-0.5 text-[10px] text-muted-foreground">
-              {t(priorityKey[a.priority] ?? a.priority)}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </section>
   );
 }
 
@@ -614,7 +555,7 @@ function RoleMenu({
     },
 
     onSuccess: () => {
-      toast.success(t("idx.roleUpdated"));
+      toastSaved(t("idx.roleUpdated"));
       setEditing(false);
       onSaved();
     },
@@ -743,11 +684,12 @@ function RoleMenu({
               {t("idx.roleProfileHint")}
             </p>
           </div>
-          <DialogFooter>
-            <Button onClick={() => save.mutate()} disabled={!title.trim() || save.isPending}>
-              {t("idx.save")}
-            </Button>
-          </DialogFooter>
+          <FormActions
+            onCancel={() => setEditing(false)}
+            onSave={() => save.mutate()}
+            pending={save.isPending}
+            disabled={!title.trim()}
+          />
         </DialogContent>
       </Dialog>
     </>
@@ -799,7 +741,7 @@ function DirectionMenu({
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success(t("idx.directionUpdated"));
+      toastSaved(t("idx.directionUpdated"));
       setEditing(false);
       onDone();
     },
@@ -815,7 +757,15 @@ function DirectionMenu({
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success(t("idx.directionArchived"));
+      toastUndoable(
+        t("idx.directionArchived"),
+        t("ui.undo"),
+        async () => {
+          await supabase.from("directions").update({ archived: false }).eq("id", direction.id);
+          onDone();
+        },
+        t("ui.undoHint"),
+      );
       setConfirming(false);
       onDone();
     },
@@ -870,11 +820,12 @@ function DirectionMenu({
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button onClick={() => save.mutate()} disabled={!title.trim() || save.isPending}>
-              {t("idx.save")}
-            </Button>
-          </DialogFooter>
+          <FormActions
+            onCancel={() => setEditing(false)}
+            onSave={() => save.mutate()}
+            pending={save.isPending}
+            disabled={!title.trim()}
+          />
         </DialogContent>
       </Dialog>
 
@@ -923,7 +874,7 @@ function NewDirectionDialog({ orgId, onDone }: { orgId: string; onDone: () => vo
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success(t("idx.directionCreated"));
+      toastSaved(t("idx.directionCreated"));
       setOpen(false);
       setTitle("");
       setDescription("");
@@ -957,11 +908,12 @@ function NewDirectionDialog({ orgId, onDone }: { orgId: string; onDone: () => vo
             />
           </div>
         </div>
-        <DialogFooter>
-          <Button onClick={() => create.mutate()} disabled={!title.trim() || create.isPending}>
-            {t("idx.save")}
-          </Button>
-        </DialogFooter>
+        <FormActions
+          onCancel={() => setOpen(false)}
+          onSave={() => create.mutate()}
+          pending={create.isPending}
+          disabled={!title.trim()}
+        />
       </DialogContent>
     </Dialog>
   );
@@ -993,7 +945,7 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success(t("idx.roleCreated"));
+      toastSaved(t("idx.roleCreated"));
       setOpen(false);
       setForm({
         title: "",
