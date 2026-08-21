@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +23,7 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const navigate = useNavigate();
   const { session } = useAuth();
+  const { t } = useI18n();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -45,10 +47,10 @@ function AuthPage() {
           options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
-        toast.success("注册成功，正在进入系统");
+        toast.success(t("auth.registerSuccess"));
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "操作失败");
+      toast.error(err instanceof Error ? err.message : t("auth.actionFailed"));
     } finally {
       setBusy(false);
     }
@@ -63,14 +65,12 @@ function AuthPage() {
         >
           ST
         </div>
-        <h1 className="mt-6 font-display text-2xl font-bold">战略岗位与人才管理系统</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          从未来战略出发，定义关键研究方向与目标岗位架构。
-        </p>
+        <h1 className="mt-6 font-display text-2xl font-bold">{t("auth.brandTitle")}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{t("auth.brandSubtitle")}</p>
 
         <form onSubmit={submit} className="mt-8 space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">邮箱</Label>
+            <Label htmlFor="email">{t("auth.email")}</Label>
             <Input
               id="email"
               type="email"
@@ -81,7 +81,7 @@ function AuthPage() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">密码</Label>
+            <Label htmlFor="password">{t("auth.password")}</Label>
             <Input
               id="password"
               type="password"
@@ -93,7 +93,7 @@ function AuthPage() {
             />
           </div>
           <Button type="submit" className="w-full" disabled={busy}>
-            {mode === "signin" ? "登录" : "创建账号"}
+            {mode === "signin" ? t("auth.signIn") : t("auth.createAccount")}
           </Button>
         </form>
 
@@ -102,7 +102,7 @@ function AuthPage() {
           className="mt-5 w-full text-center text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
           onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
         >
-          {mode === "signin" ? "还没有账号？创建一个" : "已有账号？返回登录"}
+          {mode === "signin" ? t("auth.noAccount") : t("auth.hasAccount")}
         </button>
       </div>
     </div>

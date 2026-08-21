@@ -1,3 +1,131 @@
 import type { Dict } from "../i18n-types";
 
-export const settingsDict: Dict = {};
+export const settingsDict: Dict = {
+  "set.title": { zh: "系统设置", en: "System Settings" },
+  "set.subtitle": {
+    zh: "集中管理组织、人员、权限、配置、确认变更与审计记录。",
+    en: "Manage organization, people, permissions, configuration, and audit records in one place.",
+  },
+  "set.nav.org": { zh: "组织管理", en: "Organization" },
+  "set.nav.people": { zh: "人员管理", en: "People" },
+  "set.nav.access": { zh: "权限管理", en: "Access Control" },
+  "set.nav.config": { zh: "人才配置", en: "Talent Configuration" },
+  "set.nav.audit": { zh: "操作记录", en: "Audit Log" },
+  "set.nav.system": { zh: "系统设置", en: "System" },
+  "set.loading": { zh: "加载中…", en: "Loading…" },
+
+  "set.org.title": { zh: "组织管理", en: "Organization" },
+  "set.org.desc": {
+    zh: "维护 VNRC / Lab / Team 结构，组织变更会写入操作记录。",
+    en: "Maintain the VNRC / Lab / Team structure; changes are recorded in the audit log.",
+  },
+  "set.org.addLab": { zh: "新增 Lab", en: "Add Lab" },
+  "set.org.addTeam": { zh: "新增 Team", en: "Add Team" },
+  "set.org.edit": { zh: "编辑", en: "Edit" },
+  "set.org.archive": { zh: "归档", en: "Archive" },
+  "set.org.confirmArchiveTitle": { zh: "确认归档「{name}」？", en: 'Archive "{name}"?' },
+  "set.org.confirmArchiveDesc": {
+    zh: "归档后该节点及其下级将不再出现在组织结构中，此操作会写入操作记录。",
+    en: "Once archived, this node and its children will no longer appear in the org structure. This action will be logged.",
+  },
+  "set.org.confirmArchiveLabel": { zh: "确认归档", en: "Archive" },
+  "set.org.dialogEditTitle": { zh: "编辑组织", en: "Edit Organization" },
+  "set.org.dialogAddTitle": { zh: "新增 {type}", en: "Add {type}" },
+  "set.org.name": { zh: "名称", en: "Name" },
+  "set.org.parentOrg": { zh: "上级组织", en: "Parent Organization" },
+  "set.org.mission": { zh: "使命", en: "Mission" },
+  "set.org.save": { zh: "保存", en: "Save" },
+  "set.org.updated": { zh: "组织结构已更新", en: "Organization structure updated" },
+  "set.org.archivedToast": { zh: "已归档", en: "Archived" },
+
+  "set.people.title": { zh: "人员管理", en: "People" },
+  "set.people.desc": {
+    zh: "新增、导出与归档员工数据，明细操作在人员视图中完成。",
+    en: "Add, export, and archive employee data; detailed operations are done in the People view.",
+  },
+  "set.people.goToPeople": { zh: "前往人员视图新增 / 编辑", en: "Go to People view to add / edit" },
+  "set.people.exported": { zh: "已导出员工数据", en: "Employee data exported" },
+  "set.people.overview": { zh: "人员总览", en: "People Overview" },
+  "set.people.overviewDesc": {
+    zh: "当前系统内共有 {count} 位在册人员（含候选人）。",
+    en: "There are currently {count} people on record in the system (including candidates).",
+  },
+
+  "set.access.title": { zh: "权限管理", en: "Access Control" },
+  "set.access.desc": {
+    zh: "Role + Scope + Permissions 共同决定用户可见和可编辑范围。",
+    en: "Role, scope, and permissions together determine what a user can view and edit.",
+  },
+  "set.access.confirmToggleTitle": { zh: "确认{action}「{name}」的访问权限？", en: '{action} access for "{name}"?' },
+  "set.access.actionDisable": { zh: "停用", en: "Disable" },
+  "set.access.actionEnable": { zh: "启用", en: "Enable" },
+  "set.access.confirmDisableDesc": {
+    zh: "停用后该用户将无法再访问系统数据，此操作会写入操作记录。",
+    en: "Once disabled, this user will no longer be able to access system data. This action will be logged.",
+  },
+  "set.access.confirmEnableDesc": {
+    zh: "启用后该用户将按其 Role 与 Scope 恢复访问权限，此操作会写入操作记录。",
+    en: "Once enabled, this user's access will be restored according to their Role and Scope. This action will be logged.",
+  },
+  "set.access.confirmChangeLabel": { zh: "确认变更", en: "Confirm Change" },
+  "set.access.updated": { zh: "权限已更新", en: "Permissions updated" },
+  "set.access.roleLabScope": { zh: "单个 Lab 范围", en: "Single Lab scope" },
+  "set.access.roleTeamScope": { zh: "单个 Team 范围", en: "Single Team scope" },
+  "set.access.roleHrbpScope": { zh: "多 Lab / Team 人才范围", en: "Multiple Lab / Team talent scope" },
+
+  "set.config.title": { zh: "人才配置", en: "Talent Configuration" },
+  "set.config.desc": {
+    zh: "维护标签、奖项、岗位关键性、覆盖状态、Readiness、Future Role 关系与记录类型。",
+    en: "Maintain tags, awards, role criticality, coverage status, readiness, future role relationships, and record types.",
+  },
+  "set.config.empty": { zh: "暂无配置项", en: "No configuration items" },
+  "set.config.confirmDeactivateTitle": { zh: "确认停用配置项「{name}」？", en: 'Deactivate configuration item "{name}"?' },
+  "set.config.confirmDeactivateDesc": {
+    zh: "停用后新的记录将无法再选择该项，已有数据保持不变。",
+    en: "Once deactivated, this item can no longer be selected for new records; existing data remains unchanged.",
+  },
+  "set.config.confirmDeactivateLabel": { zh: "确认停用", en: "Deactivate" },
+  "set.config.confirmDeleteTitle": { zh: "确认删除配置项「{name}」？", en: 'Delete configuration item "{name}"?' },
+  "set.config.confirmDeleteDesc": {
+    zh: "删除后不可恢复，已经引用该项的历史记录会保留原始文本。",
+    en: "This cannot be undone. Historical records referencing this item will retain their original text.",
+  },
+  "set.config.confirmDeleteLabel": { zh: "仍要删除", en: "Delete Anyway" },
+  "set.config.dialogTitle": { zh: "新增配置项", en: "Add Configuration Item" },
+  "set.config.updated": { zh: "配置已更新", en: "Configuration updated" },
+
+  "set.audit.title": { zh: "操作记录", en: "Audit Log" },
+  "set.audit.desc": {
+    zh: "Create / Edit / Delete / Archive / Transfer / Permission Change 自动记录。",
+    en: "Create / Edit / Delete / Archive / Transfer / Permission Change are recorded automatically.",
+  },
+  "set.audit.time": { zh: "时间", en: "Time" },
+  "set.audit.actor": { zh: "操作人", en: "Actor" },
+  "set.audit.action": { zh: "动作", en: "Action" },
+  "set.audit.entity": { zh: "对象", en: "Entity" },
+  "set.audit.detail": { zh: "说明", en: "Detail" },
+  "set.audit.exported": { zh: "已导出操作记录", en: "Audit log exported" },
+
+  "set.system.title": { zh: "系统设置", en: "System" },
+  "set.system.desc": {
+    zh: "语言、外观与数据导出等系统级配置。",
+    en: "System-level settings such as language, appearance, and data export.",
+  },
+  "set.system.appearanceValue": { zh: "Midnight Indigo（深色主题）", en: "Midnight Indigo (dark theme)" },
+  "set.system.data": { zh: "数据", en: "Data" },
+  "set.system.exportedAll": { zh: "已导出全部数据", en: "All data exported" },
+
+  "auth.registerSuccess": { zh: "注册成功，正在进入系统", en: "Registration successful, entering the system" },
+  "auth.actionFailed": { zh: "操作失败", en: "Action failed" },
+  "auth.brandTitle": { zh: "战略岗位与人才管理系统", en: "Strategic Roles & Talent Management System" },
+  "auth.brandSubtitle": {
+    zh: "从未来战略出发，定义关键研究方向与目标岗位架构。",
+    en: "Starting from future strategy, define key research directions and target role structures.",
+  },
+  "auth.email": { zh: "邮箱", en: "Email" },
+  "auth.password": { zh: "密码", en: "Password" },
+  "auth.signIn": { zh: "登录", en: "Sign In" },
+  "auth.createAccount": { zh: "创建账号", en: "Create Account" },
+  "auth.noAccount": { zh: "还没有账号？创建一个", en: "Don't have an account? Create one" },
+  "auth.hasAccount": { zh: "已有账号？返回登录", en: "Already have an account? Sign in" },
+};

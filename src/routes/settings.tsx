@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Plus, Pencil, Archive, Download } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { useI18n } from "@/lib/i18n";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -131,17 +132,25 @@ async function logAudit(action: string, entity: string, detail: string) {
 }
 
 function SettingsPage() {
+  const { t } = useI18n();
   return (
-    <AppShell
-      title="系统设置"
-      subtitle="集中管理组织、人员、权限、配置、确认变更与审计记录。"
-    >
+    <AppShell title={t("set.title")} subtitle={t("set.subtitle")}>
       <SettingsBody />
     </AppShell>
   );
 }
 
+const SECTION_LABEL_KEYS: Record<Section, string> = {
+  "组织管理": "set.nav.org",
+  "人员管理": "set.nav.people",
+  "权限管理": "set.nav.access",
+  "人才配置": "set.nav.config",
+  "操作记录": "set.nav.audit",
+  "系统设置": "set.nav.system",
+};
+
 function SettingsBody() {
+  const { t } = useI18n();
   const [section, setSection] = useState<Section>("组织管理");
   const { data } = useQuery({ queryKey: ["settings"], queryFn: fetchSettings });
 
@@ -158,14 +167,14 @@ function SettingsBody() {
                 : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground"
             }`}
           >
-            {s}
+            {t(SECTION_LABEL_KEYS[s])}
           </button>
         ))}
       </nav>
 
       <div className="panel min-h-[24rem] p-6">
         {!data ? (
-          <p className="text-sm text-muted-foreground">加载中…</p>
+          <p className="text-sm text-muted-foreground">{t("set.loading")}</p>
         ) : section === "组织管理" ? (
           <OrgSection nodes={data.orgNodes} />
         ) : section === "人员管理" ? (
@@ -207,6 +216,7 @@ function SectionHeader({
 /* ---------------- 组织管理 ---------------- */
 
 function OrgSection({ nodes }: { nodes: OrgNode[] }) {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const [editing, setEditing] = useState<Partial<OrgNode> | null>(null);
   const live = nodes.filter((n) => !n.archived);
@@ -241,7 +251,7 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["settings"] });
       setEditing(null);
-      toast.success("组织结构已更新");
+      toast.success(t("set.org.updated"));
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -257,7 +267,7 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["settings"] });
-      toast.success("已归档");
+      toast.success(t("set.org.archivedToast"));
     },
   });
 
@@ -281,21 +291,21 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
             </div>
             <div className="flex gap-1">
               <Button size="sm" variant="ghost" onClick={() => setEditing(node)}>
-                <Pencil className="size-3.5" /> 编辑
+                <Pencil className="size-3.5" /> {t("set.org.edit")}
               </Button>
               {node.id !== "vnrc" && (
                 <ConfirmAction
-                  title={`确认归档「${node.name}」？`}
+                  title={t("set.org.confirmArchiveTitle").replace("{name}", node.name)}
                   description={
                     <>
-                      <p>归档后该节点及其下级将不再出现在组织结构中，此操作会写入操作记录。</p>
+                      <p>{t("set.org.confirmArchiveDesc")}</p>
                     </>
                   }
-                  confirmLabel="确认归档"
+                  confirmLabel={t("set.org.confirmArchiveLabel")}
                   onConfirm={() => archive.mutate(node)}
                 >
                   <Button size="sm" variant="ghost">
-                    <Archive className="size-3.5" /> 归档
+                    <Archive className="size-3.5" /> {t("set.org.archive")}
                   </Button>
                 </ConfirmAction>
               )}
@@ -307,23 +317,20 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
 
   return (
     <>
-      <SectionHeader
-        title="组织管理"
-        desc="维护 VNRC / Lab / Team 结构，组织变更会写入操作记录。"
-      >
+      <SectionHeader title={t("set.org.title")} desc={t("set.org.desc")}>
         <Button
           size="sm"
           variant="secondary"
           onClick={() => setEditing({ type: "Lab", parent_id: "vnrc" })}
         >
-          <Plus className="size-3.5" /> 新增 Lab
+          <Plus className="size-3.5" /> {t("set.org.addLab")}
         </Button>
         <Button
           size="sm"
           variant="secondary"
           onClick={() => setEditing({ type: "Team", parent_id: "lab-network" })}
         >
-          <Plus className="size-3.5" /> 新增 Team
+          <Plus className="size-3.5" /> {t("set.org.addTeam")}
         </Button>
       </SectionHeader>
 
@@ -332,18 +339,22 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editing?.id ? "编辑组织" : `新增 ${editing?.type}`}</DialogTitle>
+            <DialogTitle>
+              {editing?.id
+                ? t("set.org.dialogEditTitle")
+                : t("set.org.dialogAddTitle").replace("{type}", editing?.type ?? "")}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>名称</Label>
+              <Label>{t("set.org.name")}</Label>
               <Input
                 value={editing?.name ?? ""}
                 onChange={(e) => setEditing((p) => ({ ...p!, name: e.target.value }))}
               />
             </div>
             <div className="space-y-2">
-              <Label>上级组织</Label>
+              <Label>{t("set.org.parentOrg")}</Label>
               <Select
                 value={editing?.parent_id ?? "vnrc"}
                 onValueChange={(v) => setEditing((p) => ({ ...p!, parent_id: v }))}
@@ -363,7 +374,7 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>使命</Label>
+              <Label>{t("set.org.mission")}</Label>
               <Textarea
                 rows={3}
                 value={editing?.mission ?? ""}
@@ -376,7 +387,7 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
               onClick={() => editing?.name && save.mutate(editing)}
               disabled={save.isPending}
             >
-              保存
+              {t("set.org.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -388,6 +399,7 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
 /* ---------------- 人员管理 ---------------- */
 
 function PeopleOpsSection() {
+  const { t } = useI18n();
   const { data } = useQuery({
     queryKey: ["people-count"],
     queryFn: async () => {
@@ -411,24 +423,24 @@ function PeopleOpsSection() {
     a.click();
     URL.revokeObjectURL(url);
     await logAudit("Export", "人员数据", "导出员工 CSV");
-    toast.success("已导出员工数据");
+    toast.success(t("set.people.exported"));
   };
 
   return (
     <>
-      <SectionHeader title="人员管理" desc="新增、导出与归档员工数据，明细操作在人员视图中完成。" />
+      <SectionHeader title={t("set.people.title")} desc={t("set.people.desc")} />
       <div className="flex flex-wrap gap-2">
         <Button variant="secondary" size="sm" asChild>
-          <a href="/people">前往人员视图新增 / 编辑</a>
+          <a href="/people">{t("set.people.goToPeople")}</a>
         </Button>
         <Button variant="secondary" size="sm" onClick={exportPeople}>
           <Download className="size-3.5" /> Export Employees
         </Button>
       </div>
       <div className="mt-6 rounded-lg border border-border/60 bg-card/40 p-4">
-        <p className="text-sm font-medium">人员总览</p>
+        <p className="text-sm font-medium">{t("set.people.overview")}</p>
         <p className="mt-1 text-sm text-muted-foreground">
-          当前系统内共有 {data ?? 0} 位在册人员（含候选人）。
+          {t("set.people.overviewDesc").replace("{count}", String(data ?? 0))}
         </p>
       </div>
     </>
@@ -437,15 +449,15 @@ function PeopleOpsSection() {
 
 /* ---------------- 权限管理 ---------------- */
 
-const ROLE_DEFS: [string, string][] = [
-  ["System Owner", "All Research Center data"],
-  ["Viewer", "All Research Center review access"],
-  ["Lab Manager", "单个 Lab 范围"],
-  ["Team Manager", "单个 Team 范围"],
-  ["HRBP", "多 Lab / Team 人才范围"],
-];
-
 function AccessSection({ users }: { users: AccessUser[] }) {
+  const { t } = useI18n();
+  const ROLE_DEFS: [string, string][] = [
+    ["System Owner", "All Research Center data"],
+    ["Viewer", "All Research Center review access"],
+    ["Lab Manager", t("set.access.roleLabScope")],
+    ["Team Manager", t("set.access.roleTeamScope")],
+    ["HRBP", t("set.access.roleHrbpScope")],
+  ];
   const qc = useQueryClient();
   const toggle = useMutation({
     mutationFn: async (u: AccessUser) => {
@@ -456,16 +468,13 @@ function AccessSection({ users }: { users: AccessUser[] }) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["settings"] });
-      toast.success("权限已更新");
+      toast.success(t("set.access.updated"));
     },
   });
 
   return (
     <>
-      <SectionHeader
-        title="权限管理"
-        desc="Role + Scope + Permissions 共同决定用户可见和可编辑范围。"
-      />
+      <SectionHeader title={t("set.access.title")} desc={t("set.access.desc")} />
       <Table>
         <TableHeader>
           <TableRow>
@@ -487,19 +496,24 @@ function AccessSection({ users }: { users: AccessUser[] }) {
               </TableCell>
               <TableCell className="text-right">
                 <ConfirmAction
-                  title={`确认${u.status === "Active" ? "停用" : "启用"}「${u.name}」的访问权限？`}
+                  title={t("set.access.confirmToggleTitle")
+                    .replace(
+                      "{action}",
+                      u.status === "Active" ? t("set.access.actionDisable") : t("set.access.actionEnable"),
+                    )
+                    .replace("{name}", u.name)}
                   description={
                     <p>
                       {u.status === "Active"
-                        ? "停用后该用户将无法再访问系统数据，此操作会写入操作记录。"
-                        : "启用后该用户将按其 Role 与 Scope 恢复访问权限，此操作会写入操作记录。"}
+                        ? t("set.access.confirmDisableDesc")
+                        : t("set.access.confirmEnableDesc")}
                     </p>
                   }
-                  confirmLabel="确认变更"
+                  confirmLabel={t("set.access.confirmChangeLabel")}
                   onConfirm={() => toggle.mutate(u)}
                 >
                   <Button size="sm" variant="ghost">
-                    {u.status === "Active" ? "停用" : "启用"}
+                    {u.status === "Active" ? t("set.access.actionDisable") : t("set.access.actionEnable")}
                   </Button>
                 </ConfirmAction>
               </TableCell>

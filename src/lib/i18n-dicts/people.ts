@@ -1,3 +1,48 @@
 import type { Dict } from "../i18n-types";
 
-export const peopleDict: Dict = {};
+export const peopleDict: Dict = {
+  "ppl.loading": { zh: "加载中…", en: "Loading…" },
+  "ppl.title": { zh: "人员视图", en: "People" },
+  "ppl.subtitle": {
+    zh: "管理在岗人员与候选人，追踪职级分布与岗位归属。",
+    en: "Manage onboard staff and candidates, and track level distribution and role assignment.",
+  },
+  "ppl.stat.total": { zh: "总人数", en: "Total People" },
+  "ppl.stat.onboard": { zh: "在岗", en: "Onboard" },
+  "ppl.stat.candidate": { zh: "候选人", en: "Candidates" },
+  "ppl.stat.unassigned": { zh: "未分配岗位", en: "Unassigned" },
+  "ppl.list.title": { zh: "人员名单", en: "People List" },
+  "ppl.list.desc.pre": {
+    zh: "全员平铺清单；按团队层级浏览与数据完整度详情见",
+    en: "Full flat list; browse by team hierarchy and data completeness details in ",
+  },
+  "ppl.list.desc.link": { zh: "组织 & 人员视图", en: "Org & People View" },
+  "ppl.add": { zh: "新增人员", en: "Add Person" },
+  "ppl.dialog.title": { zh: "新增人员", en: "Add Person" },
+  "ppl.field.name": { zh: "姓名", en: "Name" },
+  "ppl.field.level": { zh: "职级", en: "Level" },
+  "ppl.field.status": { zh: "状态", en: "Status" },
+  "ppl.status.onboard": { zh: "在岗", en: "Onboard" },
+  "ppl.status.candidate": { zh: "候选人", en: "Candidate" },
+  "ppl.field.targetRole": { zh: "目标岗位", en: "Target Role" },
+  "ppl.role.unassigned": { zh: "未分配", en: "Unassigned" },
+  "ppl.role.noRole": { zh: "未分配岗位", en: "No role assigned" },
+  "ppl.save": { zh: "保存", en: "Save" },
+  "ppl.incomplete": { zh: "资料不全", en: "Incomplete" },
+  "ppl.incomplete.items": { zh: "项", en: "items" },
+  "ppl.empty": { zh: "暂无人员", en: "No people yet" },
+  "ppl.remove.label": { zh: "移除", en: "Remove" },
+  "ppl.remove.confirmTitle": { zh: "确认删除「{name}」？", en: "Delete “{name}”?" },
+  "ppl.remove.desc1": {
+    zh: "该人员的所有评估信息、岗位归属与 AI 匹配记录都会一并删除，且无法恢复。",
+    en: "All assessment data, role assignment, and AI matching records for this person will be permanently deleted.",
+  },
+  "ppl.remove.desc2": {
+    zh: "如果只是离岗，建议改为在详情里把状态改为「候选人」或移除岗位归属。",
+    en: "If they are simply leaving the role, consider changing status to “Candidate” or removing the role assignment instead.",
+  },
+  "ppl.remove.confirmLabel": { zh: "仍要删除", en: "Delete Anyway" },
+  "ppl.toast.added": { zh: "已添加人员", en: "Person added" },
+  "ppl.toast.removed": { zh: "已移除", en: "Removed" },
+  "ppl.error.orgNotInit": { zh: "组织尚未初始化", en: "Organization not initialized yet" },
+};
