@@ -135,7 +135,7 @@ function Children({ children }: { children: React.ReactNode[] }) {
   if (items.length === 0) return null;
   return (
     <>
-      <div className="h-6 w-px bg-border" />
+      <div className="h-4 w-px bg-border" />
       <div className="flex items-start">{items}</div>
     </>
   );
@@ -144,9 +144,9 @@ function Children({ children }: { children: React.ReactNode[] }) {
 /** 单个子分支：顶部连接线 */
 function Branch({ children }: { children: React.ReactNode }) {
   return (
-    <div className="branch relative flex flex-col items-center px-3 pt-6">
+    <div className="branch relative flex flex-col items-center px-2 pt-4">
       <span className="pointer-events-none absolute top-0 left-0 right-0 h-px bg-border [.branch:first-child>&]:left-1/2 [.branch:last-child>&]:right-1/2" />
-      <span className="pointer-events-none absolute top-0 left-1/2 h-6 w-px bg-border" />
+      <span className="pointer-events-none absolute top-0 left-1/2 h-4 w-px bg-border" />
       {children}
     </div>
   );
