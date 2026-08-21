@@ -63,7 +63,60 @@ function perfLabelOf(t: (k: string) => string, key: string): string {
   return map[key] ?? key;
 }
 
+const SKILL_LEVELS = ["Proficient", "Advanced", "Expert"] as const;
+
+/** 等级刻度：空心=要求，实心=实际 */
+function LevelScale({ required, actual }: { required: string; actual: string | null }) {
+  const req = levelRank(required);
+  const act = levelRank(actual);
+  return (
+    <span className="flex items-center gap-0.5" title={`${required} / ${actual ?? "-"}`}>
+      {[1, 2, 3].map((i) => (
+        <span
+          key={i}
+          className={`size-2 rounded-full border ${
+            i <= act
+              ? act >= req
+                ? "border-ok bg-ok"
+                : "border-warn bg-warn"
+              : i <= req
+                ? "border-muted-foreground/60"
+                : "border-transparent"
+          }`}
+        />
+      ))}
+    </span>
+  );
+}
+
+/** 折叠展示低信号条目 */
+function CollapsedRest({ items, label }: { items: string[]; label: string }) {
+  const [open, setOpen] = useState(false);
+  if (items.length === 0) return null;
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+      >
+        {label.replace("{n}", String(items.length))}
+      </button>
+      {open && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {items.map((i) => (
+            <span key={i} className="rounded-full border border-border/70 px-2.5 py-1 text-xs">
+              {i}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Fact({ label, value, tone }: { label: string; value: string; tone?: "ok" | "warn" | "danger" | undefined }) {
+
   const toneCls =
     tone === "ok" ? "text-ok" : tone === "warn" ? "text-warn" : tone === "danger" ? "text-danger" : "";
   return (
