@@ -153,7 +153,10 @@ function PeopleBody() {
               </Link>
             </p>
           </div>
+          <div className="flex items-center gap-2">
+          <ImportPeopleDialog />
           <Dialog open={open} onOpenChange={setOpen}>
+
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1.5">
                 <Plus className="size-4" /> {t("ppl.add")}
