@@ -81,4 +81,26 @@ export const coreDict: Dict = {
   "importance.leaderBadge": { zh: "领导", en: "Leader" },
   "common.yes": { zh: "是", en: "Yes" },
   "common.no": { zh: "否", en: "No" },
+
+  // ---- unified interaction rules ----
+  "ui.save": { zh: "保存", en: "Save" },
+  "ui.saving": { zh: "保存中…", en: "Saving…" },
+  "ui.cancel": { zh: "取消", en: "Cancel" },
+  "ui.saveHint": {
+    zh: "点「保存」后才会写入，取消则丢弃本次修改。",
+    en: "Nothing is written until you press Save; Cancel discards these changes.",
+  },
+  "ui.undo": { zh: "撤销", en: "Undo" },
+  "ui.restore": { zh: "恢复", en: "Restore" },
+  "ui.restored": { zh: "已恢复", en: "Restored" },
+  "ui.archiveBin": { zh: "已归档", en: "Archived" },
+  "ui.archiveBinHint": {
+    zh: "归档不是删除：这里的方向与岗位随时可以恢复，恢复后重新计入覆盖统计。",
+    en: "Archiving is not deleting: directions and roles here can be restored anytime and will count toward coverage again.",
+  },
+  "ui.archiveBinEmpty": { zh: "还没有归档内容。", en: "Nothing archived yet." },
+  "ui.archivedDirections": { zh: "已归档方向", en: "Archived directions" },
+  "ui.archivedRoles": { zh: "已归档岗位", en: "Archived roles" },
+  "ui.undoHint": { zh: "可在提示中撤销，或到「已归档」里恢复。", en: "Undo from the toast, or restore later from Archived." },
 };
+

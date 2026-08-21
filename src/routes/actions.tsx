@@ -493,16 +493,17 @@ type ActionForm = {
 };
 
 function composeActionDetail(form: ActionForm) {
-  const meta = [
+  const meta = ([
     ["Source", form.sourceNote],
     ["Related", form.relatedObject],
     ["Approver", form.approver],
     ["Confirmation", form.confirmationStatus],
     ["Evidence", form.evidence],
     ["Rejection reason", form.rejectionReason],
-  ]
+  ] as [string, string][])
     .filter(([, value]) => value.trim())
     .map(([key, value]) => `${key}: ${value.trim()}`);
+
 
   return [form.detail.trim(), meta.length ? `Workflow\n${meta.join("\n")}` : ""]
     .filter(Boolean)
@@ -521,7 +522,7 @@ function parseActionWorkflow(detail: string | null) {
   );
 
   return {
-    description: descriptionRaw.trim(),
+    description: (descriptionRaw ?? "").trim(),
     sourceNote: pairs["Source"] ?? "",
     relatedObject: pairs["Related"] ?? "",
     approver: pairs["Approver"] ?? "",
