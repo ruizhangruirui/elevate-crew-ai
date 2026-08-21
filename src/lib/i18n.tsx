@@ -1,0 +1,100 @@
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+
+export type Lang = "zh" | "en";
+
+const STORAGE_KEY = "app-lang";
+
+type Dict = Record<string, { zh: string; en: string }>;
+
+export const dict: Dict = {
+  // ---- nav / shell ----
+  "nav.index": { zh: "战略岗位视图", en: "Strategic Roles" },
+  "nav.capability": { zh: "组织能力视图", en: "Org Capability" },
+  "nav.org": { zh: "组织视图", en: "Org Structure" },
+  "nav.people": { zh: "人员视图", en: "People" },
+  "nav.actions": { zh: "待办中心", en: "Action Center" },
+  "nav.settings": { zh: "系统设置", en: "Settings" },
+  "shell.brand": { zh: "战略岗位与人才", en: "Talent Architecture" },
+  "shell.brandSub": { zh: "Talent Architecture", en: "Strategic Roles & Talent" },
+  "shell.signOut": { zh: "退出登录", en: "Sign out" },
+  "shell.language": { zh: "语言", en: "Language" },
+
+  // ---- common ----
+  "common.loading": { zh: "加载中…", en: "Loading…" },
+  "common.people": { zh: "人", en: "people" },
+  "common.expandAll": { zh: "展开全部", en: "Expand all" },
+  "common.collapse": { zh: "收起", en: "Collapse" },
+  "common.chartView": { zh: "架构图", en: "Chart" },
+  "common.listView": { zh: "列表", en: "List" },
+  "common.candidate": { zh: "候选人", en: "Candidate" },
+  "common.vacantSeat": { zh: "空缺席位", en: "Vacant seat" },
+
+  // ---- org view ----
+  "org.title": { zh: "组织视图", en: "Org Structure" },
+  "org.subtitle": {
+    zh: "系统设置里维护的 Lab / Team 结构，在这里逐层展开：团队下挂着岗位（含空缺席位），岗位下挂着人。",
+    en: "The Lab / Team structure maintained in Settings, expanded layer by layer: teams hold roles (including vacant seats), roles hold people.",
+  },
+  "org.metaDesc": {
+    zh: "从 Lab 到 Team 到人，逐层展开组织结构，点开成员查看岗位、技能与能力承载详情。",
+    en: "Expand the organization from Lab to Team to person, and open any member for role, skill and capability details.",
+  },
+  "org.stat.nodes": { zh: "组织节点", en: "Org nodes" },
+  "org.stat.assigned": { zh: "已归属成员", en: "Assigned members" },
+  "org.stat.unassigned": { zh: "未归属成员", en: "Unassigned members" },
+  "org.aiDiagnosis": { zh: "AI 诊断", en: "AI diagnosis" },
+  "org.onboard": { zh: "在岗", en: "Onboard" },
+  "org.target": { zh: "编制", en: "Target" },
+  "org.avgLevel": { zh: "平均职级", en: "Avg. level" },
+  "org.directions": { zh: "承担方向", en: "Directions" },
+  "org.viewCapability": { zh: "查看该团队能力体检", en: "View capability check" },
+  "org.roleProfile": { zh: "岗位画像", en: "Role profile" },
+  "org.noSeats": { zh: "暂无席位。", en: "No seats yet." },
+  "org.emptyNode": { zh: "该节点下暂无子团队或成员。", en: "No sub-teams or members under this node." },
+  "org.emptyTree": {
+    zh: "还没有组织结构，请先在「系统设置 → 组织管理」中创建 Lab 与 Team。",
+    en: "No org structure yet. Create Labs and Teams in Settings → Organization first.",
+  },
+  "org.unplacedRoles": { zh: "未挂载到团队的岗位", en: "Roles not attached to a team" },
+  "org.unplacedRolesHint": {
+    zh: "这些岗位还没有在岗人员、也未指定团队，指定后会出现在组织树对应团队下（含空缺席位）。",
+    en: "These roles have no onboard members and no team yet. Once assigned they appear under that team in the tree, with vacant seats.",
+  },
+  "org.attachToTeam": { zh: "挂到团队", en: "Attach to team" },
+  "org.unassignedTitle": { zh: "未归属成员", en: "Unassigned members" },
+  "org.unassignedHint": {
+    zh: "为他们指定所属 Lab / Team，组织树就会自动关联。",
+    en: "Assign them to a Lab / Team and the tree will link them automatically.",
+  },
+  "org.selectTeam": { zh: "选择所属团队", en: "Select a team" },
+  "org.noStrategicRole": { zh: "未匹配战略岗位", en: "No strategic role" },
+  "org.roleAttached": { zh: "岗位归属已更新", en: "Role placement updated" },
+  "org.personAssigned": { zh: "归属已更新", en: "Assignment updated" },
+};
+
+type Ctx = { lang: Lang; setLang: (l: Lang) => void; t: (key: string) => string };
+
+const LangContext = createContext<Ctx>({ lang: "zh", setLang: () => {}, t: (k) => dict[k]?.zh ?? k });
+
+export function LanguageProvider({ children }: { children: ReactNode }) {
+  const [lang, setLangState] = useState<Lang>("zh");
+
+  useEffect(() => {
+    const stored = typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY) : null;
+    if (stored === "en" || stored === "zh") setLangState(stored);
+  }, []);
+
+  const setLang = useCallback((l: Lang) => {
+    setLangState(l);
+    if (typeof window !== "undefined") window.localStorage.setItem(STORAGE_KEY, l);
+  }, []);
+
+  const t = useCallback((key: string) => dict[key]?.[lang] ?? dict[key]?.zh ?? key, [lang]);
+
+  const value = useMemo(() => ({ lang, setLang, t }), [lang, setLang, t]);
+  return <LangContext.Provider value={value}>{children}</LangContext.Provider>;
+}
+
+export function useI18n() {
+  return useContext(LangContext);
+}
