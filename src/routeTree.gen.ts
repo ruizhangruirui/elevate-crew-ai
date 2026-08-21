@@ -54,9 +54,9 @@ const PeopleIndexRoute = PeopleIndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const PeoplePersonIdRoute = PeoplePersonIdRouteImport.update({
-  id: '/$personId',
-  path: '/$personId',
-  getParentRoute: () => PeopleRoute,
+  id: '/people/$personId',
+  path: '/people/$personId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -130,6 +130,7 @@ export interface RootRouteChildren {
   CapabilityRoute: typeof CapabilityRoute
   OrgRoute: typeof OrgRoute
   SettingsRoute: typeof SettingsRoute
+  PeoplePersonIdRoute: typeof PeoplePersonIdRoute
   PeopleIndexRoute: typeof PeopleIndexRoute
 }
 
@@ -186,10 +187,10 @@ declare module '@tanstack/react-router' {
     }
     '/people/$personId': {
       id: '/people/$personId'
-      path: '/$personId'
+      path: '/people/$personId'
       fullPath: '/people/$personId'
       preLoaderRoute: typeof PeoplePersonIdRouteImport
-      parentRoute: typeof PeopleRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -201,6 +202,7 @@ const rootRouteChildren: RootRouteChildren = {
   CapabilityRoute: CapabilityRoute,
   OrgRoute: OrgRoute,
   SettingsRoute: SettingsRoute,
+  PeoplePersonIdRoute: PeoplePersonIdRoute,
   PeopleIndexRoute: PeopleIndexRoute,
 }
 export const routeTree = rootRouteImport
