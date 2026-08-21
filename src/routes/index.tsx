@@ -25,7 +25,7 @@ import {
   type Role,
 } from "@/lib/talent";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchOrgNodes } from "@/lib/org-tree";
+import { fetchOrgNodes, type OrgNode } from "@/lib/org-tree";
 import {
   actionSummary,
   fetchActions,
