@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Pencil, ExternalLink, AlertTriangle, Check } from "lucide-react";
+import { Pencil, ExternalLink, AlertTriangle, Check, ChevronRight, Plus, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   coverageOf,
