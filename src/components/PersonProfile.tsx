@@ -25,6 +25,8 @@ import {
 import { buildCapabilities, normalizeKey, levelRank, carrierRiskTier } from "@/lib/capability";
 import { fetchOrgNodes } from "@/lib/org-tree";
 import { useI18n } from "@/lib/i18n";
+import { fetchLifecycleEvents, recordJoin } from "@/lib/lifecycle";
+import { ArchivePersonDialog } from "@/components/ArchivePersonDialog";
 import { contractLabel } from "@/lib/contract";
 import { effectiveImportance } from "@/lib/importance";
 import { ConfirmAction } from "@/components/ConfirmAction";
@@ -546,6 +548,10 @@ export function PersonProfile({
         })
         .eq("id", person.id);
       if (error) throw error;
+
+      if (person.status !== "onboard" && form.status === "onboard") {
+        await recordJoin(person.id, { reason: "candidate_converted" });
+      }
 
       const nextNode = form.org_node_id === "none" ? null : form.org_node_id;
       if (nextNode !== (person.org_node_id ?? null)) {
