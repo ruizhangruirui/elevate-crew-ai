@@ -106,10 +106,10 @@ export function OrgChart({ nodes, people, roles, rolesByNode, onPerson, onRole }
 
     return (
       <div className="flex flex-col items-center" key={node.id}>
-        <div className="w-52 rounded-xl border border-border/60 bg-surface-raised/60 px-3 py-2.5 text-center shadow-sm">
-          <Icon className="mx-auto size-4 text-brand" />
-          <p className="mt-1 truncate font-display text-sm font-semibold">{node.name}</p>
-          <p className="mt-0.5 text-[10px] text-muted-foreground">
+        <div className="w-40 rounded-lg border border-border/60 bg-surface-raised/60 px-2 py-1.5 text-center shadow-sm">
+          <Icon className="mx-auto size-3.5 text-brand" />
+          <p className="mt-0.5 truncate font-display text-xs font-semibold">{node.name}</p>
+          <p className="text-[9px] text-muted-foreground">
             {node.type} · {countIn(node.id)} {t("common.people")}
           </p>
         </div>
@@ -121,8 +121,8 @@ export function OrgChart({ nodes, people, roles, rolesByNode, onPerson, onRole }
   if (roots.length === 0) return null;
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-border/60 bg-background/20 p-6">
-      <div className="flex min-w-max items-start justify-center gap-10">
+    <div className="overflow-x-auto rounded-xl border border-border/60 bg-background/20 p-4">
+      <div className="flex min-w-max items-start justify-center gap-6">
         {roots.map((r) => renderNode(r))}
       </div>
     </div>
