@@ -25,7 +25,7 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { fetchOrgNodes, peopleInSubtree } from "@/lib/org-tree";
+import { fetchOrgNodes, peopleInSubtree, type OrgNode } from "@/lib/org-tree";
 import { fetchSnapshots, recordSnapshot, type Snapshot } from "@/lib/snapshots";
 
 export const Route = createFileRoute("/capability")({
@@ -107,26 +107,8 @@ function CapabilityBody() {
           <TabsTrigger value="building">{t("cap.tab.building")}</TabsTrigger>
           <TabsTrigger value="trend">{t("cap.tab.trend")}</TabsTrigger>
         </TabsList>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="mr-1 text-xs text-muted-foreground">{t("cap.scopeLabel")}</span>
-          {[{ id: "__all__", name: t("cap.scopeAll"), type: "" }, ...allNodes].map((n) => {
-            const active = scope === n.id;
-            return (
-              <button
-                key={n.id}
-                type="button"
-                onClick={() => setScope(n.id)}
-                className={`rounded-full border px-3 py-1 text-xs transition-colors ${
-                  active
-                    ? "border-brand bg-brand/15 text-foreground"
-                    : "border-border text-muted-foreground hover:border-brand/50 hover:text-foreground"
-                }`}
-              >
-                {n.name}
-              </button>
-            );
-          })}
-        </div>
+        <ScopePicker nodes={allNodes} scope={scope} scopeName={scopeName} onChange={setScope} />
+
       </div>
       {scope !== "__all__" && (
         <p className="-mt-4 text-xs text-muted-foreground">
@@ -145,6 +127,84 @@ function CapabilityBody() {
     </Tabs>
   );
 }
+
+/** 可折叠的范围选择：默认只显示当前范围，点开才展开 Lab → Team 树 */
+function ScopePicker({
+  nodes,
+  scope,
+  scopeName,
+  onChange,
+}: {
+  nodes: OrgNode[];
+  scope: string;
+  scopeName: string;
+  onChange: (v: string) => void;
+}) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const roots = nodes.filter((n) => !n.parent_id);
+  const childrenOf = (id: string) => nodes.filter((n) => n.parent_id === id);
+
+  const Row = ({ node, depth }: { node: OrgNode; depth: number }) => (
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          onChange(node.id);
+          setOpen(false);
+        }}
+        style={{ paddingLeft: `${12 + depth * 16}px` }}
+        className={`flex w-full items-center justify-between rounded-md py-1.5 pr-3 text-left text-xs transition-colors hover:bg-surface-raised ${
+          scope === node.id ? "bg-brand/15 text-foreground" : "text-muted-foreground"
+        }`}
+      >
+        <span className="truncate">{node.name}</span>
+        <span className="ml-2 shrink-0 text-[10px] opacity-60">{node.type}</span>
+      </button>
+      {childrenOf(node.id).map((c) => (
+        <Row key={c.id} node={c} depth={depth + 1} />
+      ))}
+    </>
+  );
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-brand/50 hover:text-foreground"
+      >
+        <span>{t("cap.scopeLabel")}:</span>
+        <b className="text-foreground">{scopeName}</b>
+        <ChevronDown className={`size-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 top-full z-30 mt-1.5 max-h-72 w-60 overflow-y-auto rounded-lg border border-border bg-background p-1.5 shadow-lg">
+            <button
+              type="button"
+              onClick={() => {
+                onChange("__all__");
+                setOpen(false);
+              }}
+              className={`flex w-full rounded-md px-3 py-1.5 text-left text-xs transition-colors hover:bg-surface-raised ${
+                scope === "__all__" ? "bg-brand/15 text-foreground" : "text-muted-foreground"
+              }`}
+            >
+              {t("cap.scopeAll")}
+            </button>
+            {roots.map((n) => (
+              <Row key={n.id} node={n} depth={0} />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+
 
 /* ---------------------------------- 能力体检 --------------------------------- */
 

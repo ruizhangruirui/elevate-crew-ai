@@ -12,7 +12,7 @@ import {
   type Role,
   type Skill,
 } from "@/lib/talent";
-import { buildCapabilities, normalizeKey, levelRank } from "@/lib/capability";
+import { buildCapabilities, normalizeKey, levelRank, carrierRiskTier } from "@/lib/capability";
 import { fetchOrgNodes } from "@/lib/org-tree";
 import { useI18n } from "@/lib/i18n";
 import { contractLabel } from "@/lib/contract";
@@ -63,7 +63,60 @@ function perfLabelOf(t: (k: string) => string, key: string): string {
   return map[key] ?? key;
 }
 
+const SKILL_LEVELS = ["Proficient", "Advanced", "Expert"] as const;
+
+/** 等级刻度：空心=要求，实心=实际 */
+function LevelScale({ required, actual }: { required: string; actual: string | null }) {
+  const req = levelRank(required);
+  const act = levelRank(actual);
+  return (
+    <span className="flex items-center gap-0.5" title={`${required} / ${actual ?? "-"}`}>
+      {[1, 2, 3].map((i) => (
+        <span
+          key={i}
+          className={`size-2 rounded-full border ${
+            i <= act
+              ? act >= req
+                ? "border-ok bg-ok"
+                : "border-warn bg-warn"
+              : i <= req
+                ? "border-muted-foreground/60"
+                : "border-transparent"
+          }`}
+        />
+      ))}
+    </span>
+  );
+}
+
+/** 折叠展示低信号条目 */
+function CollapsedRest({ items, label }: { items: string[]; label: string }) {
+  const [open, setOpen] = useState(false);
+  if (items.length === 0) return null;
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+      >
+        {label.replace("{n}", String(items.length))}
+      </button>
+      {open && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {items.map((i) => (
+            <span key={i} className="rounded-full border border-border/70 px-2.5 py-1 text-xs">
+              {i}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Fact({ label, value, tone }: { label: string; value: string; tone?: "ok" | "warn" | "danger" | undefined }) {
+
   const toneCls =
     tone === "ok" ? "text-ok" : tone === "warn" ? "text-warn" : tone === "danger" ? "text-danger" : "";
   return (
@@ -126,18 +179,28 @@ export function PersonDetailSheet({
     },
   });
 
-  // 该人员承载的组织能力（来自其岗位画像），并标注是否为单点承载
+  // 该人员承载的组织能力（来自其岗位画像），按「能力关键度 × 人员可替代性」分级
   const carried = useMemo(() => {
     if (!person || !role) return [];
     const caps = buildCapabilities(roles, people);
     return caps
       .filter((c) => c.roleIds.includes(role.id))
-      .map((c) => ({
-        label: c.label,
-        kind: c.kind,
-        sole: c.carriers.length === 1 && c.carriers[0]?.person.id === person.id,
-        assessed: c.carriers.find((x) => x.person.id === person.id)?.assessed ?? false,
-      }));
+      .map((c) => {
+        const sole = c.carriers.length === 1 && c.carriers[0]?.person.id === person.id;
+        const risk = sole ? carrierRiskTier(c, person, people, roles).tier : "normal";
+        return {
+          label: c.label,
+          kind: c.kind,
+          sole,
+          tier: sole ? risk : ("normal" as const),
+          assessed: c.carriers.find((x) => x.person.id === person.id)?.assessed ?? false,
+        };
+      })
+      .sort(
+        (a, b) =>
+          (b.tier === "critical" ? 2 : b.tier === "watch" ? 1 : 0) -
+          (a.tier === "critical" ? 2 : a.tier === "watch" ? 1 : 0),
+      );
   }, [person, role, roles, people]);
 
   const skillMatch = useMemo(() => {
@@ -145,14 +208,64 @@ export function PersonDetailSheet({
     const own = (person?.assessed_skills ?? []) as Skill[];
     return (role.skills ?? []).map((req) => {
       const k = normalizeKey(req.skill);
-      const hit = own.find((s) => {
-        const sk = normalizeKey(s.skill ?? "");
-        return sk && (sk === k || sk.includes(k) || k.includes(sk));
-      });
-      const ok = !!hit && levelRank(hit.level) >= levelRank(req.level);
-      return { skill: req.skill, required: req.level, actual: hit?.level ?? null, ok };
+      const exact = own.find((s) => normalizeKey(s.skill ?? "") === k);
+      const fuzzy =
+        exact ??
+        own.find((s) => {
+          const sk = normalizeKey(s.skill ?? "");
+          return sk && (sk.includes(k) || k.includes(sk));
+        });
+      const hit = fuzzy ?? null;
+      const gap = hit ? levelRank(req.level) - levelRank(hit.level) : null;
+      const state: "met" | "minor" | "major" | "none" =
+        gap == null ? "none" : gap <= 0 ? "met" : gap === 1 ? "minor" : "major";
+      return {
+        skill: req.skill,
+        required: req.level,
+        actual: hit?.level ?? null,
+        fuzzy: !!hit && !exact,
+        gap,
+        state,
+      };
     });
   }, [role, person]);
+
+  const skillSummary = useMemo(
+    () => ({
+      total: skillMatch.length,
+      ok: skillMatch.filter((s) => s.state === "met").length,
+      minor: skillMatch.filter((s) => s.state === "minor").length,
+      major: skillMatch.filter((s) => s.state === "major").length,
+      none: skillMatch.filter((s) => s.state === "none").length,
+    }),
+    [skillMatch],
+  );
+
+  const setSkillLevel = useMutation({
+    mutationFn: async ({ skill, level }: { skill: string; level: string | null }) => {
+      const own = [...((person?.assessed_skills ?? []) as Skill[])];
+      const k = normalizeKey(skill);
+      const idx = own.findIndex((s) => normalizeKey(s.skill ?? "") === k);
+      if (level === null) {
+        if (idx >= 0) own.splice(idx, 1);
+      } else if (idx >= 0) {
+        own[idx] = { skill: own[idx]!.skill, level };
+      } else {
+        own.push({ skill, level });
+      }
+      const { error } = await supabase
+        .from("people")
+        .update({ assessed_skills: own as unknown as never, assessed_at: new Date().toISOString() })
+        .eq("id", person!.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(t("sheet.person.levelSaved"));
+      onDone();
+    },
+    onError: (e: unknown) => toast.error(String((e as Error)?.message ?? e)),
+  });
+
 
   const teammates = role
     ? people.filter((p) => p.role_id === role.id && p.id !== person?.id)
@@ -556,27 +669,81 @@ export function PersonDetailSheet({
               {skillMatch.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("sheet.person.noSkillRequirements")}</p>
               ) : (
-                <ul className="space-y-2">
-                  {skillMatch.map((s) => (
-                    <li
-                      key={s.skill}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/60 bg-surface-raised/40 px-3 py-2"
-                    >
-                      <span className="text-sm">{s.skill}</span>
-                      <span className="flex items-center gap-2 text-xs">
-                        <span className="text-muted-foreground">{t("sheet.person.required").replace("{level}", s.required)}</span>
-                        <span className={s.ok ? "text-ok" : "text-warn"}>
-                          {t("sheet.person.actual").replace("{level}", s.actual ?? t("sheet.person.notAssessed"))}
-                        </span>
-                        {s.ok ? (
-                          <Check className="size-4 text-ok" />
-                        ) : (
-                          <AlertTriangle className="size-4 text-warn" />
-                        )}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <p className="mb-3 text-xs text-muted-foreground">
+                    {t("sheet.person.skillSummary")
+                      .replace("{total}", String(skillSummary.total))
+                      .replace("{ok}", String(skillSummary.ok))
+                      .replace("{minor}", String(skillSummary.minor))
+                      .replace("{major}", String(skillSummary.major))
+                      .replace("{none}", String(skillSummary.none))}
+                  </p>
+                  <ul className="space-y-2">
+                    {skillMatch.map((s) => {
+                      const tone =
+                        s.state === "met"
+                          ? "text-ok"
+                          : s.state === "none"
+                            ? "text-muted-foreground"
+                            : s.state === "minor"
+                              ? "text-warn"
+                              : "text-danger";
+                      const stateLabel =
+                        s.state === "met"
+                          ? t("sheet.person.gapMet")
+                          : s.state === "minor"
+                            ? t("sheet.person.gapMinor")
+                            : s.state === "major"
+                              ? t("sheet.person.gapMajor")
+                              : t("sheet.person.gapNone");
+                      return (
+                        <li
+                          key={s.skill}
+                          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/60 bg-surface-raised/40 px-3 py-2"
+                        >
+                          <span className="flex items-center gap-2 text-sm">
+                            {s.skill}
+                            {s.fuzzy && (
+                              <span className="rounded-full border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                                {t("sheet.person.fuzzyMatch")}
+                              </span>
+                            )}
+                          </span>
+                          <span className="flex items-center gap-2 text-xs">
+                            <LevelScale required={s.required} actual={s.actual} />
+                            <span className={tone}>{stateLabel}</span>
+                            {s.state === "met" ? (
+                              <Check className="size-4 text-ok" />
+                            ) : (
+                              <AlertTriangle className={`size-4 ${tone}`} />
+                            )}
+                            <Select
+                              value={s.actual ? String(s.actual) : "none"}
+                              onValueChange={(v) =>
+                                setSkillLevel.mutate({
+                                  skill: s.skill,
+                                  level: v === "none" ? null : v,
+                                })
+                              }
+                            >
+                              <SelectTrigger className="h-7 w-32 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">{t("sheet.person.gapNone")}</SelectItem>
+                                {SKILL_LEVELS.map((lv) => (
+                                  <SelectItem key={lv} value={lv}>
+                                    {lv}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </>
               )}
             </Module>
           )}
@@ -586,28 +753,41 @@ export function PersonDetailSheet({
               {carried.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("sheet.person.noRelatedCapabilities")}</p>
               ) : (
-                <div className="flex flex-wrap gap-1.5">
-                  {carried.map((c) => (
-                    <span
-                      key={`${c.kind}-${c.label}`}
-                      className={`rounded-full border px-2.5 py-1 text-xs ${
-                        c.sole
-                          ? "border-danger/50 bg-danger/10 text-danger"
-                          : "border-border/70 text-foreground"
-                      }`}
-                      title={c.sole ? t("sheet.person.solePointTitle") : undefined}
-                    >
-                      {c.label}
-                      {c.sole ? t("sheet.person.solePointTag") : ""}
-                    </span>
-                  ))}
-                </div>
+                <>
+                  <div className="flex flex-wrap gap-1.5">
+                    {carried
+                      .filter((c) => c.tier !== "normal")
+                      .map((c) => (
+                        <span
+                          key={`${c.kind}-${c.label}`}
+                          className={`rounded-full border px-2.5 py-1 text-xs ${
+                            c.tier === "critical"
+                              ? "border-danger/50 bg-danger/10 text-danger"
+                              : "border-warn/50 bg-warn/10 text-warn"
+                          }`}
+                          title={
+                            c.tier === "critical"
+                              ? t("sheet.person.suggestBackup")
+                              : t("sheet.person.suggestShare")
+                          }
+                        >
+                          {c.label} ·{" "}
+                          {c.tier === "critical"
+                            ? t("sheet.person.riskCritical")
+                            : t("sheet.person.riskWatch")}
+                        </span>
+                      ))}
+                  </div>
+                  <CollapsedRest
+                    items={carried.filter((c) => c.tier === "normal").map((c) => c.label)}
+                    label={t("sheet.person.otherCarried")}
+                  />
+                </>
               )}
-              <p className="mt-3 text-xs text-muted-foreground">
-                {t("sheet.person.solePointFootnote")}
-              </p>
+              <p className="mt-3 text-xs text-muted-foreground">{t("sheet.person.riskFootnote")}</p>
             </Module>
           )}
+
 
           <Module title={t("sheet.person.aiFitRecordsTitle")}>
             {fits.isLoading ? (
