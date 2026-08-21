@@ -72,6 +72,7 @@ function PersonRow({
   onOpen: () => void;
   muted?: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <button
       type="button"
