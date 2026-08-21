@@ -447,6 +447,8 @@ export type Database = {
       }
       people: {
         Row: {
+          archived: boolean
+          archived_at: string | null
           assessed_at: string | null
           assessed_by: string | null
           assessed_skills: Json
@@ -471,6 +473,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived?: boolean
+          archived_at?: string | null
           assessed_at?: string | null
           assessed_by?: string | null
           assessed_skills?: Json
@@ -495,6 +499,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived?: boolean
+          archived_at?: string | null
           assessed_at?: string | null
           assessed_by?: string | null
           assessed_skills?: Json
@@ -585,6 +591,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "performance_records_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      person_lifecycle_events: {
+        Row: {
+          created_at: string
+          detail: string | null
+          effective_on: string
+          event_type: string
+          id: string
+          person_id: string
+          reason: string | null
+          recorded_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          effective_on?: string
+          event_type?: string
+          id?: string
+          person_id: string
+          reason?: string | null
+          recorded_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          effective_on?: string
+          event_type?: string
+          id?: string
+          person_id?: string
+          reason?: string | null
+          recorded_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "person_lifecycle_events_person_id_fkey"
             columns: ["person_id"]
             isOneToOne: false
             referencedRelation: "people"

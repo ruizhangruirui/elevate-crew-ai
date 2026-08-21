@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchOrgNodes, peopleInSubtree, type OrgNode } from "@/lib/org-tree";
 import { fetchSnapshots, recordSnapshot, type Snapshot } from "@/lib/snapshots";
+import { fetchArchivedPeople, fetchLifecycleEvents, flowStats } from "@/lib/lifecycle";
 
 export const Route = createFileRoute("/capability")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -100,12 +101,12 @@ function CapabilityBody() {
   })();
 
   return (
-    <Tabs defaultValue="health" className="space-y-8">
+    <Tabs defaultValue="building" className="space-y-8">
       <div className="flex flex-wrap items-center gap-3">
         <TabsList>
-          <TabsTrigger value="health">{t("cap.tab.health")}</TabsTrigger>
           <TabsTrigger value="building">{t("cap.tab.building")}</TabsTrigger>
           <TabsTrigger value="trend">{t("cap.tab.trend")}</TabsTrigger>
+          <TabsTrigger value="health">{t("cap.tab.health")}</TabsTrigger>
         </TabsList>
         <ScopePicker nodes={allNodes} scope={scope} scopeName={scopeName} onChange={setScope} />
 
@@ -847,6 +848,8 @@ function TrendPanel({ data, activities }: { data: Workspace; activities: Activit
 
   return (
     <div className="space-y-6">
+      <HeadcountFlow />
+
       <section className="panel p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -969,5 +972,123 @@ function Sparkline({ snaps }: { snaps: Snapshot[] }) {
         return <circle key={i} cx={x} cy={y} r="3" fill="var(--color-brand)" />;
       })}
     </svg>
+  );
+}
+
+/* -------------------------------- 人员流动 -------------------------------- */
+
+function HeadcountFlow() {
+  const { t } = useI18n();
+  const { data: events } = useQuery({ queryKey: ["lifecycle"], queryFn: fetchLifecycleEvents });
+  const { data: ws } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
+  const { data: archived } = useQuery({
+    queryKey: ["archived-people"],
+    queryFn: fetchArchivedPeople,
+  });
+  const list = events ?? [];
+  const stats = useMemo(() => flowStats(list), [list]);
+  const nameOf = (id: string) =>
+    ws?.people.find((p) => p.id === id)?.name ??
+    (archived ?? []).find((p) => p.id === id)?.name ??
+    "—";
+  const max = Math.max(1, ...stats.byMonth.map((m) => Math.max(m.joins, m.exits)));
+
+  return (
+    <section className="panel p-6">
+      <h3 className="font-display text-base font-semibold">{t("lc.flow.title")}</h3>
+      <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+        {t("lc.flow.desc")}
+      </p>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        <TrendTile label={t("lc.flow.joins90")} value={String(stats.joins90)} delta={null} />
+        <TrendTile label={t("lc.flow.exits90")} value={String(stats.exits90)} delta={null} />
+        <TrendTile
+          label={t("lc.flow.net90")}
+          value={`${stats.net90 > 0 ? "+" : ""}${stats.net90}`}
+          delta={null}
+        />
+      </div>
+
+      <div className="mt-6">
+        <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+          {t("lc.flow.byMonth")}
+        </p>
+        <div className="mt-3 flex items-end gap-4">
+          {stats.byMonth.map((m) => (
+            <div key={m.month} className="flex flex-1 flex-col items-center gap-1">
+              <div className="flex h-24 w-full items-end justify-center gap-1">
+                <div
+                  className="w-3 rounded-t bg-ok"
+                  style={{ height: `${(m.joins / max) * 100}%` }}
+                  title={`${t("lc.flow.joins")} ${m.joins}`}
+                />
+                <div
+                  className="w-3 rounded-t bg-danger"
+                  style={{ height: `${(m.exits / max) * 100}%` }}
+                  title={`${t("lc.flow.exits")} ${m.exits}`}
+                />
+              </div>
+              <span className="text-[10px] tabular-nums text-muted-foreground">
+                {m.month.slice(5)}
+              </span>
+              <span className="text-[10px] tabular-nums text-muted-foreground">
+                +{m.joins} / -{m.exits}
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 flex gap-4 text-xs text-muted-foreground">
+          <Legend className="bg-ok" label={t("lc.flow.joins")} />
+          <Legend className="bg-danger" label={t("lc.flow.exits")} />
+        </div>
+      </div>
+
+      {stats.exitReasons.length > 0 && (
+        <div className="mt-6">
+          <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+            {t("lc.flow.reasons")}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {stats.exitReasons.map((r) => (
+              <span
+                key={r.reason}
+                className="rounded-full border border-border/70 px-2.5 py-1 text-xs text-muted-foreground"
+              >
+                {t(`lc.reason.${r.reason}`)} · {r.count}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="mt-6">
+        <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+          {t("lc.flow.recent")}
+        </p>
+        {list.length === 0 ? (
+          <p className="mt-2 text-sm text-muted-foreground">{t("lc.flow.empty")}</p>
+        ) : (
+          <ul className="mt-2 divide-y divide-border/40">
+            {list.slice(0, 8).map((e) => (
+              <li key={e.id} className="flex flex-wrap items-center gap-2.5 py-2 text-sm">
+                <span
+                  className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                    e.event_type === "exit" ? "bg-danger/12 text-danger" : "bg-ok/12 text-ok"
+                  }`}
+                >
+                  {e.event_type === "exit" ? t("lc.flow.eventExit") : t("lc.flow.eventJoin")}
+                </span>
+                <span className="font-medium">{nameOf(e.person_id)}</span>
+                <span className="text-xs text-muted-foreground">
+                  {e.effective_on} · {t(`lc.reason.${e.reason ?? "other"}`)}
+                  {e.detail ? ` · ${e.detail}` : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
   );
 }

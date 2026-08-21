@@ -13,6 +13,7 @@ import { actionsDict } from "./i18n-dicts/actions";
 import { settingsDict } from "./i18n-dicts/settings";
 import { sheetsDict } from "./i18n-dicts/sheets";
 import { personPageDict } from "./i18n-dicts/person-page";
+import { lifecycleDict } from "./i18n-dicts/lifecycle";
 
 export const dict: Dict = {
   ...coreDict,
@@ -23,6 +24,7 @@ export const dict: Dict = {
   ...settingsDict,
   ...sheetsDict,
   ...personPageDict,
+  ...lifecycleDict,
 };
 
 type Ctx = { lang: Lang; setLang: (l: Lang) => void; t: (key: string) => string };
