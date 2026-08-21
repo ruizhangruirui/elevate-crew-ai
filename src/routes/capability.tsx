@@ -12,18 +12,17 @@ import { fetchWorkspace, criticalityLabel } from "@/lib/talent";
 import {
   buildCapabilities,
   capabilityHealth,
-  kindLabel,
   vacancyClusters,
   type Capability,
 } from "@/lib/capability";
 import {
   activitiesForCapability,
-  activityKindLabel,
   buildingStats,
   fetchOrgBuilding,
   type Activity,
   type Participant,
 } from "@/lib/org-building";
+import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchOrgNodes, peopleInSubtree } from "@/lib/org-tree";
@@ -53,17 +52,16 @@ export const Route = createFileRoute("/capability")({
 });
 
 function CapabilityPage() {
+  const { t } = useI18n();
   return (
-    <AppShell
-      title="组织能力视图"
-      subtitle="两件事：我们的岗位要求的能力有没有人扛得起来，以及我们为建设这支队伍做了什么。"
-    >
+    <AppShell title={t("cap.title")} subtitle={t("cap.subtitle")}>
       <CapabilityBody />
     </AppShell>
   );
 }
 
 function CapabilityBody() {
+  const { t } = useI18n();
   const { data } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
   const { data: building } = useQuery({ queryKey: ["org-building"], queryFn: fetchOrgBuilding });
   const { data: nodes } = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
@@ -73,7 +71,7 @@ function CapabilityBody() {
   const setScope = (v: string) =>
     navigate({ search: { scope: v === "__all__" ? undefined : v }, replace: true });
 
-  if (!data) return <div className="text-sm text-muted-foreground">加载中…</div>;
+  if (!data) return <div className="text-sm text-muted-foreground">{t("cap.loading")}</div>;
 
   const allNodes = nodes ?? [];
   const scopedPeople =
@@ -87,7 +85,7 @@ function CapabilityBody() {
           people: scopedPeople,
           roles: data.roles.filter((r) => scopedRoleIds.has(r.id)),
         };
-  const scopeName = allNodes.find((n) => n.id === scope)?.name ?? "全组织";
+  const scopeName = allNodes.find((n) => n.id === scope)?.name ?? t("cap.scopeAll");
 
   const scopedPersonIds = new Set(scopedPeople.map((p) => p.id));
   const scopedBuilding = (() => {
@@ -105,13 +103,13 @@ function CapabilityBody() {
     <Tabs defaultValue="health" className="space-y-8">
       <div className="flex flex-wrap items-center gap-3">
         <TabsList>
-          <TabsTrigger value="health">能力体检</TabsTrigger>
-          <TabsTrigger value="building">组织建设</TabsTrigger>
-          <TabsTrigger value="trend">趋势</TabsTrigger>
+          <TabsTrigger value="health">{t("cap.tab.health")}</TabsTrigger>
+          <TabsTrigger value="building">{t("cap.tab.building")}</TabsTrigger>
+          <TabsTrigger value="trend">{t("cap.tab.trend")}</TabsTrigger>
         </TabsList>
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="mr-1 text-xs text-muted-foreground">范围</span>
-          {[{ id: "__all__", name: "全组织", type: "" }, ...allNodes].map((n) => {
+          <span className="mr-1 text-xs text-muted-foreground">{t("cap.scopeLabel")}</span>
+          {[{ id: "__all__", name: t("cap.scopeAll"), type: "" }, ...allNodes].map((n) => {
             const active = scope === n.id;
             return (
               <button
@@ -132,7 +130,7 @@ function CapabilityBody() {
       </div>
       {scope !== "__all__" && (
         <p className="-mt-4 text-xs text-muted-foreground">
-          仅统计 <b className="text-foreground">{scopeName}</b> 及其下级团队在岗人员所承担的岗位
+          {t("cap.scopeNotePrefix")} <b className="text-foreground">{scopeName}</b> {t("cap.scopeNoteSuffix")}
         </p>
       )}
       <TabsContent value="health">
