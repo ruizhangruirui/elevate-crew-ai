@@ -550,6 +550,7 @@ function AccessSection({ users }: { users: AccessUser[] }) {
 /* ---------------- 人才配置 ---------------- */
 
 function ConfigSection({ items }: { items: ConfigItem[] }) {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const [adding, setAdding] = useState<string | null>(null);
   const [name, setName] = useState("");
@@ -579,17 +580,14 @@ function ConfigSection({ items }: { items: ConfigItem[] }) {
       qc.invalidateQueries({ queryKey: ["settings"] });
       setAdding(null);
       setName("");
-      toast.success("配置已更新");
+      toast.success(t("set.config.updated"));
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
   return (
     <>
-      <SectionHeader
-        title="人才配置"
-        desc="维护标签、奖项、岗位关键性、覆盖状态、Readiness、Future Role 关系与记录类型。"
-      />
+      <SectionHeader title={t("set.config.title")} desc={t("set.config.desc")} />
       <div className="grid gap-4 md:grid-cols-2">
         {CONFIG_GROUPS.map(([key, title]) => (
           <article key={key} className="rounded-lg border border-border/60 bg-card/40 p-4">
@@ -617,9 +615,9 @@ function ConfigSection({ items }: { items: ConfigItem[] }) {
                     <span className="flex shrink-0 gap-1">
                       {item.active ? (
                         <ConfirmAction
-                          title={`确认停用配置项「${item.name}」？`}
-                          description={<p>停用后新的记录将无法再选择该项，已有数据保持不变。</p>}
-                          confirmLabel="确认停用"
+                          title={t("set.config.confirmDeactivateTitle").replace("{name}", item.name)}
+                          description={<p>{t("set.config.confirmDeactivateDesc")}</p>}
+                          confirmLabel={t("set.config.confirmDeactivateLabel")}
                           onConfirm={() => mutate.mutate({ type: "toggle", item })}
                         >
                           <button className="text-xs text-muted-foreground hover:text-foreground">
@@ -636,13 +634,13 @@ function ConfigSection({ items }: { items: ConfigItem[] }) {
                       )}
                       {!item.active && (
                         <ConfirmAction
-                          title={`确认删除配置项「${item.name}」？`}
+                          title={t("set.config.confirmDeleteTitle").replace("{name}", item.name)}
                           description={
                             <>
-                              <p>删除后不可恢复，已经引用该项的历史记录会保留原始文本。</p>
+                              <p>{t("set.config.confirmDeleteDesc")}</p>
                             </>
                           }
-                          confirmLabel="仍要删除"
+                          confirmLabel={t("set.config.confirmDeleteLabel")}
                           onConfirm={() => mutate.mutate({ type: "delete", item })}
                         >
                           <button className="text-xs text-destructive hover:opacity-80">
@@ -654,7 +652,7 @@ function ConfigSection({ items }: { items: ConfigItem[] }) {
                   </li>
                 ))}
               {items.filter((i) => i.category === key).length === 0 && (
-                <li className="text-xs text-muted-foreground">暂无配置项</li>
+                <li className="text-xs text-muted-foreground">{t("set.config.empty")}</li>
               )}
             </ul>
           </article>
@@ -664,10 +662,10 @@ function ConfigSection({ items }: { items: ConfigItem[] }) {
       <Dialog open={!!adding} onOpenChange={(o) => !o && setAdding(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>新增配置项</DialogTitle>
+            <DialogTitle>{t("set.config.dialogTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-2">
-            <Label>名称</Label>
+            <Label>{t("set.org.name")}</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <DialogFooter>
@@ -675,7 +673,7 @@ function ConfigSection({ items }: { items: ConfigItem[] }) {
               disabled={!name.trim()}
               onClick={() => mutate.mutate({ type: "add", category: adding! })}
             >
-              保存
+              {t("set.org.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -687,6 +685,7 @@ function ConfigSection({ items }: { items: ConfigItem[] }) {
 /* ---------------- 操作记录 ---------------- */
 
 function AuditSection({ rows }: { rows: AuditRow[] }) {
+  const { t } = useI18n();
   const exportLog = async () => {
     const csv = [
       "time,actor,action,entity,detail",
@@ -698,15 +697,12 @@ function AuditSection({ rows }: { rows: AuditRow[] }) {
     a.download = "audit-log.csv";
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("已导出操作记录");
+    toast.success(t("set.audit.exported"));
   };
 
   return (
     <>
-      <SectionHeader
-        title="操作记录"
-        desc="Create / Edit / Delete / Archive / Transfer / Permission Change 自动记录。"
-      >
+      <SectionHeader title={t("set.audit.title")} desc={t("set.audit.desc")}>
         <Button size="sm" variant="secondary" onClick={exportLog}>
           <Download className="size-3.5" /> Export Audit Log
         </Button>
@@ -714,11 +710,11 @@ function AuditSection({ rows }: { rows: AuditRow[] }) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>时间</TableHead>
-            <TableHead>操作人</TableHead>
-            <TableHead>动作</TableHead>
-            <TableHead>对象</TableHead>
-            <TableHead>说明</TableHead>
+            <TableHead>{t("set.audit.time")}</TableHead>
+            <TableHead>{t("set.audit.actor")}</TableHead>
+            <TableHead>{t("set.audit.action")}</TableHead>
+            <TableHead>{t("set.audit.entity")}</TableHead>
+            <TableHead>{t("set.audit.detail")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -744,6 +740,7 @@ function AuditSection({ rows }: { rows: AuditRow[] }) {
 /* ---------------- 系统设置 ---------------- */
 
 function SystemSection() {
+  const { t } = useI18n();
   const [language, setLanguage] = useState("中文");
   const exportAll = async () => {
     const [orgs, directions, roles, people] = await Promise.all([
@@ -773,12 +770,12 @@ function SystemSection() {
     a.download = "talent-data.json";
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("已导出全部数据");
+    toast.success(t("set.system.exportedAll"));
   };
 
   return (
     <>
-      <SectionHeader title="系统设置" desc="语言、外观与数据导出等系统级配置。" />
+      <SectionHeader title={t("set.system.title")} desc={t("set.system.desc")} />
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2 rounded-lg border border-border/60 bg-card/40 p-4">
           <Label>Language</Label>
@@ -794,10 +791,10 @@ function SystemSection() {
         </div>
         <div className="space-y-2 rounded-lg border border-border/60 bg-card/40 p-4">
           <Label>Appearance</Label>
-          <p className="text-sm text-muted-foreground">Midnight Indigo（深色主题）</p>
+          <p className="text-sm text-muted-foreground">{t("set.system.appearanceValue")}</p>
         </div>
         <div className="space-y-2 rounded-lg border border-border/60 bg-card/40 p-4 sm:col-span-2">
-          <Label>数据</Label>
+          <Label>{t("set.system.data")}</Label>
           <div>
             <Button size="sm" variant="secondary" onClick={exportAll}>
               <Download className="size-3.5" /> Export data
