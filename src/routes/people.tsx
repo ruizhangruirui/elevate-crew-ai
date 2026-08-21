@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/lib/i18n";
+import { contractLabel } from "@/lib/contract";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { PersonDetailSheet } from "@/components/PersonDetailSheet";
 import { completeness } from "@/lib/org-tree";
@@ -230,7 +231,7 @@ function PeopleBody() {
               <div className="min-w-40 flex-1">
                 <p className="font-display font-semibold">{p.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {[roleName(p.role_id), p.contract_type].filter(Boolean).join(" · ")}
+                  {[roleName(p.role_id), contractLabel(t, p.contract_type)].filter(Boolean).join(" · ")}
                 </p>
                 {(p.tags ?? []).length > 0 && (
                   <div className="mt-1 flex flex-wrap gap-1">
