@@ -249,7 +249,7 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
       }
     },
     onSuccess: () => {
-      qc.invalidateQueries();
+      qc.invalidateQueries({ refetchType: "all" });
       setEditing(null);
       toast.success(t("set.org.updated"));
     },
@@ -266,7 +266,7 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
       await logAudit("Archive", "组织结构", `归档 ${node.name}`);
     },
     onSuccess: () => {
-      qc.invalidateQueries();
+      qc.invalidateQueries({ refetchType: "all" });
       toast.success(t("set.org.archivedToast"));
     },
   });
@@ -467,7 +467,7 @@ function AccessSection({ users }: { users: AccessUser[] }) {
       await logAudit("Permission Change", "权限管理", `${u.name} → ${status}`);
     },
     onSuccess: () => {
-      qc.invalidateQueries();
+      qc.invalidateQueries({ refetchType: "all" });
       toast.success(t("set.access.updated"));
     },
   });
@@ -577,7 +577,7 @@ function ConfigSection({ items }: { items: ConfigItem[] }) {
       }
     },
     onSuccess: () => {
-      qc.invalidateQueries();
+      qc.invalidateQueries({ refetchType: "all" });
       setAdding(null);
       setName("");
       toast.success(t("set.config.updated"));

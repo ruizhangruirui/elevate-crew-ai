@@ -81,7 +81,7 @@ function ActionsBoard() {
   const { data: nodes } = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
   const [tab, setTab] = useState<"open" | "done" | "all">("open");
 
-  const invalidate = () => qc.invalidateQueries();
+  const invalidate = () => qc.invalidateQueries({ refetchType: "all" });
 
   const move = useMutation({
     mutationFn: ({ id, status }: { id: string; status: ActionStatus }) =>

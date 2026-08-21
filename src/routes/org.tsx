@@ -199,7 +199,7 @@ function OrgTreeBody() {
     },
     onSuccess: () => {
       toast.success(t("org.roleAttached"));
-      qc.invalidateQueries();
+      qc.invalidateQueries({ refetchType: "all" });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -211,7 +211,7 @@ function OrgTreeBody() {
     },
     onSuccess: () => {
       toast.success(t("org.personAssigned"));
-      qc.invalidateQueries();
+      qc.invalidateQueries({ refetchType: "all" });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -534,7 +534,7 @@ function OrgTreeBody() {
         directions={directions}
         open={!!personId}
         onOpenChange={(v) => !v && setPersonId(null)}
-        onDone={() => qc.invalidateQueries()}
+        onDone={() => qc.invalidateQueries({ refetchType: "all" })}
         onOpenRole={(rid) => {
           setPersonId(null);
           setRoleId(rid);
@@ -549,7 +549,7 @@ function OrgTreeBody() {
         }
         open={!!roleId}
         onOpenChange={(v) => !v && setRoleId(null)}
-        onDone={() => qc.invalidateQueries()}
+        onDone={() => qc.invalidateQueries({ refetchType: "all" })}
       />
     </div>
   );

@@ -124,7 +124,7 @@ export function ActivityDialog({
     },
     onSuccess: () => {
       toast.success(activity ? t("sheet.activity.updated") : t("sheet.activity.recorded"));
-      qc.invalidateQueries();
+      qc.invalidateQueries({ refetchType: "all" });
       onOpenChange(false);
     },
     onError: (e: Error) => toast.error(e.message),
