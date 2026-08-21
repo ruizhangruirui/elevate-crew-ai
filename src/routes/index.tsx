@@ -842,7 +842,7 @@ function DirectionMenu({
               {t("idx.cancel")}
             </Button>
             <Button
-              className="bg-danger text-white hover:bg-danger/90"
+              className="bg-danger text-destructive-foreground hover:bg-danger/90"
               onClick={() => archive.mutate()}
               disabled={archive.isPending}
             >

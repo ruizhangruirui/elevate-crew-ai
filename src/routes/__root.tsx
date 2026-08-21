@@ -114,7 +114,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="zh-CN" className="dark">
+    <html lang="zh-CN">
       <head>
         <HeadContent />
       </head>
@@ -134,7 +134,7 @@ function RootComponent() {
       <LanguageProvider>
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
-        <Toaster theme="dark" />
+        <Toaster theme="light" />
       </LanguageProvider>
     </QueryClientProvider>
   );
