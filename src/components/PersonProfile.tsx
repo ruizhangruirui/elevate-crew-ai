@@ -1320,91 +1320,124 @@ export function PersonProfile({
             )}
           </Module>
 
-          {role && (
-            <Module badge={String(skillMatch.length)} title={t("sheet.person.skillMatchTitle")}>
-              {skillMatch.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {t("sheet.person.noSkillRequirements")}
-                </p>
-              ) : (
-                <>
-                  <p className="mb-3 text-xs text-muted-foreground">
-                    {t("sheet.person.skillSummary")
-                      .replace("{total}", String(skillSummary.total))
-                      .replace("{ok}", String(skillSummary.ok))
-                      .replace("{minor}", String(skillSummary.minor))
-                      .replace("{major}", String(skillSummary.major))
-                      .replace("{none}", String(skillSummary.none))}
-                  </p>
-                  <ul className="space-y-2">
-                    {skillMatch.map((s) => {
-                      const tone =
-                        s.state === "met"
-                          ? "text-ok"
-                          : s.state === "none"
-                            ? "text-muted-foreground"
-                            : s.state === "minor"
-                              ? "text-warn"
-                              : "text-danger";
-                      const stateLabel =
-                        s.state === "met"
-                          ? t("sheet.person.gapMet")
-                          : s.state === "minor"
-                            ? t("sheet.person.gapMinor")
-                            : s.state === "major"
-                              ? t("sheet.person.gapMajor")
-                              : t("sheet.person.gapNone");
-                      return (
-                        <li
-                          key={s.skill}
-                          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/60 bg-surface-raised/40 px-3 py-2"
+          <Module
+            badge={String(ownSkills.length)}
+            title={t("pp.skill.title")}
+            actions={
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setSkillOpen((v) => !v)}
+              >
+                <Plus className="size-4" /> {t("pp.skill.add")}
+              </Button>
+            }
+          >
+            <p className="mb-3 text-xs text-muted-foreground">{t("pp.skill.hint")}</p>
+            {skillOpen && (
+              <div className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-border/60 bg-surface-raised/40 p-3">
+                <div className="min-w-[200px] flex-1 space-y-1.5">
+                  <Label>{t("pp.skill.name")}</Label>
+                  <Input
+                    value={newSkill.skill}
+                    placeholder={t("pp.skill.namePlaceholder")}
+                    onChange={(e) => setNewSkill({ ...newSkill, skill: e.target.value })}
+                  />
+                </div>
+                <div className="w-40 space-y-1.5">
+                  <Label>{t("pp.skill.level")}</Label>
+                  <Select
+                    value={newSkill.level}
+                    onValueChange={(v) => setNewSkill({ ...newSkill, level: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SKILL_LEVELS.map((lv) => (
+                        <SelectItem key={lv} value={lv}>
+                          {lv}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    disabled={!newSkill.skill.trim() || setSkillLevel.isPending}
+                    onClick={() =>
+                      setSkillLevel.mutate(
+                        { skill: newSkill.skill.trim(), level: newSkill.level },
+                        {
+                          onSuccess: () => {
+                            setNewSkill({ skill: "", level: "Proficient" });
+                            setSkillOpen(false);
+                          },
+                        },
+                      )
+                    }
+                  >
+                    {t("sheet.save")}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setSkillOpen(false)}>
+                    {t("sheet.cancel")}
+                  </Button>
+                </div>
+              </div>
+            )}
+            {ownSkills.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("pp.skill.empty")}</p>
+            ) : (
+              <ul className="space-y-2">
+                {ownSkills.map((s) => (
+                  <li
+                    key={s.skill}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/60 bg-surface-raised/40 px-3 py-2"
+                  >
+                    <span className="text-sm">{s.skill}</span>
+                    <span className="flex items-center gap-2">
+                      <Select
+                        value={s.level ?? "Proficient"}
+                        onValueChange={(v) =>
+                          setSkillLevel.mutate({ skill: s.skill as string, level: v })
+                        }
+                      >
+                        <SelectTrigger className="h-7 w-36 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SKILL_LEVELS.map((lv) => (
+                            <SelectItem key={lv} value={lv}>
+                              {lv}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <ConfirmAction
+                        title={t("pp.skill.removeTitle")}
+                        description={<p>{t("pp.skill.removeDesc")}</p>}
+                        confirmLabel={t("ppl.remove.confirmLabel")}
+                        onConfirm={() =>
+                          setSkillLevel.mutate({ skill: s.skill as string, level: null })
+                        }
+                      >
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-danger"
+                          aria-label={t("ppl.remove.label")}
                         >
-                          <span className="flex items-center gap-2 text-sm">
-                            {s.skill}
-                            {s.fuzzy && (
-                              <span className="rounded-full border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                                {t("sheet.person.fuzzyMatch")}
-                              </span>
-                            )}
-                          </span>
-                          <span className="flex items-center gap-2 text-xs">
-                            <LevelScale required={s.required} actual={s.actual} />
-                            <span className={tone}>{stateLabel}</span>
-                            {s.state === "met" ? (
-                              <Check className="size-4 text-ok" />
-                            ) : (
-                              <AlertTriangle className={`size-4 ${tone}`} />
-                            )}
-                            <Select
-                              value={s.actual ? String(s.actual) : "none"}
-                              onValueChange={(v) =>
-                                setSkillLevel.mutate({
-                                  skill: s.skill,
-                                  level: v === "none" ? null : v,
-                                })
-                              }
-                            >
-                              <SelectTrigger className="h-7 w-32 text-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">{t("sheet.person.gapNone")}</SelectItem>
-                                {SKILL_LEVELS.map((lv) => (
-                                  <SelectItem key={lv} value={lv}>
-                                    {lv}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </>
-              )}
-            </Module>
-          )}
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </ConfirmAction>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Module>
 
           {role && (
             <Module title={t("sheet.person.carriedCapabilities")}>
