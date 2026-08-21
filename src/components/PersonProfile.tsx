@@ -4,8 +4,6 @@ import { toast } from "sonner";
 import {
   Pencil,
   ExternalLink,
-  AlertTriangle,
-  Check,
   ChevronRight,
   Plus,
   History,
@@ -23,7 +21,7 @@ import {
   type Role,
   type Skill,
 } from "@/lib/talent";
-import { buildCapabilities, normalizeKey, levelRank, carrierRiskTier } from "@/lib/capability";
+import { buildCapabilities, normalizeKey, carrierRiskTier } from "@/lib/capability";
 import { fetchOrgNodes } from "@/lib/org-tree";
 import { useI18n } from "@/lib/i18n";
 import { fetchLifecycleEvents, recordJoin } from "@/lib/lifecycle";
