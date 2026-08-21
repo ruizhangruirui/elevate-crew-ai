@@ -127,17 +127,50 @@ function Fact({ label, value, tone }: { label: string; value: string; tone?: "ok
   );
 }
 
-function Module({ title, actions, children }: { title: string; actions?: React.ReactNode; children: React.ReactNode }) {
+function Module({
+  title,
+  actions,
+  children,
+  collapsible = false,
+  defaultOpen = true,
+  badge,
+}: {
+  title: string;
+  actions?: React.ReactNode;
+  children: React.ReactNode;
+  collapsible?: boolean;
+  defaultOpen?: boolean;
+  badge?: string;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const shown = collapsible ? open : true;
   return (
     <section className="panel p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-display text-base font-semibold">{title}</h3>
-        {actions}
+        {collapsible ? (
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="flex items-center gap-2 text-left font-display text-base font-semibold hover:text-brand"
+          >
+            <ChevronRight className={`size-4 transition-transform ${open ? "rotate-90" : ""}`} />
+            {title}
+            {badge && (
+              <span className="rounded-full border border-border/70 px-2 py-0.5 text-[10px] font-normal text-muted-foreground">
+                {badge}
+              </span>
+            )}
+          </button>
+        ) : (
+          <h3 className="font-display text-base font-semibold">{title}</h3>
+        )}
+        {shown && actions}
       </div>
-      <div className="mt-4">{children}</div>
+      {shown && <div className="mt-4">{children}</div>}
     </section>
   );
 }
+
 
 export function PersonDetailSheet({
   person,
