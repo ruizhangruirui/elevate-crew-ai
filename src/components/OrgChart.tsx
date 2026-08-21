@@ -3,6 +3,7 @@ import type { Person, Role } from "@/lib/talent";
 import type { OrgNode } from "@/lib/org-tree";
 import { useI18n } from "@/lib/i18n";
 import { contractLabel } from "@/lib/contract";
+import { effectiveImportance } from "@/lib/importance";
 
 type Props = {
   nodes: OrgNode[];
@@ -40,7 +41,7 @@ export function OrgChart({ nodes, people, roles, rolesByNode, onPerson, onRole }
         </span>
         <span className="w-full truncate text-[11px] font-medium">{p.name}</span>
         <span className="w-full truncate text-[9px] text-muted-foreground">
-          {[p.level ? `L${p.level}` : null, contractLabel(t, p.contract_type), p.status !== "onboard" ? t("common.candidate") : null]
+          {[p.level ? `L${p.level}` : null, t(`importance.${effectiveImportance(p, roles)}`), contractLabel(t, p.contract_type), p.status !== "onboard" ? t("common.candidate") : null]
             .filter(Boolean)
             .join(" · ") || "—"}
         </span>

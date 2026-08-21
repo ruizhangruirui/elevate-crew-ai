@@ -65,7 +65,7 @@ function OrgPage() {
   );
 }
 
-export function ImportanceChip({ level, leader }: { level: Importance; leader?: boolean }) {
+function ImportanceChip({ level, leader }: { level: Importance; leader?: boolean }) {
   const { t } = useI18n();
   return (
     <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] ${IMPORTANCE_TONE[level]}`}>
