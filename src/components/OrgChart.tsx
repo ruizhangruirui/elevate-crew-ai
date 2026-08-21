@@ -1,6 +1,7 @@
 import { Building2, Users, Briefcase, UserPlus } from "lucide-react";
 import type { Person, Role } from "@/lib/talent";
 import type { OrgNode } from "@/lib/org-tree";
+import { useI18n } from "@/lib/i18n";
 
 type Props = {
   nodes: OrgNode[];
@@ -13,6 +14,7 @@ type Props = {
 
 /** 上下结构的组织架构图：Lab → Team → 岗位（含空缺席位）→ 人 */
 export function OrgChart({ nodes, people, roles, rolesByNode, onPerson, onRole }: Props) {
+  const { t } = useI18n();
   const childrenOf = new Map<string, OrgNode[]>();
   for (const n of nodes) {
     const key = n.parent_id ?? "__root";
@@ -37,7 +39,7 @@ export function OrgChart({ nodes, people, roles, rolesByNode, onPerson, onRole }
         </span>
         <span className="w-full truncate text-xs font-medium">{p.name}</span>
         <span className="w-full truncate text-[10px] text-muted-foreground">
-          {[p.level ? `L${p.level}` : null, p.contract_type, p.status !== "onboard" ? "候选人" : null]
+          {[p.level ? `L${p.level}` : null, p.contract_type, p.status !== "onboard" ? t("common.candidate") : null]
             .filter(Boolean)
             .join(" · ") || "—"}
         </span>
@@ -55,7 +57,7 @@ export function OrgChart({ nodes, people, roles, rolesByNode, onPerson, onRole }
         <Branch key={`vac-${r.id}-${i}`}>
           <div className="flex w-36 flex-col items-center gap-1 rounded-lg border border-dashed border-warn/50 bg-warn/5 px-2 py-2 text-center text-warn">
             <UserPlus className="size-5" />
-            <span className="text-xs font-medium">空缺席位</span>
+            <span className="text-xs font-medium">{t("common.vacantSeat")}</span>
             <span className="text-[10px] opacity-80">
               L{r.level_min}–{r.level_max}
             </span>
@@ -77,7 +79,7 @@ export function OrgChart({ nodes, people, roles, rolesByNode, onPerson, onRole }
             <p
               className={`mt-0.5 text-[10px] tabular-nums ${vacancies > 0 ? "text-warn" : "text-ok"}`}
             >
-              在岗 {onboardAll} / 编制 {r.target_count}
+              {t("org.onboard")} {onboardAll} / {t("org.target")} {r.target_count}
             </p>
           </button>
           <Children>{kids}</Children>
@@ -107,7 +109,7 @@ export function OrgChart({ nodes, people, roles, rolesByNode, onPerson, onRole }
           <Icon className="mx-auto size-4 text-brand" />
           <p className="mt-1 truncate font-display text-sm font-semibold">{node.name}</p>
           <p className="mt-0.5 text-[10px] text-muted-foreground">
-            {node.type} · {countIn(node.id)} 人
+            {node.type} · {countIn(node.id)} {t("common.people")}
           </p>
         </div>
         <Children>{kids}</Children>

@@ -4,14 +4,15 @@ import { useEffect, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n";
 
 const nav = [
-  { to: "/", label: "战略岗位视图", icon: LayoutGrid },
-  { to: "/capability", label: "组织能力视图", icon: Network },
-  { to: "/org", label: "组织视图", icon: FolderTree },
-  { to: "/people", label: "人员视图", icon: Users },
-  { to: "/actions", label: "待办中心", icon: ListChecks },
-  { to: "/settings", label: "系统设置", icon: Settings },
+  { to: "/", key: "nav.index", icon: LayoutGrid },
+  { to: "/capability", key: "nav.capability", icon: Network },
+  { to: "/org", key: "nav.org", icon: FolderTree },
+  { to: "/people", key: "nav.people", icon: Users },
+  { to: "/actions", key: "nav.actions", icon: ListChecks },
+  { to: "/settings", key: "nav.settings", icon: Settings },
 ] as const;
 
 export function AppShell({
@@ -25,6 +26,7 @@ export function AppShell({
 }) {
   const { session, user, loading } = useAuth();
   const navigate = useNavigate();
+  const { lang, setLang, t } = useI18n();
 
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/auth" });
@@ -49,13 +51,30 @@ export function AppShell({
             ST
           </div>
           <div className="leading-tight">
-            <p className="font-display text-sm font-semibold">战略岗位与人才</p>
-            <p className="text-xs text-muted-foreground">Talent Architecture</p>
+            <p className="font-display text-sm font-semibold">{t("shell.brand")}</p>
+            <p className="text-xs text-muted-foreground">{t("shell.brandSub")}</p>
           </div>
         </div>
 
-        <nav className="mt-8 space-y-1">
-          {nav.map(({ to, label, icon: Icon }) => (
+        <div className="mt-5 flex items-center gap-1 rounded-lg border border-sidebar-border p-1">
+          {(["zh", "en"] as const).map((l) => (
+            <button
+              key={l}
+              type="button"
+              onClick={() => setLang(l)}
+              className={`flex-1 rounded-md px-2 py-1 text-xs transition-colors ${
+                lang === l
+                  ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {l === "zh" ? "中文" : "English"}
+            </button>
+          ))}
+        </div>
+
+        <nav className="mt-4 space-y-1">
+          {nav.map(({ to, key, icon: Icon }) => (
             <Link
               key={to}
               to={to}
@@ -67,7 +86,7 @@ export function AppShell({
               }}
             >
               <Icon className="size-4" />
-              {label}
+              {t(key)}
             </Link>
           ))}
         </nav>
@@ -84,7 +103,7 @@ export function AppShell({
             }}
           >
             <LogOut className="size-4" />
-            退出登录
+            {t("shell.signOut")}
           </Button>
         </div>
       </aside>
