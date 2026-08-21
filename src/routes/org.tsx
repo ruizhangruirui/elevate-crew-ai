@@ -28,8 +28,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { fetchWorkspace, criticalityLabel, type Person, type Role } from "@/lib/talent";
+import { dict } from "@/lib/i18n";
 import { fetchOrgNodes, structureStats, type OrgNode } from "@/lib/org-tree";
 import { TeamDiagnosisDialog } from "@/components/TeamDiagnosisDialog";
+import { OrgChart } from "@/components/OrgChart";
+import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/org")({
   head: () => ({
@@ -53,11 +56,9 @@ export const Route = createFileRoute("/org")({
 
 
 function OrgPage() {
+  const { t } = useI18n();
   return (
-    <AppShell
-      title="组织视图"
-      subtitle="系统设置里维护的 Lab / Team 结构，在这里逐层展开：团队下挂着岗位（含空缺席位），岗位下挂着人。"
-    >
+    <AppShell title={t("org.title")} subtitle={t("org.subtitle")}>
       <OrgTreeBody />
     </AppShell>
   );
@@ -93,7 +94,7 @@ function PersonRow({
         {(person.contract_type || (person.tags ?? []).length > 0 || muted) && (
           <p className="truncate text-[11px] text-muted-foreground">
             {[
-              muted ? "未匹配战略岗位" : null,
+              muted ? t("org.noStrategicRole") : null,
               person.contract_type,
               ...(person.tags ?? []),
             ]
@@ -104,7 +105,7 @@ function PersonRow({
       </div>
       {person.status !== "onboard" && (
         <span className="shrink-0 rounded-md bg-warn/12 px-1.5 py-0.5 text-[10px] text-warn">
-          候选人
+          {t("common.candidate")}
         </span>
       )}
       <UserRound className="size-4 shrink-0 text-muted-foreground" />
@@ -117,6 +118,8 @@ function OrgTreeBody() {
   const ws = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
   const tree = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
   const [diagNode, setDiagNode] = useState<OrgNode | null>(null);
+  const [view, setView] = useState<"chart" | "list">("chart");
+  const { t } = useI18n();
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [personId, setPersonId] = useState<string | null>(null);
@@ -178,7 +181,7 @@ function OrgTreeBody() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("岗位归属已更新");
+      toast.success(dict["org.roleAttached"].zh);
       qc.invalidateQueries({ queryKey: ["workspace"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -190,7 +193,7 @@ function OrgTreeBody() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("归属已更新");
+      toast.success(dict["org.personAssigned"].zh);
       qc.invalidateQueries({ queryKey: ["workspace"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -231,7 +234,7 @@ function OrgTreeBody() {
           <Badge variant="outline" className="shrink-0 text-[10px]">
             {node.type}
           </Badge>
-          <span className="shrink-0 text-xs text-muted-foreground">{total} 人</span>
+          <span className="shrink-0 text-xs text-muted-foreground">{total} {t("common.people")}</span>
           </button>
           <Button
             variant="ghost"
@@ -239,23 +242,23 @@ function OrgTreeBody() {
             className="shrink-0 gap-1.5 text-xs text-muted-foreground"
             onClick={() => setDiagNode(node)}
           >
-            <Sparkles className="size-3.5" /> AI 诊断
+            <Sparkles className="size-3.5" /> {t("org.aiDiagnosis")}
           </Button>
         </div>
 
         {total > 0 && (
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border/40 px-4 py-2 text-[11px] text-muted-foreground">
             <span>
-              在岗 <b className="text-foreground tabular-nums">{st.onboard}</b> / 编制{" "}
+              {t("org.onboard")} <b className="text-foreground tabular-nums">{st.onboard}</b> / {t("org.target")}{" "}
               <b className="tabular-nums">{st.targetSeats}</b>
             </span>
             <span>
-              平均职级{" "}
+              {t("org.avgLevel")}{" "}
               <b className="text-foreground tabular-nums">{st.avgLevel ?? "—"}</b>
             </span>
             {st.directions.length > 0 && (
               <span className="truncate">
-                承担方向：{st.directions.map((d) => d.title).join(" / ")}
+                {t("org.directions")}: {st.directions.map((d) => d.title).join(" / ")}
               </span>
             )}
             <Link
@@ -263,7 +266,7 @@ function OrgTreeBody() {
               search={{ scope: node.id }}
               className="ml-auto inline-flex items-center gap-1 text-brand hover:underline"
             >
-              查看该团队能力体检 <ArrowUpRight className="size-3" />
+              {t("org.viewCapability")} <ArrowUpRight className="size-3" />
             </Link>
           </div>
         )}
@@ -301,7 +304,7 @@ function OrgTreeBody() {
                           vacancies > 0 ? "bg-warn/12 text-warn" : "bg-ok/12 text-ok"
                         }`}
                       >
-                        在岗 {onboardAll} / 编制 {r.target_count}
+                        {t("org.onboard")} {onboardAll} / {t("org.target")} {r.target_count}
                       </span>
                     </button>
                     <Button
@@ -310,7 +313,7 @@ function OrgTreeBody() {
                       className="shrink-0 text-xs text-muted-foreground"
                       onClick={() => setRoleId(r.id)}
                     >
-                      岗位画像
+                      {t("org.roleProfile")}
                     </Button>
                   </div>
 
@@ -325,11 +328,11 @@ function OrgTreeBody() {
                           className="flex items-center gap-3 rounded-lg border border-dashed border-warn/50 bg-warn/5 px-3 py-2 text-xs text-warn"
                         >
                           <UserPlus className="size-4 shrink-0" />
-                          <span className="flex-1">空缺席位（L{r.level_min}–{r.level_max}）</span>
+                          <span className="flex-1">{t("common.vacantSeat")} (L{r.level_min}–{r.level_max})</span>
                         </div>
                       ))}
                       {holders.length === 0 && vacancies === 0 && (
-                        <p className="py-1 text-xs text-muted-foreground">暂无席位。</p>
+                        <p className="py-1 text-xs text-muted-foreground">{t("org.noSeats")}</p>
                       )}
                     </div>
                   )}
@@ -342,7 +345,7 @@ function OrgTreeBody() {
             ))}
 
             {kids.length === 0 && members.length === 0 && nodeRoles.length === 0 && (
-              <p className="px-2 py-3 text-xs text-muted-foreground">该节点下暂无子团队或成员。</p>
+              <p className="px-2 py-3 text-xs text-muted-foreground">{t("org.emptyNode")}</p>
             )}
           </div>
         )}
@@ -351,37 +354,61 @@ function OrgTreeBody() {
   };
 
   if (ws.isLoading || tree.isLoading) {
-    return <p className="text-sm text-muted-foreground">加载中…</p>;
+    return <p className="text-sm text-muted-foreground">{t("common.loading")}</p>;
   }
 
   return (
     <div className="space-y-6">
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatTile label="组织节点" value={nodes.length} />
-        <StatTile label="已归属成员" value={`${people.length - unassigned.length} / ${people.length}`} />
+        <StatTile label={t("org.stat.nodes")} value={nodes.length} />
+        <StatTile label={t("org.stat.assigned")} value={`${people.length - unassigned.length} / ${people.length}`} />
         <StatTile
-          label="未归属成员"
+          label={t("org.stat.unassigned")}
           value={unassigned.length}
           tone={unassigned.length > 0 ? "warn" : "ok"}
         />
+      </div>
+
+      <div className="flex items-center gap-1 rounded-lg border border-border/60 p-1 w-fit">
+        {(["chart", "list"] as const).map((v) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => setView(v)}
+            className={`rounded-md px-3 py-1 text-xs transition-colors ${
+              view === v ? "bg-surface-raised font-medium text-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {v === "chart" ? t("common.chartView") : t("common.listView")}
+          </button>
+        ))}
       </div>
 
       {roots.length === 0 ? (
         <div className="rounded-xl border border-border/60 bg-surface-raised/40 p-8 text-center">
           <FolderTree className="mx-auto size-6 text-muted-foreground" />
           <p className="mt-3 text-sm text-muted-foreground">
-            还没有组织结构，请先在「系统设置 → 组织管理」中创建 Lab 与 Team。
+            {t("org.emptyTree")}
           </p>
         </div>
+      ) : view === "chart" ? (
+        <OrgChart
+          nodes={nodes}
+          people={people}
+          roles={roles}
+          rolesByNode={rolePlacement.byNode}
+          onPerson={setPersonId}
+          onRole={setRoleId}
+        />
       ) : (
         <div className="space-y-3">{roots.map((r) => renderNode(r, 0))}</div>
       )}
 
       {rolePlacement.unplaced.length > 0 && (
         <section className="rounded-xl border border-border/60 bg-surface-raised/40 p-4">
-          <h2 className="font-display text-sm font-semibold">未挂载到团队的岗位</h2>
+          <h2 className="font-display text-sm font-semibold">{t("org.unplacedRoles")}</h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            这些岗位还没有在岗人员、也未指定团队，指定后会出现在组织树对应团队下（含空缺席位）。
+            {t("org.unplacedRolesHint")}
           </p>
           <div className="mt-3 space-y-2">
             {rolePlacement.unplaced.map((r) => (
@@ -396,7 +423,7 @@ function OrgTreeBody() {
                 >
                   {r.title}
                   <span className="ml-2 text-xs text-muted-foreground">
-                    编制 {r.target_count}
+                    {t("org.target")} {r.target_count}
                   </span>
                 </button>
                 <Select
@@ -404,7 +431,7 @@ function OrgTreeBody() {
                   disabled={placeRole.isPending}
                 >
                   <SelectTrigger className="w-full sm:w-64">
-                    <SelectValue placeholder="挂到团队" />
+                    <SelectValue placeholder={t("org.attachToTeam")} />
                   </SelectTrigger>
                   <SelectContent>
                     {selectableNodes.map((n) => (
@@ -422,9 +449,9 @@ function OrgTreeBody() {
 
       {unassigned.length > 0 && (
         <section className="rounded-xl border border-warn/40 bg-surface-raised/40 p-4">
-          <h2 className="font-display text-sm font-semibold">未归属成员</h2>
+          <h2 className="font-display text-sm font-semibold">{t("org.unassignedTitle")}</h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            为他们指定所属 Lab / Team，组织树就会自动关联。
+            {t("org.unassignedHint")}
           </p>
           <div className="mt-3 space-y-2">
             {unassigned.map((p) => (
@@ -444,7 +471,7 @@ function OrgTreeBody() {
                   disabled={assign.isPending}
                 >
                   <SelectTrigger className="w-full sm:w-64">
-                    <SelectValue placeholder="选择所属团队" />
+                    <SelectValue placeholder={t("org.selectTeam")} />
                   </SelectTrigger>
                   <SelectContent>
                     {selectableNodes.map((n) => (
@@ -467,10 +494,10 @@ function OrgTreeBody() {
             size="sm"
             onClick={() => setExpanded(Object.fromEntries(nodes.map((n) => [n.id, true])))}
           >
-            展开全部
+            {t("common.expandAll")}
           </Button>
           <Button variant="ghost" size="sm" onClick={() => setExpanded({})}>
-            收起
+            {t("common.collapse")}
           </Button>
         </div>
       )}
