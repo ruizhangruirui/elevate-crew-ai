@@ -592,6 +592,56 @@ export type Database = {
           },
         ]
       }
+      person_milestones: {
+        Row: {
+          created_at: string
+          detail: string | null
+          effective_on: string
+          from_level: number | null
+          id: string
+          issuer: string | null
+          kind: string
+          person_id: string
+          title: string
+          to_level: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          effective_on?: string
+          from_level?: number | null
+          id?: string
+          issuer?: string | null
+          kind?: string
+          person_id: string
+          title: string
+          to_level?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          effective_on?: string
+          from_level?: number | null
+          id?: string
+          issuer?: string | null
+          kind?: string
+          person_id?: string
+          title?: string
+          to_level?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "person_milestones_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       person_role_fit: {
         Row: {
           created_at: string
