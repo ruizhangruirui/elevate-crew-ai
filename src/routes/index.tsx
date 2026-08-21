@@ -706,6 +706,24 @@ function RoleMenu({
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label>{t("idx.assignTeam")}</Label>
+              <Select value={nodeId} onValueChange={setNodeId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t("idx.noTeam")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none">{t("idx.noTeam")}</SelectItem>
+                  {orgNodes.map((n) => (
+                    <SelectItem key={n.id} value={n.id}>
+                      {n.type === "Team" ? "— " : ""}
+                      {n.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <p className="text-xs text-muted-foreground">
               {t("idx.roleProfileHint")}
             </p>
