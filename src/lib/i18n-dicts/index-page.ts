@@ -91,4 +91,7 @@ export const indexDict: Dict = {
   "idx.newRole": { zh: "新增战略岗位", en: "Add strategic role" },
   "idx.lowestLevel": { zh: "最低级别", en: "Lowest level" },
   "idx.highestLevel": { zh: "最高级别", en: "Highest level" },
+  "idx.assignTeam": { zh: "所属团队", en: "Assigned team" },
+  "idx.noTeam": { zh: "未指定团队", en: "No team" },
+
 };

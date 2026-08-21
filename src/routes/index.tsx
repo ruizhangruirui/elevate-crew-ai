@@ -25,7 +25,7 @@ import {
   type Role,
 } from "@/lib/talent";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchOrgNodes } from "@/lib/org-tree";
+import { fetchOrgNodes, type OrgNode } from "@/lib/org-tree";
 import {
   actionSummary,
   fetchActions,
@@ -253,23 +253,26 @@ function StrategyBoard() {
             <NewRoleDialog directionId={active.id} onDone={invalidate} />
           </div>
 
-          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {activeRoles.map((role) => (
               <RoleCard
                 key={role.id}
                 role={role}
+                orgNodes={orgNodes.data ?? []}
                 filled={coverageOf(role, people).filled}
                 gap={coverageOf(role, people).gap}
                 members={people.filter((p) => p.role_id === role.id).map((p) => p.name)}
                 teams={Array.from(
                   new Set(
-                    people
-                      .filter((p) => p.role_id === role.id && p.org_node_id)
-                      .map(
-                        (p) =>
-                          (orgNodes.data ?? []).find((n) => n.id === p.org_node_id)?.name ?? "",
-                      )
-                      .filter(Boolean),
+                    [
+                      (orgNodes.data ?? []).find((n) => n.id === role.org_node_id)?.name ?? "",
+                      ...people
+                        .filter((p) => p.role_id === role.id && p.org_node_id)
+                        .map(
+                          (p) =>
+                            (orgNodes.data ?? []).find((n) => n.id === p.org_node_id)?.name ?? "",
+                        ),
+                    ].filter(Boolean),
                   ),
                 )}
                 onArchive={() => archiveRole.mutate(role.id)}
@@ -277,6 +280,7 @@ function StrategyBoard() {
                 onSaved={invalidate}
               />
             ))}
+
             {activeRoles.length === 0 && (
               <p className="text-sm text-muted-foreground">{t("idx.noRolesInDirection")}</p>
             )}
@@ -458,6 +462,7 @@ function ActionStripInner({ list }: { list: ActionItem[] }) {
 
 function RoleCard({
   role,
+  orgNodes,
   filled,
   gap,
   members,
@@ -467,6 +472,7 @@ function RoleCard({
   onSaved,
 }: {
   role: Role;
+  orgNodes: OrgNode[];
   filled: number;
   gap: number;
   members: string[];
@@ -487,60 +493,71 @@ function RoleCard({
   const stateLabel = state === "full" ? "Fully Covered" : state === "partial" ? "Partially Covered" : "Not Covered";
 
   return (
-    <article className="panel group relative flex h-full flex-col p-5">
-      <RoleMenu role={role} onArchive={onArchive} onSaved={onSaved} />
-      <div className="flex items-start justify-between gap-3">
-        <span className={`rounded-md px-2 py-1 text-[11px] font-medium ${stateStyle}`}>
+    <article className="panel group relative flex h-full flex-col p-3.5">
+      <RoleMenu role={role} orgNodes={orgNodes} onArchive={onArchive} onSaved={onSaved} />
+      <div className="flex items-start justify-between gap-2">
+        <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${stateStyle}`}>
           {stateLabel}
         </span>
-        <span className="pr-7 text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+        <span className="pr-6 text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
           {criticalityLabel[role.criticality] ?? role.criticality}
         </span>
       </div>
 
-      <h3 className="mt-4 font-display text-lg font-semibold">{role.title}</h3>
-      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{role.description}</p>
+      <h3 className="mt-2.5 font-display text-sm font-semibold leading-snug">{role.title}</h3>
+      <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+        {role.description}
+      </p>
 
-      <div className="mt-5 grid grid-cols-2 gap-2 text-xs">
-        <Cell label={t("idx.targetLevel")} value={`${role.level_min}–${role.level_max}`} />
-        <Cell label={t("idx.targetHeadcount")} value={role.target_count} />
-        <Cell label={t("idx.currentCoverage")} value={`${filled}/${role.target_count}`} />
-        <Cell label="Gap" value={gap} danger={gap > 0} />
+      <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground tabular-nums">
+        <span>
+          {t("idx.targetLevel")} L{role.level_min}–{role.level_max}
+        </span>
+        <span>
+          {t("idx.currentCoverage")} {filled}/{role.target_count}
+        </span>
+        <span className={gap > 0 ? "text-danger" : "text-ok"}>Gap {gap}</span>
       </div>
 
-      <div className="mt-4">
-        <Progress value={pct} className="h-1.5" />
+      <div className="mt-2">
+        <Progress value={pct} className="h-1" />
       </div>
 
       {teams.length > 0 && (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Building2 className="size-3.5" />
-          {t("idx.teamsLabel")}{teams.join("、")}
+        <p className="mt-2 flex items-center gap-1 truncate text-[11px] text-muted-foreground">
+          <Building2 className="size-3 shrink-0" />
+          <span className="truncate">
+            {t("idx.teamsLabel")}
+            {teams.join("、")}
+          </span>
         </p>
       )}
 
       {members.length > 0 && (
-        <p className="mt-4 flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Users className="size-3.5" />
-          {members.join("、")}
+        <p className="mt-1 flex items-center gap-1 truncate text-[11px] text-muted-foreground">
+          <Users className="size-3 shrink-0" />
+          <span className="truncate">{members.join("、")}</span>
         </p>
       )}
 
-      <div className="mt-auto flex items-center justify-between gap-2 pt-5">
-        <Button size="sm" variant="outline" className="gap-1.5" onClick={onOpen}>
-          {t("idx.viewRoleProfile")} <ArrowUpRight className="size-3.5" />
+      <div className="mt-auto pt-3">
+        <Button size="sm" variant="outline" className="h-7 gap-1 px-2 text-xs" onClick={onOpen}>
+          {t("idx.viewRoleProfile")} <ArrowUpRight className="size-3" />
         </Button>
       </div>
     </article>
   );
 }
 
+
 function RoleMenu({
   role,
+  orgNodes,
   onArchive,
   onSaved,
 }: {
   role: Role;
+  orgNodes: OrgNode[];
   onArchive: () => void;
   onSaved: () => void;
 }) {
@@ -552,6 +569,7 @@ function RoleMenu({
   const [levelMax, setLevelMax] = useState(String(role.level_max));
   const [targetCount, setTargetCount] = useState(String(role.target_count));
   const [criticality, setCriticality] = useState(role.criticality);
+  const [nodeId, setNodeId] = useState(role.org_node_id ?? "__none");
 
   const reset = () => {
     setTitle(role.title);
@@ -560,6 +578,7 @@ function RoleMenu({
     setLevelMax(String(role.level_max));
     setTargetCount(String(role.target_count));
     setCriticality(role.criticality);
+    setNodeId(role.org_node_id ?? "__none");
   };
 
   const save = useMutation({
@@ -573,10 +592,12 @@ function RoleMenu({
           level_max: Number(levelMax) || role.level_max,
           target_count: Math.max(1, Number(targetCount) || 1),
           criticality,
+          org_node_id: nodeId === "__none" ? null : nodeId,
         })
         .eq("id", role.id);
       if (error) throw error;
     },
+
     onSuccess: () => {
       toast.success(t("idx.roleUpdated"));
       setEditing(false);
@@ -685,6 +706,24 @@ function RoleMenu({
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label>{t("idx.assignTeam")}</Label>
+              <Select value={nodeId} onValueChange={setNodeId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t("idx.noTeam")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none">{t("idx.noTeam")}</SelectItem>
+                  {orgNodes.map((n) => (
+                    <SelectItem key={n.id} value={n.id}>
+                      {n.type === "Team" ? "— " : ""}
+                      {n.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <p className="text-xs text-muted-foreground">
               {t("idx.roleProfileHint")}
             </p>
