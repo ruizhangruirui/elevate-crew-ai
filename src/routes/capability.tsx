@@ -25,7 +25,7 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { fetchOrgNodes, peopleInSubtree } from "@/lib/org-tree";
+import { fetchOrgNodes, peopleInSubtree, type OrgNode } from "@/lib/org-tree";
 import { fetchSnapshots, recordSnapshot, type Snapshot } from "@/lib/snapshots";
 
 export const Route = createFileRoute("/capability")({
