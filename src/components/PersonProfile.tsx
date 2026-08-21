@@ -74,28 +74,6 @@ function perfLabelOf(t: (k: string) => string, key: string): string {
 
 const SKILL_LEVELS = ["Proficient", "Advanced", "Expert"] as const;
 
-function LevelScale({ required, actual }: { required: string; actual: string | null }) {
-  const req = levelRank(required);
-  const act = levelRank(actual);
-  return (
-    <span className="flex items-center gap-0.5" title={`${required} / ${actual ?? "-"}`}>
-      {[1, 2, 3].map((i) => (
-        <span
-          key={i}
-          className={`size-2 rounded-full border ${
-            i <= act
-              ? act >= req
-                ? "border-ok bg-ok"
-                : "border-warn bg-warn"
-              : i <= req
-                ? "border-muted-foreground/60"
-                : "border-transparent"
-          }`}
-        />
-      ))}
-    </span>
-  );
-}
 
 function CollapsedRest({ items, label }: { items: string[]; label: string }) {
   const [open, setOpen] = useState(false);
