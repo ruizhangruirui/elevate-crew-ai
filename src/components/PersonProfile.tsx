@@ -129,7 +129,13 @@ function Fact({
   tone?: "ok" | "warn" | "danger" | undefined;
 }) {
   const toneCls =
-    tone === "ok" ? "text-ok" : tone === "warn" ? "text-warn" : tone === "danger" ? "text-danger" : "";
+    tone === "ok"
+      ? "text-ok"
+      : tone === "warn"
+        ? "text-warn"
+        : tone === "danger"
+          ? "text-danger"
+          : "";
   return (
     <div className="rounded-lg border border-border/60 bg-surface-raised/50 px-3 py-2">
       <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
@@ -202,8 +208,8 @@ export function PersonProfile({
   const [editingMgr, setEditingMgr] = useState(false);
   const orgNodes = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
 
-  const role = person.role_id ? roles.find((r) => r.id === person.role_id) ?? null : null;
-  const direction = role ? directions.find((d) => d.id === role.direction_id) ?? null : null;
+  const role = person.role_id ? (roles.find((r) => r.id === person.role_id) ?? null) : null;
+  const direction = role ? (directions.find((d) => d.id === role.direction_id) ?? null) : null;
 
   const fits = useQuery({
     queryKey: ["person-fit", person.id],
@@ -544,7 +550,9 @@ export function PersonProfile({
       const nextNode = form.org_node_id === "none" ? null : form.org_node_id;
       if (nextNode !== (person.org_node_id ?? null)) {
         const nameOf = (id: string | null) =>
-          id ? (orgNodes.data ?? []).find((n) => n.id === id)?.name ?? id : t("sheet.person.unassigned");
+          id
+            ? ((orgNodes.data ?? []).find((n) => n.id === id)?.name ?? id)
+            : t("sheet.person.unassigned");
         await supabase.from("audit_log").insert({
           person_id: person.id,
           action: t("sheet.person.orgMoveAction"),
@@ -555,9 +563,14 @@ export function PersonProfile({
 
       const diffs: string[] = [];
       const cmp = (label: string, before: string, after: string) => {
-        if ((before || "—") !== (after || "—")) diffs.push(`${label}: ${before || "—"} → ${after || "—"}`);
+        if ((before || "—") !== (after || "—"))
+          diffs.push(`${label}: ${before || "—"} → ${after || "—"}`);
       };
-      cmp(t("sheet.person.performance"), perfLabelOf(t, person.performance ?? ""), perfLabelOf(t, form.performance));
+      cmp(
+        t("sheet.person.performance"),
+        perfLabelOf(t, person.performance ?? ""),
+        perfLabelOf(t, form.performance),
+      );
       cmp(t("sheet.person.level"), person.level != null ? String(person.level) : "", form.level);
       cmp(t("sheet.person.status"), person.status ?? "", form.status);
       cmp(
@@ -621,10 +634,15 @@ export function PersonProfile({
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-        <Fact label={t("sheet.person.level")} value={person.level != null ? `Level ${person.level}` : "—"} />
+        <Fact
+          label={t("sheet.person.level")}
+          value={person.level != null ? `Level ${person.level}` : "—"}
+        />
         <Fact
           label={t("sheet.person.status")}
-          value={person.status === "onboard" ? t("sheet.person.onboard") : t("sheet.person.candidate")}
+          value={
+            person.status === "onboard" ? t("sheet.person.onboard") : t("sheet.person.candidate")
+          }
           tone={person.status === "onboard" ? "ok" : "warn"}
         />
         <Fact
@@ -641,7 +659,10 @@ export function PersonProfile({
         />
         <Fact
           label={t("sheet.person.team")}
-          value={(orgNodes.data ?? []).find((n) => n.id === person.org_node_id)?.name ?? t("sheet.person.unassigned")}
+          value={
+            (orgNodes.data ?? []).find((n) => n.id === person.org_node_id)?.name ??
+            t("sheet.person.unassigned")
+          }
           tone={person.org_node_id ? undefined : "warn"}
         />
         <Fact
@@ -661,7 +682,11 @@ export function PersonProfile({
           label={t("sheet.person.attritionRisk")}
           value={riskLabelOf(t, person.attrition_risk ?? "unknown")}
           tone={
-            person.attrition_risk === "high" ? "danger" : person.attrition_risk === "medium" ? "warn" : undefined
+            person.attrition_risk === "high"
+              ? "danger"
+              : person.attrition_risk === "medium"
+                ? "warn"
+                : undefined
           }
         />
       </div>
@@ -715,7 +740,10 @@ export function PersonProfile({
                   </div>
                   <div className="space-y-2">
                     <Label>{t("sheet.person.status")}</Label>
-                    <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                    <Select
+                      value={form.status}
+                      onValueChange={(v) => setForm({ ...form, status: v })}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -737,7 +765,10 @@ export function PersonProfile({
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label>{t("sheet.person.assignedRole")}</Label>
-                    <Select value={form.role_id} onValueChange={(v) => setForm({ ...form, role_id: v })}>
+                    <Select
+                      value={form.role_id}
+                      onValueChange={(v) => setForm({ ...form, role_id: v })}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -787,15 +818,22 @@ export function PersonProfile({
                       <SelectItem value="正式员工">{t("sheet.person.contractRegular")}</SelectItem>
                       <SelectItem value="外包">{t("sheet.person.contractOutsourced")}</SelectItem>
                       <SelectItem value="实习生">{t("sheet.person.contractIntern")}</SelectItem>
-                      <SelectItem value="外部顾问">{t("sheet.person.contractConsultant")}</SelectItem>
-                      <SelectItem value="访问学者">{t("sheet.person.contractVisitingScholar")}</SelectItem>
+                      <SelectItem value="外部顾问">
+                        {t("sheet.person.contractConsultant")}
+                      </SelectItem>
+                      <SelectItem value="访问学者">
+                        {t("sheet.person.contractVisitingScholar")}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label>{t("importance.label")}</Label>
-                    <Select value={form.importance} onValueChange={(v) => setForm({ ...form, importance: v })}>
+                    <Select
+                      value={form.importance}
+                      onValueChange={(v) => setForm({ ...form, importance: v })}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -858,7 +896,12 @@ export function PersonProfile({
             title={t("pp.ms.title")}
             badge={String((milestones.data ?? []).length)}
             actions={
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setMsOpen((v) => !v)}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setMsOpen((v) => !v)}
+              >
                 <Plus className="size-4" /> {t("pp.ms.add")}
               </Button>
             }
@@ -868,14 +911,19 @@ export function PersonProfile({
                 <div className="grid gap-3 sm:grid-cols-3">
                   <div className="space-y-1.5">
                     <Label>{t("pp.ms.kind")}</Label>
-                    <Select value={msForm.kind} onValueChange={(v) => setMsForm({ ...msForm, kind: v })}>
+                    <Select
+                      value={msForm.kind}
+                      onValueChange={(v) => setMsForm({ ...msForm, kind: v })}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="promotion">{t("pp.ms.kind.promotion")}</SelectItem>
                         <SelectItem value="award">{t("pp.ms.kind.award")}</SelectItem>
-                        <SelectItem value="certification">{t("pp.ms.kind.certification")}</SelectItem>
+                        <SelectItem value="certification">
+                          {t("pp.ms.kind.certification")}
+                        </SelectItem>
                         <SelectItem value="other">{t("pp.ms.kind.other")}</SelectItem>
                       </SelectContent>
                     </Select>
@@ -1072,14 +1120,18 @@ export function PersonProfile({
                     <Label>{t("sheet.person.performance")}</Label>
                     <Select
                       value={form.performance || "unset"}
-                      onValueChange={(v) => setForm({ ...form, performance: v === "unset" ? "" : v })}
+                      onValueChange={(v) =>
+                        setForm({ ...form, performance: v === "unset" ? "" : v })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="unset">{t("sheet.person.notAssessed")}</SelectItem>
-                        <SelectItem value="exceeds">{t("sheet.person.exceedsExpectation")}</SelectItem>
+                        <SelectItem value="exceeds">
+                          {t("sheet.person.exceedsExpectation")}
+                        </SelectItem>
                         <SelectItem value="meets">{t("sheet.person.meetsExpectation")}</SelectItem>
                         <SelectItem value="below">{t("sheet.person.belowExpectation")}</SelectItem>
                       </SelectContent>
@@ -1087,7 +1139,10 @@ export function PersonProfile({
                   </div>
                   <div className="space-y-2">
                     <Label>Readiness</Label>
-                    <Select value={form.readiness} onValueChange={(v) => setForm({ ...form, readiness: v })}>
+                    <Select
+                      value={form.readiness}
+                      onValueChange={(v) => setForm({ ...form, readiness: v })}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -1135,7 +1190,12 @@ export function PersonProfile({
             badge={String((perfRecords.data ?? []).length)}
             title={t("sheet.person.perfRecordTitle")}
             actions={
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setPerfOpen((v) => !v)}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setPerfOpen((v) => !v)}
+              >
                 <Plus className="size-4" /> {t("sheet.person.perfAdd")}
               </Button>
             }
@@ -1161,7 +1221,9 @@ export function PersonProfile({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="exceeds">{t("sheet.person.exceedsExpectation")}</SelectItem>
+                        <SelectItem value="exceeds">
+                          {t("sheet.person.exceedsExpectation")}
+                        </SelectItem>
                         <SelectItem value="meets">{t("sheet.person.meetsExpectation")}</SelectItem>
                         <SelectItem value="below">{t("sheet.person.belowExpectation")}</SelectItem>
                       </SelectContent>
@@ -1218,7 +1280,10 @@ export function PersonProfile({
             ) : (
               <ul className="space-y-2">
                 {(perfRecords.data ?? []).map((r) => (
-                  <li key={r.id} className="rounded-lg border border-border/60 bg-surface-raised/40 p-3">
+                  <li
+                    key={r.id}
+                    className="rounded-lg border border-border/60 bg-surface-raised/40 p-3"
+                  >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="font-display text-sm font-semibold">{r.period}</span>
                       <span
@@ -1249,7 +1314,9 @@ export function PersonProfile({
           {role && (
             <Module badge={String(skillMatch.length)} title={t("sheet.person.skillMatchTitle")}>
               {skillMatch.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t("sheet.person.noSkillRequirements")}</p>
+                <p className="text-sm text-muted-foreground">
+                  {t("sheet.person.noSkillRequirements")}
+                </p>
               ) : (
                 <>
                   <p className="mb-3 text-xs text-muted-foreground">
@@ -1302,7 +1369,10 @@ export function PersonProfile({
                             <Select
                               value={s.actual ? String(s.actual) : "none"}
                               onValueChange={(v) =>
-                                setSkillLevel.mutate({ skill: s.skill, level: v === "none" ? null : v })
+                                setSkillLevel.mutate({
+                                  skill: s.skill,
+                                  level: v === "none" ? null : v,
+                                })
                               }
                             >
                               <SelectTrigger className="h-7 w-32 text-xs">
@@ -1330,7 +1400,9 @@ export function PersonProfile({
           {role && (
             <Module title={t("sheet.person.carriedCapabilities")}>
               {carried.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t("sheet.person.noRelatedCapabilities")}</p>
+                <p className="text-sm text-muted-foreground">
+                  {t("sheet.person.noRelatedCapabilities")}
+                </p>
               ) : (
                 <>
                   <div className="flex flex-wrap gap-1.5">
@@ -1351,7 +1423,9 @@ export function PersonProfile({
                           }
                         >
                           {c.label} ·{" "}
-                          {c.tier === "critical" ? t("sheet.person.riskCritical") : t("sheet.person.riskWatch")}
+                          {c.tier === "critical"
+                            ? t("sheet.person.riskCritical")
+                            : t("sheet.person.riskWatch")}
                         </span>
                       ))}
                   </div>
@@ -1371,14 +1445,21 @@ export function PersonProfile({
             title={t("sheet.person.currentRole")}
             actions={
               role && onOpenRole ? (
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => onOpenRole(role.id)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => onOpenRole(role.id)}
+                >
                   <ExternalLink className="size-4" /> {t("sheet.person.viewRoleProfile")}
                 </Button>
               ) : null
             }
           >
             {!role ? (
-              <p className="text-sm text-muted-foreground">{t("sheet.person.noRoleAssignedHint")}</p>
+              <p className="text-sm text-muted-foreground">
+                {t("sheet.person.noRoleAssignedHint")}
+              </p>
             ) : (
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -1413,10 +1494,15 @@ export function PersonProfile({
                   <p className="text-xs text-muted-foreground">{t("sheet.person.teammates")}</p>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {teammates.length === 0 && (
-                      <span className="text-xs text-danger">{t("sheet.person.soleOwnerWarning")}</span>
+                      <span className="text-xs text-danger">
+                        {t("sheet.person.soleOwnerWarning")}
+                      </span>
                     )}
                     {teammates.map((m) => (
-                      <span key={m.id} className="rounded-full border border-border/70 px-2.5 py-1 text-xs">
+                      <span
+                        key={m.id}
+                        className="rounded-full border border-border/70 px-2.5 py-1 text-xs"
+                      >
                         {m.name}
                       </span>
                     ))}
@@ -1441,7 +1527,10 @@ export function PersonProfile({
                 {(fits.data ?? []).map((f) => {
                   const r = roles.find((x) => x.id === f.role_id);
                   return (
-                    <li key={f.id} className="rounded-lg border border-border/60 bg-surface-raised/40 p-3">
+                    <li
+                      key={f.id}
+                      className="rounded-lg border border-border/60 bg-surface-raised/40 p-3"
+                    >
                       <div className="flex items-center justify-between gap-2">
                         <button
                           className="text-left font-display text-sm font-semibold hover:text-brand"
@@ -1449,12 +1538,19 @@ export function PersonProfile({
                         >
                           {r?.title ?? t("sheet.person.deletedRole")}
                         </button>
-                        <span className="font-display text-sm tabular-nums text-brand">{f.fit_score}</span>
+                        <span className="font-display text-sm tabular-nums text-brand">
+                          {f.fit_score}
+                        </span>
                       </div>
-                      {f.summary && <p className="mt-1 text-xs text-muted-foreground">{f.summary}</p>}
+                      {f.summary && (
+                        <p className="mt-1 text-xs text-muted-foreground">{f.summary}</p>
+                      )}
                       {f.recommendation && (
                         <p className="mt-1 text-xs text-foreground/80">
-                          {t("sheet.person.recommendationLabel").replace("{text}", f.recommendation)}
+                          {t("sheet.person.recommendationLabel").replace(
+                            "{text}",
+                            f.recommendation,
+                          )}
                         </p>
                       )}
                     </li>

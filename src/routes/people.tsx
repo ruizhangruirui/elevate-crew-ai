@@ -239,7 +239,9 @@ function PeopleBody() {
                   </span>
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {[roleName(p.role_id), contractLabel(t, p.contract_type)].filter(Boolean).join(" · ")}
+                  {[roleName(p.role_id), contractLabel(t, p.contract_type)]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </p>
                 {(p.tags ?? []).length > 0 && (
                   <div className="mt-1 flex flex-wrap gap-1">
@@ -259,9 +261,7 @@ function PeopleBody() {
               </span>
               <span
                 className={`rounded-md px-2 py-1 text-xs font-medium ${
-                  p.status === "onboard"
-                    ? "bg-ok/12 text-ok"
-                    : "bg-warn/12 text-warn"
+                  p.status === "onboard" ? "bg-ok/12 text-ok" : "bg-warn/12 text-warn"
                 }`}
               >
                 {p.status === "onboard" ? t("ppl.status.onboard") : t("ppl.status.candidate")}
@@ -301,7 +301,6 @@ function PeopleBody() {
           )}
         </div>
       </div>
-
     </div>
   );
 }

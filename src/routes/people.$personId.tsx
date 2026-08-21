@@ -13,7 +13,10 @@ export const Route = createFileRoute("/people/$personId")({
   head: () => ({
     meta: [
       { title: "人员档案 · 战略岗位与人才管理系统" },
-      { name: "description", content: "查看单个人员的 HR 档案与主管评估：基础信息、晋升奖项、绩效与技能评估。" },
+      {
+        name: "description",
+        content: "查看单个人员的 HR 档案与主管评估：基础信息、晋升奖项、绩效与技能评估。",
+      },
       { property: "og:title", content: "人员档案 · 战略岗位与人才管理系统" },
       {
         property: "og:description",
@@ -34,8 +37,10 @@ function PersonPage() {
   const [activeRoleId, setActiveRoleId] = useState<string | null>(null);
 
   const person = data?.people.find((p) => p.id === personId) ?? null;
-  const role = person?.role_id ? data?.roles.find((r) => r.id === person.role_id) ?? null : null;
-  const direction = role ? data?.directions.find((d) => d.id === role.direction_id) ?? null : null;
+  const role = person?.role_id ? (data?.roles.find((r) => r.id === person.role_id) ?? null) : null;
+  const direction = role
+    ? (data?.directions.find((d) => d.id === role.direction_id) ?? null)
+    : null;
 
   return (
     <AppShell
