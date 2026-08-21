@@ -12,7 +12,7 @@ import {
   type Role,
   type Skill,
 } from "@/lib/talent";
-import { buildCapabilities, normalizeKey, levelRank } from "@/lib/capability";
+import { buildCapabilities, normalizeKey, levelRank, carrierRiskTier } from "@/lib/capability";
 import { fetchOrgNodes } from "@/lib/org-tree";
 import { useI18n } from "@/lib/i18n";
 import { contractLabel } from "@/lib/contract";
