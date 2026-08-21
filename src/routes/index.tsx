@@ -253,23 +253,26 @@ function StrategyBoard() {
             <NewRoleDialog directionId={active.id} onDone={invalidate} />
           </div>
 
-          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {activeRoles.map((role) => (
               <RoleCard
                 key={role.id}
                 role={role}
+                orgNodes={orgNodes.data ?? []}
                 filled={coverageOf(role, people).filled}
                 gap={coverageOf(role, people).gap}
                 members={people.filter((p) => p.role_id === role.id).map((p) => p.name)}
                 teams={Array.from(
                   new Set(
-                    people
-                      .filter((p) => p.role_id === role.id && p.org_node_id)
-                      .map(
-                        (p) =>
-                          (orgNodes.data ?? []).find((n) => n.id === p.org_node_id)?.name ?? "",
-                      )
-                      .filter(Boolean),
+                    [
+                      (orgNodes.data ?? []).find((n) => n.id === role.org_node_id)?.name ?? "",
+                      ...people
+                        .filter((p) => p.role_id === role.id && p.org_node_id)
+                        .map(
+                          (p) =>
+                            (orgNodes.data ?? []).find((n) => n.id === p.org_node_id)?.name ?? "",
+                        ),
+                    ].filter(Boolean),
                   ),
                 )}
                 onArchive={() => archiveRole.mutate(role.id)}
@@ -277,6 +280,7 @@ function StrategyBoard() {
                 onSaved={invalidate}
               />
             ))}
+
             {activeRoles.length === 0 && (
               <p className="text-sm text-muted-foreground">{t("idx.noRolesInDirection")}</p>
             )}
