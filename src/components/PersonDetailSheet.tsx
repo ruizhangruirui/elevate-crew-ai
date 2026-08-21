@@ -14,6 +14,7 @@ import {
 } from "@/lib/talent";
 import { buildCapabilities, normalizeKey, levelRank } from "@/lib/capability";
 import { fetchOrgNodes } from "@/lib/org-tree";
+import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,23 +35,32 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const readinessLabel: Record<string, string> = {
-  ready: "Ready now",
-  ready_1y: "1 年内可上手",
-  ready_2y: "2 年内可上手",
-  unknown: "未评估",
-};
-const riskLabel: Record<string, string> = {
-  low: "低",
-  medium: "中",
-  high: "高",
-  unknown: "未评估",
-};
-const perfLabel: Record<string, string> = {
-  exceeds: "超出预期",
-  meets: "符合预期",
-  below: "低于预期",
-};
+function readinessLabelOf(t: (k: string) => string, key: string): string {
+  const map: Record<string, string> = {
+    ready: t("sheet.person.readyNow"),
+    ready_1y: t("sheet.person.ready1yFull"),
+    ready_2y: t("sheet.person.ready2yFull"),
+    unknown: t("sheet.person.notAssessed"),
+  };
+  return map[key];
+}
+function riskLabelOf(t: (k: string) => string, key: string): string {
+  const map: Record<string, string> = {
+    low: t("sheet.person.riskLow"),
+    medium: t("sheet.person.riskMedium"),
+    high: t("sheet.person.riskHigh"),
+    unknown: t("sheet.person.notAssessed"),
+  };
+  return map[key];
+}
+function perfLabelOf(t: (k: string) => string, key: string): string {
+  const map: Record<string, string> = {
+    exceeds: t("sheet.person.exceedsExpectation"),
+    meets: t("sheet.person.meetsExpectation"),
+    below: t("sheet.person.belowExpectation"),
+  };
+  return map[key];
+}
 
 function Fact({ label, value, tone }: { label: string; value: string; tone?: "ok" | "warn" | "danger" | undefined }) {
   const toneCls =
@@ -94,6 +104,7 @@ export function PersonDetailSheet({
   onDone: () => void;
   onOpenRole?: (roleId: string) => void;
 }) {
+  const { t } = useI18n();
   const [editing, setEditing] = useState(false);
   const orgNodes = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
 
@@ -223,16 +234,16 @@ export function PersonDetailSheet({
       const nextNode = form.org_node_id === "none" ? null : form.org_node_id;
       if (nextNode !== (person!.org_node_id ?? null)) {
         const nameOf = (id: string | null) =>
-          id ? (orgNodes.data ?? []).find((n) => n.id === id)?.name ?? id : "未归属";
+          id ? (orgNodes.data ?? []).find((n) => n.id === id)?.name ?? id : t("sheet.person.unassigned");
         await supabase.from("audit_log").insert({
-          action: "组织调动",
-          entity: `人员 / ${person!.name}`,
+          action: t("sheet.person.orgMoveAction"),
+          entity: t("sheet.person.orgMoveEntity").replace("{name}", person!.name),
           detail: `${nameOf(person!.org_node_id ?? null)} → ${nameOf(nextNode)}`,
         });
       }
     },
     onSuccess: () => {
-      toast.success("已保存评估信息");
+      toast.success(t("sheet.person.assessmentSaved"));
       setEditing(false);
       onDone();
     },
@@ -247,39 +258,39 @@ export function PersonDetailSheet({
         <SheetHeader className="text-left">
           <SheetTitle className="font-display text-2xl">{person.name}</SheetTitle>
           <SheetDescription>
-            {role ? `${direction?.title ?? "未知方向"} · ${role.title}` : "未分配岗位"}
+            {role ? `${direction?.title ?? t("sheet.person.unknownDirection")} · ${role.title}` : t("sheet.person.unassignedRole")}
           </SheetDescription>
         </SheetHeader>
 
         <div className="mt-6 space-y-5 pb-10">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            <Fact label="职级" value={person.level != null ? `Level ${person.level}` : "—"} />
+            <Fact label={t("sheet.person.level")} value={person.level != null ? `Level ${person.level}` : "—"} />
             <Fact
-              label="状态"
-              value={person.status === "onboard" ? "在岗" : "候选人"}
+              label={t("sheet.person.status")}
+              value={person.status === "onboard" ? t("sheet.person.onboard") : t("sheet.person.candidate")}
               tone={person.status === "onboard" ? "ok" : "warn"}
             />
-            <Fact label="绩效" value={perfLabel[person.performance ?? ""] ?? "未评估"} />
-            <Fact label="合同类型" value={person.contract_type || "未填写"} />
+            <Fact label={t("sheet.person.performance")} value={perfLabelOf(t, person.performance ?? "") ?? t("sheet.person.notAssessed")} />
+            <Fact label={t("sheet.person.contractType")} value={person.contract_type || t("sheet.person.notFilled")} />
             <Fact
-              label="所属团队"
+              label={t("sheet.person.team")}
               value={
-                (orgNodes.data ?? []).find((n) => n.id === person.org_node_id)?.name ?? "未归属"
+                (orgNodes.data ?? []).find((n) => n.id === person.org_node_id)?.name ?? t("sheet.person.unassigned")
               }
               tone={person.org_node_id ? undefined : "warn"}
             />
             <Fact
-              label="司龄"
-              value={person.tenure_months != null ? `${person.tenure_months} 个月` : "—"}
+              label={t("sheet.person.tenure")}
+              value={person.tenure_months != null ? t("sheet.person.tenureMonths").replace("{n}", String(person.tenure_months)) : "—"}
             />
             <Fact
-              label="Readiness"
-              value={readinessLabel[person.readiness ?? "unknown"] ?? "未评估"}
+              label={t("sheet.person.readiness")}
+              value={readinessLabelOf(t, person.readiness ?? "unknown") ?? t("sheet.person.notAssessed")}
               tone={person.readiness === "ready" ? "ok" : undefined}
             />
             <Fact
-              label="流失风险"
-              value={riskLabel[person.attrition_risk ?? "unknown"] ?? "未评估"}
+              label={t("sheet.person.attritionRisk")}
+              value={riskLabelOf(t, person.attrition_risk ?? "unknown") ?? t("sheet.person.notAssessed")}
               tone={
                 person.attrition_risk === "high"
                   ? "danger"
@@ -305,12 +316,12 @@ export function PersonDetailSheet({
 
           {!editing && (
             <Button variant="outline" size="sm" className="gap-1.5" onClick={startEdit}>
-              <Pencil className="size-4" /> 编辑评估信息
+              <Pencil className="size-4" /> {t("sheet.person.editAssessment")}
             </Button>
           )}
 
           {editing && (
-            <Module title="编辑评估信息（HR / 主管填写）">
+            <Module title={t("sheet.person.editAssessmentTitle")}>
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className="space-y-2">
