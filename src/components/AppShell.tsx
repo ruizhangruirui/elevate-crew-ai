@@ -26,6 +26,7 @@ export function AppShell({
 }) {
   const { session, user, loading } = useAuth();
   const navigate = useNavigate();
+  const { lang, setLang, t } = useI18n();
 
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/auth" });
