@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import type React from "react";
 import { toast } from "sonner";
 import {
   Plus,
@@ -84,7 +83,10 @@ export const Route = createFileRoute("/")({
 function Index() {
   const { t } = useI18n();
   return (
-    <AppShell title={t("nav.index")} subtitle={t("idx.subtitle")}>
+    <AppShell
+      title={t("nav.index")}
+      subtitle={t("idx.subtitle")}
+    >
       <StrategyBoard />
     </AppShell>
   );
@@ -127,7 +129,9 @@ function StrategyBoard() {
   const activeRoleIds = new Set(roles.map((role) => role.id));
   const totalFilled = people.filter(
     (person) =>
-      person.status === "onboard" && person.role_id !== null && activeRoleIds.has(person.role_id),
+      person.status === "onboard" &&
+      person.role_id !== null &&
+      activeRoleIds.has(person.role_id),
   ).length;
   const totalGap = Math.max(0, totalSeats - totalFilled);
 
@@ -137,21 +141,13 @@ function StrategyBoard() {
     const seats = rs.reduce((n, role) => n + role.target_count, 0);
     const filled = people.filter(
       (person) =>
-        person.status === "onboard" && person.role_id !== null && roleIds.has(person.role_id),
+        person.status === "onboard" &&
+        person.role_id !== null &&
+        roleIds.has(person.role_id),
     ).length;
     const gap = Math.max(0, seats - filled);
     return { count: rs.length, gap };
   };
-
-  const riskRoles = roles
-    .map((role) => {
-      const coverage = coverageOf(role, people);
-      const node = (orgNodes.data ?? []).find((n) => n.id === role.org_node_id);
-      return { role, node, ...coverage };
-    })
-    .filter((item) => item.gap > 0 || item.filled === 0)
-    .sort((a, b) => b.gap - a.gap || a.filled - b.filled)
-    .slice(0, 5);
 
   return (
     <div className="space-y-10">
@@ -193,21 +189,13 @@ function StrategyBoard() {
               <StatTile label={t("idx.statDirections")} value={directions.length} />
               <StatTile label={t("idx.statRoleTypes")} value={roles.length} />
               <StatTile label={t("idx.statTargetSeats")} value={totalSeats} />
-              <StatTile
-                label={t("idx.statCurrentGap")}
-                value={totalGap}
-                tone={totalGap ? "danger" : "ok"}
-              />
+              <StatTile label={t("idx.statCurrentGap")} value={totalGap} tone={totalGap ? "danger" : "ok"} />
             </div>
             <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
               <Link to="/org" className="text-brand hover:underline">
                 {t("idx.linkOrg")}
               </Link>
-              <Link
-                to="/capability"
-                search={{ scope: undefined }}
-                className="text-brand hover:underline"
-              >
+              <Link to="/capability" search={{ scope: undefined }} className="text-brand hover:underline">
                 {t("idx.linkCapability")}
               </Link>
               <Link to="/people" className="text-brand hover:underline">
@@ -252,9 +240,7 @@ function StrategyBoard() {
                         s.gap ? "bg-danger/12 text-danger" : "bg-ok/12 text-ok"
                       }`}
                     >
-                      {s.gap
-                        ? t("idx.criticalGapCount").replace("{count}", String(s.gap))
-                        : t("idx.fullCoverage")}
+                      {s.gap ? t("idx.criticalGapCount").replace("{count}", String(s.gap)) : t("idx.fullCoverage")}
                     </span>
                   </div>
                   <h3 className="mt-3 pr-7 font-display text-base font-semibold">{d.title}</h3>
@@ -269,150 +255,65 @@ function StrategyBoard() {
         </div>
       </section>
 
-      <section className="grid gap-5 lg:grid-cols-[1.05fr_1fr]">
-        <div className="panel p-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
+      {/* Roles */}
+      {active && (
+        <section>
+          <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-                {t("idx.riskOverview")}
+              <h2 className="font-display text-xl font-semibold">{t("idx.rolesHeading")}</h2>
+              <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+                {active.title} · {active.description}
               </p>
-              <h2 className="mt-2 font-display text-xl font-semibold">{t("idx.riskHeading")}</h2>
             </div>
-            <Link to="/actions" className="text-xs text-brand hover:underline">
-              {t("idx.actionCenterLink")}
-            </Link>
+            <NewRoleDialog directionId={active.id} onDone={invalidate} />
           </div>
 
-          <div className="mt-5 space-y-3">
-            {riskRoles.map(({ role, node, filled, gap }) => (
-              <div
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+            {activeRoles.map((role) => (
+              <RoleCard
                 key={role.id}
-                className="rounded-lg border border-border/60 bg-surface-raised/35 px-4 py-3"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{role.title}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {node?.name ?? t("idx.noTeam")} · L{role.level_min}-{role.level_max}
-                    </p>
-                  </div>
-                  <span
-                    className={`rounded px-2 py-1 text-xs font-medium ${gap > 0 ? "bg-danger/12 text-danger" : "bg-warn/12 text-warn"}`}
-                  >
-                    {t("idx.gapLabel").replace("{count}", String(gap))}
-                  </span>
-                </div>
-                <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
-                  <span>
-                    {t("idx.currentCoverage")} {filled}/{role.target_count}
-                  </span>
-                  <Progress
-                    value={Math.min(
-                      100,
-                      Math.round((filled / Math.max(1, role.target_count)) * 100),
-                    )}
-                    className="h-1 flex-1"
-                  />
-                </div>
-              </div>
+                role={role}
+                orgNodes={orgNodes.data ?? []}
+                filled={coverageOf(role, people).filled}
+                gap={coverageOf(role, people).gap}
+                members={people.filter((p) => p.role_id === role.id).map((p) => p.name)}
+                teams={Array.from(
+                  new Set(
+                    [
+                      (orgNodes.data ?? []).find((n) => n.id === role.org_node_id)?.name ?? "",
+                      ...people
+                        .filter((p) => p.role_id === role.id && p.org_node_id)
+                        .map(
+                          (p) =>
+                            (orgNodes.data ?? []).find((n) => n.id === p.org_node_id)?.name ?? "",
+                        ),
+                    ].filter(Boolean),
+                  ),
+                )}
+                onArchive={() => archiveRole.mutate(role.id)}
+                onOpen={() => setOpenRoleId(role.id)}
+                onSaved={invalidate}
+              />
             ))}
-            {riskRoles.length === 0 && (
-              <p className="rounded-lg border border-border/60 bg-ok/10 px-4 py-5 text-sm text-ok">
-                {t("idx.noCriticalRisk")}
-              </p>
+
+            {activeRoles.length === 0 && (
+              <p className="text-sm text-muted-foreground">{t("idx.noRolesInDirection")}</p>
             )}
           </div>
-        </div>
-
-        <div className="panel p-6">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-            {t("idx.nextSteps")}
-          </p>
-          <h2 className="mt-2 font-display text-xl font-semibold">{t("idx.drilldownHeading")}</h2>
-          <div className="mt-5 grid gap-3">
-            <HomeLink
-              to="/org"
-              icon={<Building2 className="size-4" />}
-              title={t("idx.homeOrgTitle")}
-              desc={t("idx.homeOrgDesc")}
-            />
-            <HomeLink
-              to="/capability"
-              icon={<ArrowUpRight className="size-4" />}
-              title={t("idx.homeCapabilityTitle")}
-              desc={t("idx.homeCapabilityDesc")}
-            />
-            <HomeLink
-              to="/people"
-              icon={<Users className="size-4" />}
-              title={t("idx.homePeopleTitle")}
-              desc={t("idx.homePeopleDesc")}
-            />
-          </div>
-          {active && (
-            <div className="mt-5 rounded-lg border border-border/60 bg-surface-raised/30 p-4">
-              <p className="text-xs font-medium text-muted-foreground">
-                {t("idx.selectedDirection")}
-              </p>
-              <p className="mt-1 text-sm font-semibold">{active.title}</p>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                {active.description}
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                <span className="rounded bg-muted/40 px-2 py-1">
-                  {t("idx.roleTypesCount").replace("{count}", String(activeRoles.length))}
-                </span>
-                <span className="rounded bg-muted/40 px-2 py-1">
-                  {t("idx.currentGapForDirection").replace(
-                    "{count}",
-                    String(activeRoles.reduce((n, role) => n + coverageOf(role, people).gap, 0)),
-                  )}
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
+        </section>
+      )}
 
       <RoleDetailSheet
         role={roles.find((r) => r.id === openRoleId) ?? null}
         people={people}
         directionTitle={
-          directions.find((d) => d.id === roles.find((r) => r.id === openRoleId)?.direction_id)
-            ?.title ?? ""
+          directions.find((d) => d.id === roles.find((r) => r.id === openRoleId)?.direction_id)?.title ?? ""
         }
         open={!!openRoleId}
         onOpenChange={(v) => !v && setOpenRoleId(null)}
         onDone={invalidate}
       />
     </div>
-  );
-}
-
-function HomeLink({
-  to,
-  icon,
-  title,
-  desc,
-}: {
-  to: "/org" | "/capability" | "/people";
-  icon: React.ReactNode;
-  title: string;
-  desc: string;
-}) {
-  return (
-    <Link
-      to={to}
-      className="flex items-start gap-3 rounded-lg border border-border/60 bg-surface-raised/30 p-4 transition-colors hover:border-brand/60"
-    >
-      <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg bg-brand/12 text-brand">
-        {icon}
-      </span>
-      <span className="min-w-0">
-        <span className="block text-sm font-medium">{title}</span>
-        <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">{desc}</span>
-      </span>
-    </Link>
   );
 }
 
@@ -505,7 +406,10 @@ function EditOrgDialog({ org, onDone }: { org: Org; onDone: () => void }) {
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={() => save.mutate()} disabled={save.isPending || !name.trim()}>
+          <Button
+            onClick={() => save.mutate()}
+            disabled={save.isPending || !name.trim()}
+          >
             {t("idx.save")}
           </Button>
         </DialogFooter>
@@ -536,16 +440,10 @@ function ActionStripInner({ list }: { list: ActionItem[] }) {
           <p className="mt-1 text-xs text-muted-foreground">
             {t("idx.openCount").replace("{count}", String(s.open))}
             {s.overdue > 0 && (
-              <span className="text-danger">
-                {" "}
-                · {t("idx.overdueCount").replace("{count}", String(s.overdue))}
-              </span>
+              <span className="text-danger"> · {t("idx.overdueCount").replace("{count}", String(s.overdue))}</span>
             )}
             {s.high > 0 && (
-              <span className="text-warn">
-                {" "}
-                · {t("idx.highPriorityCount").replace("{count}", String(s.high))}
-              </span>
+              <span className="text-warn"> · {t("idx.highPriorityCount").replace("{count}", String(s.high))}</span>
             )}
           </p>
         </div>
@@ -561,7 +459,9 @@ function ActionStripInner({ list }: { list: ActionItem[] }) {
           >
             <span className="min-w-0 flex-1 truncate">{a.title}</span>
             {a.owner && <span className="text-xs text-muted-foreground">{a.owner}</span>}
-            <span className={`text-xs ${isOverdue(a) ? "text-danger" : "text-muted-foreground"}`}>
+            <span
+              className={`text-xs ${isOverdue(a) ? "text-danger" : "text-muted-foreground"}`}
+            >
               {a.due_on ?? t("idx.noDeadline")}
               {isOverdue(a) && ` · ${t("idx.overdueSuffix")}`}
             </span>
@@ -605,8 +505,7 @@ function RoleCard({
       : state === "partial"
         ? "bg-warn/12 text-warn"
         : "bg-danger/12 text-danger";
-  const stateLabel =
-    state === "full" ? "Fully Covered" : state === "partial" ? "Partially Covered" : "Not Covered";
+  const stateLabel = state === "full" ? "Fully Covered" : state === "partial" ? "Partially Covered" : "Not Covered";
 
   return (
     <article className="panel group relative flex h-full flex-col p-3.5">
@@ -664,6 +563,7 @@ function RoleCard({
     </article>
   );
 }
+
 
 function RoleMenu({
   role,
@@ -839,7 +739,9 @@ function RoleMenu({
               </Select>
             </div>
 
-            <p className="text-xs text-muted-foreground">{t("idx.roleProfileHint")}</p>
+            <p className="text-xs text-muted-foreground">
+              {t("idx.roleProfileHint")}
+            </p>
           </div>
           <DialogFooter>
             <Button onClick={() => save.mutate()} disabled={!title.trim() || save.isPending}>
@@ -979,9 +881,7 @@ function DirectionMenu({
       <Dialog open={confirming} onOpenChange={setConfirming}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {t("idx.archiveDirectionConfirmTitle").replace("{title}", direction.title)}
-            </DialogTitle>
+            <DialogTitle>{t("idx.archiveDirectionConfirmTitle").replace("{title}", direction.title)}</DialogTitle>
           </DialogHeader>
           <div className="space-y-2 text-sm text-muted-foreground">
             <p>{t("idx.archiveDirectionDesc1")}</p>
