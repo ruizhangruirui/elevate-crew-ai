@@ -49,7 +49,7 @@ export function ConfirmAction({
         <AlertDialogFooter>
           <AlertDialogCancel>{resolvedCancelLabel}</AlertDialogCancel>
           <AlertDialogAction
-            className="bg-danger text-white hover:bg-danger/90"
+            className="bg-danger text-destructive-foreground hover:bg-danger/90"
             onClick={(e) => {
               e.stopPropagation();
               onConfirm();
