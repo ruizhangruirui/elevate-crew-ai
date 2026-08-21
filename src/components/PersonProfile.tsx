@@ -836,6 +836,79 @@ export function PersonProfile({
           )}
 
           <Module
+            title={t("sheet.person.currentRole")}
+            actions={
+              role && onOpenRole ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => onOpenRole(role.id)}
+                >
+                  <ExternalLink className="size-4" /> {t("sheet.person.viewRoleProfile")}
+                </Button>
+              ) : null
+            }
+          >
+            {!role ? (
+              <p className="text-sm text-muted-foreground">
+                {t("sheet.person.noRoleAssignedHint")}
+              </p>
+            ) : (
+              <div className="space-y-3">
+                <p className="font-display text-sm font-semibold">{role.title}</p>
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <span className="rounded-full border border-brand/40 bg-brand/10 px-2.5 py-1 text-foreground">
+                    {direction?.title ?? t("sheet.person.unknownDirection")}
+                  </span>
+                  <span className="rounded-full border border-border/70 px-2.5 py-1">
+                    {criticalityLabel[role.criticality] ?? role.criticality}
+                  </span>
+                  <span className="rounded-full border border-border/70 px-2.5 py-1">
+                    Level {role.level_min}–{role.level_max}
+                  </span>
+                </div>
+                {cov && (
+                  <div>
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>{t("sheet.person.roleCoverage")}</span>
+                      <span className="tabular-nums">
+                        {t("sheet.person.coverageGap")
+                          .replace("{filled}", String(cov.filled))
+                          .replace("{target}", String(role.target_count))
+                          .replace("{gap}", String(cov.gap))}
+                      </span>
+                    </div>
+                    <Progress
+                      className="mt-2"
+                      value={Math.min(100, (cov.filled / Math.max(1, role.target_count)) * 100)}
+                    />
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs text-muted-foreground">{t("sheet.person.teammates")}</p>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {teammates.length === 0 && (
+                      <span className="text-xs text-danger">
+                        {t("sheet.person.soleOwnerWarning")}
+                      </span>
+                    )}
+                    {teammates.map((m) => (
+                      <span
+                        key={m.id}
+                        className="rounded-full border border-border/70 px-2.5 py-1 text-xs"
+                      >
+                        {m.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </Module>
+
+
+          <Module
             title={t("pp.ms.title")}
             badge={String((milestones.data ?? []).length)}
             actions={
