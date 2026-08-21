@@ -25,10 +25,10 @@ export function TeamDiagnosisDialog({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const run = useServerFn(diagnoseTeam);
   const m = useMutation({
-    mutationFn: async () => (await run({ data: { nodeId: nodeId! } })) as TeamDiagnosis,
+    mutationFn: async () => (await run({ data: { nodeId: nodeId!, lang } })) as TeamDiagnosis,
     onError: (e: Error) => toast.error(e.message),
   });
 

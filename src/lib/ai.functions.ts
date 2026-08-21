@@ -23,13 +23,23 @@ export type FitResult = {
 
 const strArray = { type: "array", items: { type: "string" } };
 
+export type AiLang = "zh" | "en";
+
+/** Default output language is English; pass lang: "zh" to get Chinese. */
+function langRule(lang: AiLang = "en") {
+  return lang === "zh"
+    ? "使用中文输出，专有技术名词保留英文。"
+    : "Write ALL output in English (professional, concise business English), even when the source data is in Chinese. Keep proper nouns (people names, team names) as-is.";
+}
+
 export const generateRoleProfile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { roleId: string }) => {
+  .inputValidator((input: { roleId: string; lang?: AiLang }) => {
     if (!input?.roleId) throw new Error("缺少岗位");
     return input;
   })
   .handler(async ({ data, context }): Promise<RoleProfileDraft> => {
+    const lang: AiLang = data.lang ?? "en";
     const { generateStructured } = await import("./ai-gateway.server");
 
     const { data: role, error } = await context.supabase
@@ -48,7 +58,8 @@ export const generateRoleProfile = createServerFn({ method: "POST" })
     return generateStructured<RoleProfileDraft>({
       schemaName: "role_profile",
       system:
-        "你是资深的技术组织人才架构顾问，服务于一个前沿网络/芯片研究实验室。基于研究方向与岗位信息，输出严谨、具体、可落地的岗位画像。使用中文，专有技术名词保留英文。每个数组 3-6 项，简短成短语，不要整句。",
+        "你是资深的技术组织人才架构顾问，服务于一个前沿网络/芯片研究实验室。基于研究方向与岗位信息，输出严谨、具体、可落地的岗位画像。每个数组 3-6 项，用短语，不要整句。" +
+        langRule(lang),
       input: [
         `研究方向：${direction?.title ?? "未知"}`,
         `方向描述：${direction?.description ?? "无"}`,
@@ -96,11 +107,12 @@ export const generateRoleProfile = createServerFn({ method: "POST" })
 
 export const analyzeRoleFit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { roleId: string }) => {
+  .inputValidator((input: { roleId: string; lang?: AiLang }) => {
     if (!input?.roleId) throw new Error("缺少岗位");
     return input;
   })
   .handler(async ({ data, context }): Promise<FitResult[]> => {
+    const lang: AiLang = data.lang ?? "en";
     const { generateStructured } = await import("./ai-gateway.server");
 
     const { data: role, error } = await context.supabase
@@ -125,7 +137,8 @@ export const analyzeRoleFit = createServerFn({ method: "POST" })
     const result = await generateStructured<{ results: FitResult[] }>({
       schemaName: "role_fit",
       system:
-        "你是资深人才盘点顾问。所有人员数据均由 HR / 主管评估录入，没有员工自评，请据此判断可信度。为每位候选人给出对目标岗位的匹配度评分（0-100）、优势、缺口与培养建议。中文输出，简洁具体，不要空话。person_id 必须原样返回。",
+        "你是资深人才盘点顾问。所有人员数据均由 HR / 主管评估录入，没有员工自评，请据此判断可信度。为每位候选人给出对目标岗位的匹配度评分（0-100）、优势、缺口与培养建议。简洁具体，不要空话。person_id 与 person_name 必须原样返回。" +
+        langRule(lang),
       input: JSON.stringify({ role, candidates }),
       schema: {
         type: "object",
@@ -196,11 +209,12 @@ export type TeamDiagnosis = {
 
 export const diagnoseTeam = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { nodeId: string }) => {
+  .inputValidator((input: { nodeId: string; lang?: AiLang }) => {
     if (!input?.nodeId) throw new Error("缺少组织节点");
     return input;
   })
   .handler(async ({ data, context }): Promise<TeamDiagnosis> => {
+    const lang: AiLang = data.lang ?? "en";
     const { generateStructured } = await import("./ai-gateway.server");
 
     const { data: node, error } = await context.supabase
@@ -251,7 +265,8 @@ export const diagnoseTeam = createServerFn({ method: "POST" })
     return generateStructured<TeamDiagnosis>({
       schemaName: "team_diagnosis",
       system:
-        "你是技术研究组织的组织能力顾问。关注点不是个人绩效，而是「为达成战略方向，这个团队还缺什么岗位、什么能力，应该先招人还是先培养」。所有人员数据由 HR / 主管录入。中文输出，具体、可执行，不要空话套话。",
+        "你是技术研究组织的组织能力顾问。关注点不是个人绩效，而是「为达成战略方向，这个团队还缺什么岗位、什么能力，应该先招人还是先培养」。所有人员数据由 HR / 主管录入。具体、可执行，不要空话套话。" +
+        langRule(lang),
       input: JSON.stringify({
         node,
         strategy_directions: directions ?? [],
@@ -282,7 +297,10 @@ export const diagnoseTeam = createServerFn({ method: "POST" })
               properties: {
                 title: { type: "string" },
                 why: { type: "string" },
-                urgency: { type: "string", enum: ["高", "中", "低"] },
+                urgency: {
+                  type: "string",
+                  enum: lang === "zh" ? ["高", "中", "低"] : ["High", "Medium", "Low"],
+                },
               },
             },
           },
