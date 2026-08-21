@@ -52,6 +52,8 @@ export type Person = {
   status: string;
   note: string | null;
   contract_type?: string | null;
+  importance?: string | null;
+  is_leader?: boolean | null;
   tags?: string[];
   assessed_skills?: Skill[];
   performance?: string | null;
