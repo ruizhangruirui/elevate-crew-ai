@@ -51,13 +51,30 @@ export function AppShell({
             ST
           </div>
           <div className="leading-tight">
-            <p className="font-display text-sm font-semibold">战略岗位与人才</p>
-            <p className="text-xs text-muted-foreground">Talent Architecture</p>
+            <p className="font-display text-sm font-semibold">{t("shell.brand")}</p>
+            <p className="text-xs text-muted-foreground">{t("shell.brandSub")}</p>
           </div>
         </div>
 
-        <nav className="mt-8 space-y-1">
-          {nav.map(({ to, label, icon: Icon }) => (
+        <div className="mt-5 flex items-center gap-1 rounded-lg border border-sidebar-border p-1">
+          {(["zh", "en"] as const).map((l) => (
+            <button
+              key={l}
+              type="button"
+              onClick={() => setLang(l)}
+              className={`flex-1 rounded-md px-2 py-1 text-xs transition-colors ${
+                lang === l
+                  ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {l === "zh" ? "中文" : "English"}
+            </button>
+          ))}
+        </div>
+
+        <nav className="mt-4 space-y-1">
+          {nav.map(({ to, key, icon: Icon }) => (
             <Link
               key={to}
               to={to}
