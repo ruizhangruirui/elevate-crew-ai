@@ -748,6 +748,7 @@ function Legend({ className, label }: { className: string; label: string }) {
 /* ----------------------------------- 趋势 ---------------------------------- */
 
 function TrendPanel({ data, activities }: { data: Workspace; activities: Activity[] }) {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const { data: snaps } = useQuery({ queryKey: ["snapshots"], queryFn: fetchSnapshots });
 
@@ -772,7 +773,7 @@ function TrendPanel({ data, activities }: { data: Workspace; activities: Activit
         activities_90d: acts90,
       }),
     onSuccess: () => {
-      toast.success("已记录本期快照");
+      toast.success(t("cap.trend.saveToast"));
       qc.invalidateQueries({ queryKey: ["snapshots"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -787,36 +788,35 @@ function TrendPanel({ data, activities }: { data: Workspace; activities: Activit
       <section className="panel p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h3 className="font-display text-base font-semibold">组织能力趋势</h3>
+            <h3 className="font-display text-base font-semibold">{t("cap.trend.title")}</h3>
             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
-              系统里的数据都是「当前快照」。每周（或每次盘点后）记一次，就能看到覆盖率、在岗人数与建设
-              活动的变化曲线。
+              {t("cap.trend.desc")}
             </p>
           </div>
           <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending}>
-            <Plus className="size-4" /> 记录本期快照
+            <Plus className="size-4" /> {t("cap.trend.save")}
           </Button>
         </div>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-4">
-          <TrendTile label="能力覆盖率" value={`${health.coverageRate}%`} delta={first ? health.coverageRate - first.coverage_rate : null} unit="%" />
-          <TrendTile label="在岗人数" value={String(onboard)} delta={first ? onboard - first.onboard_people : null} />
-          <TrendTile label="无人承载" value={String(health.blank)} delta={first ? health.blank - first.blank_caps : null} invert />
-          <TrendTile label="90 天活动" value={String(acts90)} delta={first ? acts90 - first.activities_90d : null} />
+          <TrendTile label={t("cap.trend.coverageRate")} value={`${health.coverageRate}%`} delta={first ? health.coverageRate - first.coverage_rate : null} unit="%" />
+          <TrendTile label={t("cap.trend.onboard")} value={String(onboard)} delta={first ? onboard - first.onboard_people : null} />
+          <TrendTile label={t("cap.trend.blank")} value={String(health.blank)} delta={first ? health.blank - first.blank_caps : null} invert />
+          <TrendTile label={t("cap.trend.activities90d")} value={String(acts90)} delta={first ? acts90 - first.activities_90d : null} />
         </div>
       </section>
 
       {list.length >= 2 ? (
         <section className="panel p-6">
-          <h3 className="font-display text-base font-semibold">覆盖率曲线</h3>
+          <h3 className="font-display text-base font-semibold">{t("cap.trend.curveTitle")}</h3>
           <Sparkline snaps={list} />
           <p className="mt-2 text-xs text-muted-foreground">
-            {first?.taken_on} → {last?.taken_on}，共 {list.length} 期
+            {first?.taken_on} → {last?.taken_on}{t("cap.trend.periodMid")}{list.length} {t("cap.trend.periodSuffix")}
           </p>
         </section>
       ) : (
         <p className="text-sm text-muted-foreground">
-          至少记录 2 期快照后，这里会显示趋势曲线。
+          {t("cap.trend.needTwo")}
         </p>
       )}
 
@@ -825,12 +825,12 @@ function TrendPanel({ data, activities }: { data: Workspace; activities: Activit
           <table className="w-full text-sm">
             <thead className="border-b border-border/50 text-left text-xs text-muted-foreground">
               <tr>
-                <th className="px-4 py-2.5 font-normal">日期</th>
-                <th className="px-4 py-2.5 font-normal">覆盖率</th>
-                <th className="px-4 py-2.5 font-normal">无人承载</th>
-                <th className="px-4 py-2.5 font-normal">只靠 1 人</th>
-                <th className="px-4 py-2.5 font-normal">在岗 / 编制</th>
-                <th className="px-4 py-2.5 font-normal">90 天活动</th>
+                <th className="px-4 py-2.5 font-normal">{t("cap.table.date")}</th>
+                <th className="px-4 py-2.5 font-normal">{t("cap.table.coverageRate")}</th>
+                <th className="px-4 py-2.5 font-normal">{t("cap.table.blank")}</th>
+                <th className="px-4 py-2.5 font-normal">{t("cap.table.single")}</th>
+                <th className="px-4 py-2.5 font-normal">{t("cap.table.onboardVsTarget")}</th>
+                <th className="px-4 py-2.5 font-normal">{t("cap.table.activities90d")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/40">
