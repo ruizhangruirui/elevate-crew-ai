@@ -461,17 +461,40 @@ export function PersonDetailSheet({
         const nameOf = (id: string | null) =>
           id ? (orgNodes.data ?? []).find((n) => n.id === id)?.name ?? id : t("sheet.person.unassigned");
         await supabase.from("audit_log").insert({
+          person_id: person!.id,
           action: t("sheet.person.orgMoveAction"),
           entity: t("sheet.person.orgMoveEntity").replace("{name}", person!.name),
           detail: `${nameOf(person!.org_node_id ?? null)} → ${nameOf(nextNode)}`,
+        });
+      }
+
+      const diffs: string[] = [];
+      const cmp = (label: string, before: string, after: string) => {
+        if ((before || "—") !== (after || "—")) diffs.push(`${label}: ${before || "—"} → ${after || "—"}`);
+      };
+      cmp(t("sheet.person.performance"), perfLabelOf(t, person!.performance ?? ""), perfLabelOf(t, form.performance));
+      cmp(t("sheet.person.level"), person!.level != null ? String(person!.level) : "", form.level);
+      cmp(t("sheet.person.status"), person!.status ?? "", form.status);
+      cmp(t("sheet.person.readiness"), readinessLabelOf(t, person!.readiness ?? "unknown"), readinessLabelOf(t, form.readiness));
+      cmp(t("sheet.person.attritionRisk"), riskLabelOf(t, person!.attrition_risk ?? "unknown"), riskLabelOf(t, form.attrition_risk));
+      cmp(t("sheet.person.contractType"), person!.contract_type ?? "", form.contract_type === "unset" ? "" : form.contract_type);
+      cmp(t("sheet.person.tags"), (person!.tags ?? []).join(", "), form.tags);
+      if (diffs.length > 0) {
+        await supabase.from("audit_log").insert({
+          person_id: person!.id,
+          action: t("sheet.person.profileUpdateAction"),
+          entity: person!.name,
+          detail: diffs.join(" · "),
         });
       }
     },
     onSuccess: () => {
       toast.success(t("sheet.person.assessmentSaved"));
       setEditing(false);
+      history.refetch();
       onDone();
     },
+
     onError: (e: Error) => toast.error(e.message),
   });
 
