@@ -427,7 +427,7 @@ function CapRow({ cap, activities }: { cap: Capability; activities: Activity[] }
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className="font-medium">{cap.label}</span>
         <span className="rounded bg-muted/40 px-1.5 py-0.5 text-[10px] text-muted-foreground">
-          {kindLabel[cap.kind]}
+          {t(`cap.kind.${cap.kind}`)}
         </span>
         {cap.aliases.length > 0 && (
           <span className="text-[10px] text-muted-foreground">
@@ -630,7 +630,7 @@ function BuildingPanel({
               <li key={a.id} className="space-y-1.5 px-5 py-4 text-sm">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                   <span className="rounded bg-brand/15 px-1.5 py-0.5 text-[10px] text-brand">
-                    {activityKindLabel[a.kind] ?? a.kind}
+                    {t(`cap.actKind.${a.kind}`)}
                   </span>
                   <span className="font-medium">{a.title}</span>
                   <span className="text-xs tabular-nums text-muted-foreground">{a.happened_on}</span>

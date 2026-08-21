@@ -42,7 +42,7 @@ function readinessLabelOf(t: (k: string) => string, key: string): string {
     ready_2y: t("sheet.person.ready2yFull"),
     unknown: t("sheet.person.notAssessed"),
   };
-  return map[key];
+  return map[key] ?? key;
 }
 function riskLabelOf(t: (k: string) => string, key: string): string {
   const map: Record<string, string> = {
@@ -51,7 +51,7 @@ function riskLabelOf(t: (k: string) => string, key: string): string {
     high: t("sheet.person.riskHigh"),
     unknown: t("sheet.person.notAssessed"),
   };
-  return map[key];
+  return map[key] ?? key;
 }
 function perfLabelOf(t: (k: string) => string, key: string): string {
   const map: Record<string, string> = {
@@ -59,7 +59,7 @@ function perfLabelOf(t: (k: string) => string, key: string): string {
     meets: t("sheet.person.meetsExpectation"),
     below: t("sheet.person.belowExpectation"),
   };
-  return map[key];
+  return map[key] ?? key;
 }
 
 function Fact({ label, value, tone }: { label: string; value: string; tone?: "ok" | "warn" | "danger" | undefined }) {

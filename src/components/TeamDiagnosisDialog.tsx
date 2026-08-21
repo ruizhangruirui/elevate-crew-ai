@@ -4,6 +4,7 @@ import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { diagnoseTeam, type TeamDiagnosis } from "@/lib/ai.functions";
 import { AddActionButton } from "@/components/AddActionButton";
+import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -24,6 +25,7 @@ export function TeamDiagnosisDialog({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
+  const { t } = useI18n();
   const run = useServerFn(diagnoseTeam);
   const m = useMutation({
     mutationFn: async () => (await run({ data: { nodeId: nodeId! } })) as TeamDiagnosis,
@@ -36,17 +38,16 @@ export function TeamDiagnosisDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="font-display text-xl">{nodeName} · 组织能力诊断</DialogTitle>
+          <DialogTitle className="font-display text-xl">{t("sheet.team.diagnosisTitle").replace("{name}", nodeName)}</DialogTitle>
           <DialogDescription>
-            结合战略方向、现有岗位、成员评估与近期组织建设活动，判断这个团队还缺什么岗位、什么能力，
-            以及先招人还是先培养。
+            {t("sheet.team.diagnosisDesc")}
           </DialogDescription>
         </DialogHeader>
 
         {!r && (
           <Button onClick={() => m.mutate()} disabled={m.isPending || !nodeId} className="gap-2">
             {m.isPending ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-            {m.isPending ? "分析中…" : "开始 AI 诊断"}
+            {m.isPending ? t("sheet.role.analyzing") : t("sheet.team.startDiagnosis")}
           </Button>
         )}
 
@@ -56,20 +57,20 @@ export function TeamDiagnosisDialog({
               {r.headline}
             </p>
 
-            <Block title="已经站住的">
+            <Block title={t("sheet.team.strengthsTitle")}>
               <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
                 {r.strengths.map((s, i) => <li key={i}>{s}</li>)}
               </ul>
             </Block>
 
-            <Block title="还缺的岗位">
+            <Block title={t("sheet.team.missingRolesTitle")}>
               <ul className="space-y-2">
                 {r.missing_roles.map((x, i) => (
                   <li key={i} className="rounded-lg border border-border/60 px-3 py-2">
                     <p className="font-medium">
                       {x.title}
                       <span className="ml-2 rounded bg-muted/40 px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                        紧迫度 {x.urgency}
+                        {t("sheet.team.urgency").replace("{n}", String(x.urgency))}
                       </span>
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">{x.why}</p>
@@ -78,7 +79,7 @@ export function TeamDiagnosisDialog({
                         sourceKind="ai"
                         sourceKey={`ai:${nodeId}:role:${x.title}`}
                         orgNodeId={nodeId}
-                        defaultTitle={`${nodeName}：设立并招聘「${x.title}」`}
+                        defaultTitle={t("sheet.team.setupAndHire").replace("{name}", nodeName).replace("{title}", x.title)}
                         defaultDetail={x.why}
                         defaultPriority="high"
                       />
@@ -88,7 +89,7 @@ export function TeamDiagnosisDialog({
               </ul>
             </Block>
 
-            <Block title="还缺的能力与建议动作">
+            <Block title={t("sheet.team.missingCapabilitiesTitle")}>
               <ul className="space-y-2">
                 {r.missing_capabilities.map((x, i) => (
                   <li key={i} className="rounded-lg border border-border/60 px-3 py-2">
@@ -99,8 +100,8 @@ export function TeamDiagnosisDialog({
                         sourceKind="ai"
                         sourceKey={`ai:${nodeId}:cap:${x.capability}`}
                         orgNodeId={nodeId}
-                        defaultTitle={`${nodeName}：${x.capability} — ${x.action}`}
-                        defaultDetail={`来自 ${nodeName} 的 AI 组织能力诊断。`}
+                        defaultTitle={t("sheet.team.capabilityActionTitle").replace("{name}", nodeName).replace("{capability}", x.capability).replace("{action}", x.action)}
+                        defaultDetail={t("sheet.team.fromAiDiagnosis").replace("{name}", nodeName)}
                       />
                     </div>
                   </li>
@@ -108,11 +109,11 @@ export function TeamDiagnosisDialog({
               </ul>
             </Block>
 
-            <Block title="先招人还是先培养">
+            <Block title={t("sheet.team.hireVsGrowTitle")}>
               <p className="leading-relaxed text-muted-foreground">{r.hire_vs_grow}</p>
             </Block>
 
-            <Block title="未来 90 天">
+            <Block title={t("sheet.team.next90DaysTitle")}>
               <ol className="list-decimal space-y-1 pl-5 text-muted-foreground">
                 {r.next_90_days.map((s, i) => (
                   <li key={i} className="space-y-1">
@@ -123,7 +124,7 @@ export function TeamDiagnosisDialog({
                         sourceKey={`ai:${nodeId}:90d:${i}`}
                         orgNodeId={nodeId}
                         defaultTitle={s}
-                        defaultDetail={`来自 ${nodeName} 的 AI 组织能力诊断 · 未来 90 天建议。`}
+                        defaultDetail={t("sheet.team.next90DaysDetail").replace("{name}", nodeName)}
                       />
                     </div>
                   </li>
@@ -132,7 +133,7 @@ export function TeamDiagnosisDialog({
             </Block>
 
             <Button variant="outline" size="sm" onClick={() => m.mutate()} disabled={m.isPending}>
-              重新分析
+              {t("sheet.team.reanalyze")}
             </Button>
           </div>
         )}
