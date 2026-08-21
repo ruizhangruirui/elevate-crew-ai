@@ -552,10 +552,12 @@ function RoleCard({
 
 function RoleMenu({
   role,
+  orgNodes,
   onArchive,
   onSaved,
 }: {
   role: Role;
+  orgNodes: OrgNode[];
   onArchive: () => void;
   onSaved: () => void;
 }) {
@@ -567,6 +569,7 @@ function RoleMenu({
   const [levelMax, setLevelMax] = useState(String(role.level_max));
   const [targetCount, setTargetCount] = useState(String(role.target_count));
   const [criticality, setCriticality] = useState(role.criticality);
+  const [nodeId, setNodeId] = useState(role.org_node_id ?? "__none");
 
   const reset = () => {
     setTitle(role.title);
@@ -575,6 +578,7 @@ function RoleMenu({
     setLevelMax(String(role.level_max));
     setTargetCount(String(role.target_count));
     setCriticality(role.criticality);
+    setNodeId(role.org_node_id ?? "__none");
   };
 
   const save = useMutation({
@@ -588,10 +592,12 @@ function RoleMenu({
           level_max: Number(levelMax) || role.level_max,
           target_count: Math.max(1, Number(targetCount) || 1),
           criticality,
+          org_node_id: nodeId === "__none" ? null : nodeId,
         })
         .eq("id", role.id);
       if (error) throw error;
     },
+
     onSuccess: () => {
       toast.success(t("idx.roleUpdated"));
       setEditing(false);
