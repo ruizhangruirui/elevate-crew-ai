@@ -12,6 +12,7 @@ import { peopleDict } from "./i18n-dicts/people";
 import { actionsDict } from "./i18n-dicts/actions";
 import { settingsDict } from "./i18n-dicts/settings";
 import { sheetsDict } from "./i18n-dicts/sheets";
+import { personPageDict } from "./i18n-dicts/person-page";
 
 export const dict: Dict = {
   ...coreDict,
@@ -21,6 +22,7 @@ export const dict: Dict = {
   ...actionsDict,
   ...settingsDict,
   ...sheetsDict,
+  ...personPageDict,
 };
 
 type Ctx = { lang: Lang; setLang: (l: Lang) => void; t: (key: string) => string };

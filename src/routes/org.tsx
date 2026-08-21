@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
-import { PersonDetailSheet } from "@/components/PersonDetailSheet";
 import { RoleDetailSheet } from "@/components/RoleDetailSheet";
 import { StatTile } from "@/components/StatTile";
 import { Badge } from "@/components/ui/badge";
@@ -139,7 +138,10 @@ function OrgTreeBody() {
   const { t } = useI18n();
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [personId, setPersonId] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const setPersonId = (id: string | null) => {
+    if (id) navigate({ to: "/people/$personId", params: { personId: id } });
+  };
   const [roleId, setRoleId] = useState<string | null>(null);
 
   const nodes = useMemo(() => (tree.data ?? []).filter((n) => !n.archived), [tree.data]);
@@ -525,20 +527,6 @@ function OrgTreeBody() {
         nodeName={diagNode?.name ?? ""}
         open={!!diagNode}
         onOpenChange={(v) => !v && setDiagNode(null)}
-      />
-
-      <PersonDetailSheet
-        person={people.find((p) => p.id === personId) ?? null}
-        people={people}
-        roles={roles}
-        directions={directions}
-        open={!!personId}
-        onOpenChange={(v) => !v && setPersonId(null)}
-        onDone={() => qc.invalidateQueries({ refetchType: "all" })}
-        onOpenRole={(rid) => {
-          setPersonId(null);
-          setRoleId(rid);
-        }}
       />
 
       <RoleDetailSheet
