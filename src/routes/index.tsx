@@ -126,11 +126,26 @@ function StrategyBoard() {
   const activeRoles = active ? roles.filter((r) => r.direction_id === active.id) : [];
 
   const totalSeats = roles.reduce((n, r) => n + r.target_count, 0);
-  const totalGap = roles.reduce((n, r) => n + coverageOf(r, people).gap, 0);
+  const activeRoleIds = new Set(roles.map((role) => role.id));
+  const totalFilled = people.filter(
+    (person) =>
+      person.status === "onboard" &&
+      person.role_id !== null &&
+      activeRoleIds.has(person.role_id),
+  ).length;
+  const totalGap = Math.max(0, totalSeats - totalFilled);
 
   const dirStats = (dirId: string) => {
     const rs = roles.filter((r) => r.direction_id === dirId);
-    const gap = rs.reduce((n, r) => n + coverageOf(r, people).gap, 0);
+    const roleIds = new Set(rs.map((role) => role.id));
+    const seats = rs.reduce((n, role) => n + role.target_count, 0);
+    const filled = people.filter(
+      (person) =>
+        person.status === "onboard" &&
+        person.role_id !== null &&
+        roleIds.has(person.role_id),
+    ).length;
+    const gap = Math.max(0, seats - filled);
     return { count: rs.length, gap };
   };
 
