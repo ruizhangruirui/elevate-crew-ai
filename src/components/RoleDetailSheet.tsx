@@ -93,7 +93,7 @@ export function RoleDetailSheet({
   onOpenChange: (v: boolean) => void;
   onDone: () => void;
 }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [editing, setEditing] = useState(false);
   const [assignSeat, setAssignSeat] = useState<number | null>(null);
   const [fits, setFits] = useState<FitResult[]>([]);
