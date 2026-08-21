@@ -297,6 +297,7 @@ function VacancyRow({
   caps: Capability[];
   roleId: string;
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   return (
     <li className="px-5 py-4">
@@ -354,6 +355,7 @@ function Group({
   list: Capability[];
   activities: Activity[];
 }) {
+  const { t } = useI18n();
   const [showAll, setShowAll] = useState(false);
   if (!list.length) return null;
   const visible = showAll ? list : list.slice(0, 6);
