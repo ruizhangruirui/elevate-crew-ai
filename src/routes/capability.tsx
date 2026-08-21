@@ -151,6 +151,7 @@ function CapabilityBody() {
 type Workspace = NonNullable<Awaited<ReturnType<typeof fetchWorkspace>>>;
 
 function HealthPanel({ data, activities }: { data: Workspace; activities: Activity[] }) {
+  const { t } = useI18n();
   const [dirId, setDirId] = useState<string | null>(null);
   const caps = useMemo(() => buildCapabilities(data.roles, data.people), [data]);
 
@@ -171,13 +172,13 @@ function HealthPanel({ data, activities }: { data: Workspace; activities: Activi
   return (
     <div className="space-y-8">
       <section className="panel p-6 md:p-8">
-        <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">体检结论</p>
+        <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{t("cap.health.title")}</p>
         <p className="mt-3 max-w-3xl font-display text-xl leading-relaxed md:text-2xl">
-          {active?.title ?? "本方向"}的岗位共要求 <Num n={health.total} tone="brand" /> 项能力。其中{" "}
-          <Num n={health.vacancyDriven} tone="muted" /> 项是
-          <strong className="text-foreground">岗位还没招到人</strong>造成的（招到人就解决）；真正需要
-          现有团队补的是 <Num n={gaps.length + singles.length + thins.length} tone="warn" /> 项；已经
-          站稳 <Num n={covered.length} tone="ok" /> 项。
+          {active?.title ?? t("cap.health.defaultDirection")}{t("cap.health.summary1")} <Num n={health.total} tone="brand" /> {t("cap.health.summary2")}{" "}
+          <Num n={health.vacancyDriven} tone="muted" /> {t("cap.health.summary3")}
+          <strong className="text-foreground">{t("cap.health.summaryStrong")}</strong>{t("cap.health.summary4")}{" "}
+          <Num n={gaps.length + singles.length + thins.length} tone="warn" /> {t("cap.health.summary5")}{" "}
+          <Num n={covered.length} tone="ok" /> {t("cap.health.summary6")}
         </p>
 
         <div className="mt-6 h-3 w-full overflow-hidden rounded-full bg-muted/30">
@@ -189,10 +190,10 @@ function HealthPanel({ data, activities }: { data: Workspace; activities: Activi
           </div>
         </div>
         <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground">
-          <Legend className="bg-muted-foreground/50" label={`等招聘 ${health.vacancyDriven}`} />
-          <Legend className="bg-danger" label={`人在能力不在 ${gaps.length}`} />
-          <Legend className="bg-warn" label={`人手不足 ${singles.length + thins.length}`} />
-          <Legend className="bg-ok" label={`已覆盖 ${covered.length}`} />
+          <Legend className="bg-muted-foreground/50" label={`${t("cap.legend.vacancy")} ${health.vacancyDriven}`} />
+          <Legend className="bg-danger" label={`${t("cap.legend.gap")} ${gaps.length}`} />
+          <Legend className="bg-warn" label={`${t("cap.legend.short")} ${singles.length + thins.length}`} />
+          <Legend className="bg-ok" label={`${t("cap.legend.covered")} ${covered.length}`} />
         </div>
       </section>
 
@@ -216,7 +217,7 @@ function HealthPanel({ data, activities }: { data: Workspace; activities: Activi
               >
                 <span className="block font-medium">{d.title}</span>
                 <span className="mt-0.5 block text-xs text-muted-foreground">
-                  {list.length} 项能力 · {risky} 项要现有团队补
+                  {list.length} {t("cap.dir.capCount")} · {risky} {t("cap.dir.needCover")}
                 </span>
               </button>
             );
@@ -227,10 +228,8 @@ function HealthPanel({ data, activities }: { data: Workspace; activities: Activi
         {clusters.length > 0 && (
           <div className="panel overflow-hidden">
             <div className="border-b border-border/50 px-5 py-4">
-              <h3 className="font-display text-base font-semibold">因为岗位还没到岗</h3>
-              <p className="mt-1 text-xs text-muted-foreground">
-                这些能力目前挂在空缺岗位上，是同一个原因造成的，不必逐条焦虑——推进招聘即可。
-              </p>
+              <h3 className="font-display text-base font-semibold">{t("cap.vacancy.title")}</h3>
+              <p className="mt-1 text-xs text-muted-foreground">{t("cap.vacancy.desc")}</p>
             </div>
             <ul className="divide-y divide-border/40">
               {clusters.map((c) => (
@@ -248,39 +247,40 @@ function HealthPanel({ data, activities }: { data: Workspace; activities: Activi
 
         {/* 根因二：人在但能力不在 */}
         <Group
-          title="人在，但这项能力没人扛"
-          desc="岗位上有人，却没有人被评估具备这项能力——这是培养或引进要解决的"
+          title={t("cap.group.gapTitle")}
+          desc={t("cap.group.gapDesc")}
           tone="text-danger"
           list={gaps}
           activities={activities}
         />
         <Group
-          title="只靠 1 人"
-          desc="他一走，这项能力就断了"
+          title={t("cap.group.singleTitle")}
+          desc={t("cap.group.singleDesc")}
           tone="text-warn"
           list={singles}
           activities={activities}
         />
         <Group
-          title="人手偏少"
-          desc="有人承载，但少于岗位编制需求"
+          title={t("cap.group.thinTitle")}
+          desc={t("cap.group.thinDesc")}
           tone="text-warn"
           list={thins}
           activities={activities}
         />
-        <Collapsed title={`已覆盖 ${covered.length} 项`} list={covered} activities={activities} />
+        <Collapsed
+          title={`${t("cap.group.coveredLabel")} ${covered.length} ${t("cap.group.items")}`}
+          list={covered}
+          activities={activities}
+        />
 
         {dirCaps.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            这个方向的岗位还没有填写画像信息，先去「战略岗位视图」补齐或用 AI 生成。
-          </p>
+          <p className="text-sm text-muted-foreground">{t("cap.group.noProfile")}</p>
         )}
       </section>
 
       <p className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
         <Info className="mt-0.5 size-3.5 shrink-0" />
-        能力项由岗位画像自动汇总（近义写法已合并），承载人来自任岗关系；「近期有建设」来自组织建设里
-        记录的技术分享 / 培训 / 复盘 / 跨团队交流。岗位画像一改，这里就跟着变。
+        {t("cap.footer.info")}
       </p>
     </div>
   );
