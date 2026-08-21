@@ -214,18 +214,6 @@ export function PersonProfile({
   const role = person.role_id ? (roles.find((r) => r.id === person.role_id) ?? null) : null;
   const direction = role ? (directions.find((d) => d.id === role.direction_id) ?? null) : null;
 
-  const fits = useQuery({
-    queryKey: ["person-fit", person.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("person_role_fit")
-        .select("*")
-        .eq("person_id", person.id)
-        .order("fit_score", { ascending: false });
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
 
   const perfRecords = useQuery({
     queryKey: ["person-perf", person.id],
