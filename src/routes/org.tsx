@@ -33,6 +33,7 @@ import { TeamDiagnosisDialog } from "@/components/TeamDiagnosisDialog";
 import { OrgChart } from "@/components/OrgChart";
 import { useI18n } from "@/lib/i18n";
 import { contractLabel } from "@/lib/contract";
+import { effectiveImportance, IMPORTANCE_TONE, type Importance } from "@/lib/importance";
 
 export const Route = createFileRoute("/org")({
   head: () => ({
@@ -64,12 +65,24 @@ function OrgPage() {
   );
 }
 
+export function ImportanceChip({ level, leader }: { level: Importance; leader?: boolean }) {
+  const { t } = useI18n();
+  return (
+    <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] ${IMPORTANCE_TONE[level]}`}>
+      {t(`importance.${level}`)}
+      {leader ? ` · ${t("importance.leaderBadge")}` : ""}
+    </span>
+  );
+}
+
 function PersonRow({
   person,
+  roles,
   onOpen,
   muted,
 }: {
   person: Person;
+  roles: Role[];
   onOpen: () => void;
   muted?: boolean;
 }) {
@@ -104,6 +117,7 @@ function PersonRow({
           </p>
         )}
       </div>
+      <ImportanceChip level={effectiveImportance(person, roles)} leader={!!person.is_leader} />
       {person.status !== "onboard" && (
         <span className="shrink-0 rounded-md bg-warn/12 px-1.5 py-0.5 text-[10px] text-warn">
           {t("common.candidate")}
@@ -321,7 +335,7 @@ function OrgTreeBody() {
                   {rOpen && (
                     <div className="space-y-1.5 border-t border-border/40 px-3 py-2 pl-7">
                       {holders.map((p) => (
-                        <PersonRow key={p.id} person={p} onOpen={() => setPersonId(p.id)} />
+                        <PersonRow key={p.id} person={p} roles={roles} onOpen={() => setPersonId(p.id)} />
                       ))}
                       {Array.from({ length: vacancies }).map((_, i) => (
                         <div
@@ -342,7 +356,7 @@ function OrgTreeBody() {
             })}
 
             {roleless.map((p) => (
-              <PersonRow key={p.id} person={p} onOpen={() => setPersonId(p.id)} muted />
+              <PersonRow key={p.id} person={p} roles={roles} onOpen={() => setPersonId(p.id)} muted />
             ))}
 
             {kids.length === 0 && members.length === 0 && nodeRoles.length === 0 && (

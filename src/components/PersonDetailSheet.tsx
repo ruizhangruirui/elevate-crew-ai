@@ -16,7 +16,7 @@ import { buildCapabilities, normalizeKey, levelRank, carrierRiskTier } from "@/l
 import { fetchOrgNodes } from "@/lib/org-tree";
 import { useI18n } from "@/lib/i18n";
 import { contractLabel } from "@/lib/contract";
-import { effectiveImportance, IMPORTANCE_TONE } from "@/lib/importance";
+import { effectiveImportance } from "@/lib/importance";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
