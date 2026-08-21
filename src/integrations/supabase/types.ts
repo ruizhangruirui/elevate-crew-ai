@@ -454,6 +454,8 @@ export type Database = {
           contract_type: string | null
           created_at: string
           id: string
+          importance: string
+          is_leader: boolean
           level: number | null
           name: string
           note: string | null
@@ -476,6 +478,8 @@ export type Database = {
           contract_type?: string | null
           created_at?: string
           id?: string
+          importance?: string
+          is_leader?: boolean
           level?: number | null
           name: string
           note?: string | null
@@ -498,6 +502,8 @@ export type Database = {
           contract_type?: string | null
           created_at?: string
           id?: string
+          importance?: string
+          is_leader?: boolean
           level?: number | null
           name?: string
           note?: string | null
