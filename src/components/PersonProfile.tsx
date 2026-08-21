@@ -1100,6 +1100,8 @@ export function PersonProfile({
               </ul>
             )}
           </Module>
+
+          <LifecycleModule personId={person.id} personName={person.name} />
         </TabsContent>
 
         {/* ---------------- Manager ---------------- */}
@@ -1568,5 +1570,51 @@ export function PersonProfile({
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+function LifecycleModule({ personId, personName }: { personId: string; personName: string }) {
+  const { t } = useI18n();
+  const { data: events } = useQuery({ queryKey: ["lifecycle"], queryFn: fetchLifecycleEvents });
+  const mine = (events ?? []).filter((e) => e.person_id === personId);
+
+  return (
+    <Module
+      title={t("lc.person.title")}
+      collapsible
+      defaultOpen={false}
+      badge={String(mine.length)}
+      actions={
+        <ArchivePersonDialog personId={personId} personName={personName}>
+          <Button variant="outline" size="sm" className="gap-1.5 text-danger">
+            <LogOut className="size-3.5" /> {t("lc.archive.action")}
+          </Button>
+        </ArchivePersonDialog>
+      }
+    >
+      {mine.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t("lc.person.empty")}</p>
+      ) : (
+        <ul className="space-y-2.5">
+          {mine.map((e) => (
+            <li key={e.id} className="flex items-start gap-2.5">
+              <span
+                className={`mt-0.5 rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                  e.event_type === "exit" ? "bg-danger/12 text-danger" : "bg-ok/12 text-ok"
+                }`}
+              >
+                {e.event_type === "exit" ? t("lc.flow.eventExit") : t("lc.flow.eventJoin")}
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm">
+                  {e.effective_on} · {t(`lc.reason.${e.reason ?? "other"}`)}
+                </p>
+                {e.detail && <p className="text-xs text-muted-foreground">{e.detail}</p>}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Module>
   );
 }
