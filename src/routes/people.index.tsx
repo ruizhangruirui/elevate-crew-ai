@@ -8,6 +8,8 @@ import { useI18n } from "@/lib/i18n";
 import { contractLabel } from "@/lib/contract";
 import { effectiveImportance, IMPORTANCE_TONE } from "@/lib/importance";
 import { ConfirmAction } from "@/components/ConfirmAction";
+import { ImportPeopleDialog } from "@/components/ImportPeopleDialog";
+
 import { ArchivePersonDialog } from "@/components/ArchivePersonDialog";
 import { fetchArchivedPeople, fetchLifecycleEvents, recordJoin, restorePerson } from "@/lib/lifecycle";
 import { completeness } from "@/lib/org-tree";
