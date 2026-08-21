@@ -1,3 +1,4 @@
+import { effectiveImportance, IMPORTANCE_WEIGHT } from "@/lib/importance";
 import type { Direction, Person, Role, Skill } from "./talent";
 
 /**
@@ -355,6 +356,8 @@ const RISK_WEIGHT: Record<string, number> = { high: 3, medium: 2, low: 0 };
 
 export function personReplaceability(person: Person, people: Person[], roles: Role[]): number {
   let score = 0;
+  // 人员重要性：边缘人员（外包 / 实习）离开对组织能力的冲击更小
+  score += IMPORTANCE_WEIGHT[effectiveImportance(person, roles)];
   score += RISK_WEIGHT[String(person.attrition_risk ?? "").toLowerCase()] ?? 1;
   // 同岗位是否还有其他在岗人员
   const peers = people.filter(
