@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchOrgNodes, peopleInSubtree, type OrgNode } from "@/lib/org-tree";
 import { fetchSnapshots, recordSnapshot, type Snapshot } from "@/lib/snapshots";
-import { fetchLifecycleEvents, flowStats } from "@/lib/lifecycle";
+import { fetchArchivedPeople, fetchLifecycleEvents, flowStats } from "@/lib/lifecycle";
 
 export const Route = createFileRoute("/capability")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -981,9 +981,16 @@ function HeadcountFlow() {
   const { t } = useI18n();
   const { data: events } = useQuery({ queryKey: ["lifecycle"], queryFn: fetchLifecycleEvents });
   const { data: ws } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
+  const { data: archived } = useQuery({
+    queryKey: ["archived-people"],
+    queryFn: fetchArchivedPeople,
+  });
   const list = events ?? [];
   const stats = useMemo(() => flowStats(list), [list]);
-  const nameOf = (id: string) => ws?.people.find((p) => p.id === id)?.name ?? "—";
+  const nameOf = (id: string) =>
+    ws?.people.find((p) => p.id === id)?.name ??
+    (archived ?? []).find((p) => p.id === id)?.name ??
+    "—";
   const max = Math.max(1, ...stats.byMonth.map((m) => Math.max(m.joins, m.exits)));
 
   return (
