@@ -7,27 +7,25 @@ import type { Direction, Person, Role, Skill } from "./talent";
 
 export type CapabilityKind = "domain" | "knowledge" | "skill" | "leadership";
 
-export const kindLabel: Record<CapabilityKind, string> = {
-  domain: "专业领域",
-  knowledge: "关键知识",
-  skill: "技能",
-  leadership: "领导力",
+/** 翻译 key，供 UI 层用 t() 取文案 */
+export const kindLabelKey: Record<CapabilityKind, string> = {
+  domain: "cap.kind.domain",
+  knowledge: "cap.kind.knowledge",
+  skill: "cap.kind.skill",
+  leadership: "cap.kind.leadership",
 };
 
 export type CapabilityStatus = "blank" | "single" | "thin" | "covered";
 
-export const statusMeta: Record<
+/** 翻译 key，供 UI 层用 t() 取文案 */
+export const statusMetaKey: Record<
   CapabilityStatus,
-  { label: string; tone: "ok" | "warn" | "danger" | "muted"; hint: string }
+  { labelKey: string; tone: "ok" | "warn" | "danger" | "muted"; hintKey: string }
 > = {
-  blank: {
-    label: "无人承载",
-    tone: "danger",
-    hint: "岗位要求该能力，但目前没有任何在岗人员承载",
-  },
-  single: { label: "只靠 1 人", tone: "warn", hint: "仅 1 人承载，人一走能力即失守" },
-  thin: { label: "人手偏少", tone: "warn", hint: "承载人数少于岗位编制需求" },
-  covered: { label: "已覆盖", tone: "ok", hint: "有足够人员承载该能力" },
+  blank: { labelKey: "cap.status.blank", tone: "danger", hintKey: "cap.statusHint.blank" },
+  single: { labelKey: "cap.status.single", tone: "warn", hintKey: "cap.statusHint.single" },
+  thin: { labelKey: "cap.status.thin", tone: "warn", hintKey: "cap.statusHint.thin" },
+  covered: { labelKey: "cap.status.covered", tone: "ok", hintKey: "cap.statusHint.covered" },
 };
 
 const LEVEL_RANK: Record<string, number> = { proficient: 1, advanced: 2, expert: 3 };

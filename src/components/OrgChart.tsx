@@ -2,6 +2,7 @@ import { Building2, Users, Briefcase, UserPlus } from "lucide-react";
 import type { Person, Role } from "@/lib/talent";
 import type { OrgNode } from "@/lib/org-tree";
 import { useI18n } from "@/lib/i18n";
+import { contractLabel } from "@/lib/contract";
 
 type Props = {
   nodes: OrgNode[];
@@ -39,7 +40,7 @@ export function OrgChart({ nodes, people, roles, rolesByNode, onPerson, onRole }
         </span>
         <span className="w-full truncate text-xs font-medium">{p.name}</span>
         <span className="w-full truncate text-[10px] text-muted-foreground">
-          {[p.level ? `L${p.level}` : null, p.contract_type, p.status !== "onboard" ? t("common.candidate") : null]
+          {[p.level ? `L${p.level}` : null, contractLabel(t, p.contract_type), p.status !== "onboard" ? t("common.candidate") : null]
             .filter(Boolean)
             .join(" · ") || "—"}
         </span>

@@ -32,6 +32,7 @@ import { fetchOrgNodes, structureStats, type OrgNode } from "@/lib/org-tree";
 import { TeamDiagnosisDialog } from "@/components/TeamDiagnosisDialog";
 import { OrgChart } from "@/components/OrgChart";
 import { useI18n } from "@/lib/i18n";
+import { contractLabel } from "@/lib/contract";
 
 export const Route = createFileRoute("/org")({
   head: () => ({
@@ -95,7 +96,7 @@ function PersonRow({
           <p className="truncate text-[11px] text-muted-foreground">
             {[
               muted ? t("org.noStrategicRole") : null,
-              person.contract_type,
+              contractLabel(t, person.contract_type),
               ...(person.tags ?? []),
             ]
               .filter(Boolean)

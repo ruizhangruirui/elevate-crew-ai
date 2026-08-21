@@ -15,6 +15,7 @@ import {
 import { buildCapabilities, normalizeKey, levelRank } from "@/lib/capability";
 import { fetchOrgNodes } from "@/lib/org-tree";
 import { useI18n } from "@/lib/i18n";
+import { contractLabel } from "@/lib/contract";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -271,7 +272,7 @@ export function PersonDetailSheet({
               tone={person.status === "onboard" ? "ok" : "warn"}
             />
             <Fact label={t("sheet.person.performance")} value={perfLabelOf(t, person.performance ?? "") ?? t("sheet.person.notAssessed")} />
-            <Fact label={t("sheet.person.contractType")} value={person.contract_type || t("sheet.person.notFilled")} />
+            <Fact label={t("sheet.person.contractType")} value={contractLabel(t, person.contract_type) || t("sheet.person.notFilled")} />
             <Fact
               label={t("sheet.person.team")}
               value={

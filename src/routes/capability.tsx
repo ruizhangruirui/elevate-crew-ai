@@ -528,7 +528,7 @@ function BuildingPanel({
             )}
             {stats.byKind.map((k) => (
               <div key={k.kind} className="flex items-center gap-3 text-sm">
-                <span className="w-24 shrink-0 text-muted-foreground">{k.label}</span>
+                <span className="w-24 shrink-0 text-muted-foreground">{t(`cap.activityKind.${k.kind}`)}</span>
                 <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted/30">
                   <div
                     className="h-full bg-brand"

@@ -16,10 +16,7 @@ import {
   fetchActions,
   inDays,
   isOverdue,
-  priorityLabel,
   setActionStatus,
-  sourceLabel,
-  statusLabel,
   type ActionItem,
   type ActionPriority,
   type ActionStatus,
@@ -65,10 +62,11 @@ export const Route = createFileRoute("/actions")({
 });
 
 function ActionsPage() {
+  const { t } = useI18n();
   return (
     <AppShell
-      title="待办中心"
-      subtitle="所有分析都要落到一个人、一个日期上。能力缺口、岗位空缺、AI 诊断的结论都汇总在这里跟进。"
+      title={t("act.title")}
+      subtitle={t("act.subtitle")}
     >
       <ActionsBoard />
     </AppShell>
@@ -95,7 +93,7 @@ function ActionsBoard() {
   const remove = useMutation({
     mutationFn: (id: string) => deleteAction(id),
     onSuccess: () => {
-      toast.success("已删除待办");
+      toast.success(t("act.toast.deleted"));
       invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -117,19 +115,19 @@ function ActionsBoard() {
     const role = ws?.roles.find((r) => r.id === a.role_id);
     const person = ws?.people.find((p) => p.id === a.person_id);
     const node = (nodes ?? []).find((n) => n.id === a.org_node_id);
-    if (role) bits.push(`岗位：${role.title}`);
-    if (person) bits.push(`人员：${person.name}`);
-    if (node) bits.push(`团队：${node.name}`);
+    if (role) bits.push(`${t("act.context.role")}${role.title}`);
+    if (person) bits.push(`${t("act.context.person")}${person.name}`);
+    if (node) bits.push(`${t("act.context.team")}${node.name}`);
     return bits;
   };
 
   return (
     <div className="space-y-8">
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile label="进行中的事项" value={s.open} />
-        <StatTile label="已逾期" value={s.overdue} tone={s.overdue ? "danger" : "ok"} />
-        <StatTile label="高优先级" value={s.high} tone={s.high ? "warn" : "ok"} />
-        <StatTile label="已完成" value={s.done} tone="ok" />
+        <StatTile label={t("act.stat.open")} value={s.open} />
+        <StatTile label={t("act.stat.overdue")} value={s.overdue} tone={s.overdue ? "danger" : "ok"} />
+        <StatTile label={t("act.stat.high")} value={s.high} tone={s.high ? "warn" : "ok"} />
+        <StatTile label={t("act.stat.done")} value={s.done} tone="ok" />
       </section>
 
       <section className="flex flex-wrap items-center justify-between gap-3">

@@ -133,14 +133,15 @@ export type MissingField =
   | "skills"
   | "tenure";
 
-export const missingFieldLabel: Record<MissingField, string> = {
-  role: "未匹配岗位",
-  node: "未归属团队",
-  level: "缺职级",
-  performance: "缺绩效",
-  readiness: "缺 Readiness",
-  skills: "缺技能评估",
-  tenure: "缺司龄",
+/** 翻译 key，供 UI 层用 t() 取文案 */
+export const missingFieldLabelKey: Record<MissingField, string> = {
+  role: "orgtree.missingField.role",
+  node: "orgtree.missingField.node",
+  level: "orgtree.missingField.level",
+  performance: "orgtree.missingField.performance",
+  readiness: "orgtree.missingField.readiness",
+  skills: "orgtree.missingField.skills",
+  tenure: "orgtree.missingField.tenure",
 };
 
 /** 影响 AI 分析准确度的权重 */
@@ -178,7 +179,7 @@ export function completeness(people: Person[]) {
   const lost = rows.reduce((n, r) => n + r.weight, 0);
   const score = totalPeople === 0 ? 100 : Math.max(0, Math.round((1 - lost / (totalPeople * maxWeight)) * 100));
 
-  const byField = (Object.keys(missingFieldLabel) as MissingField[])
+  const byField = (Object.keys(missingFieldLabelKey) as MissingField[])
     .map((f) => ({ field: f, count: rows.filter((r) => r.missing.includes(f)).length }))
     .filter((x) => x.count > 0)
     .sort((a, b) => b.count - a.count);

@@ -43,6 +43,28 @@ export const priorityLabel: Record<string, string> = {
   low: "低",
 };
 
+// i18n key maps: use with t() to render translated labels, e.g. t(sourceKindKey[a.source_kind])
+export const sourceKindKey: Record<string, string> = {
+  capability: "act.source.capability",
+  vacancy: "act.source.vacancy",
+  ai: "act.source.ai",
+  data: "act.source.data",
+  manual: "act.source.manual",
+};
+
+export const statusKey: Record<string, string> = {
+  todo: "act.status.todo",
+  doing: "act.status.doing",
+  done: "act.status.done",
+  cancelled: "act.status.cancelled",
+};
+
+export const priorityKey: Record<string, string> = {
+  high: "act.priority.high",
+  normal: "act.priority.normal",
+  low: "act.priority.low",
+};
+
 export async function fetchActions() {
   const { data, error } = await supabase
     .from("actions")

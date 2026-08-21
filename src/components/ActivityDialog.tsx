@@ -149,7 +149,7 @@ export function ActivityDialog({
               <SelectContent>
                 {activityKinds.map((k) => (
                   <SelectItem key={k.value} value={k.value}>
-                    {k.label} · {k.hint}
+                    {t(k.labelKey)} · {t(k.hintKey)}
                   </SelectItem>
                 ))}
               </SelectContent>

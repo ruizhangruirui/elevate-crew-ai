@@ -11,18 +11,19 @@ export type ActivityKind =
   | "cross_team"
   | "recruiting";
 
-export const activityKinds: { value: ActivityKind; label: string; hint: string }[] = [
-  { value: "team_building", label: "团建", hint: "增进氛围与信任" },
-  { value: "tech_share", label: "技术分享", hint: "能力扩散，降低单点风险" },
-  { value: "meeting", label: "例会 / 评审", hint: "对齐目标与进展" },
-  { value: "training", label: "培训", hint: "定向补齐能力缺口" },
-  { value: "retro", label: "复盘", hint: "沉淀经验" },
-  { value: "cross_team", label: "跨团队交流", hint: "打通外部资源" },
-  { value: "recruiting", label: "招聘宣讲", hint: "补齐空缺岗位" },
+/** 翻译 key，供 UI 层用 t() 取文案 */
+export const activityKinds: { value: ActivityKind; labelKey: string; hintKey: string }[] = [
+  { value: "team_building", labelKey: "cap.activityKind.team_building", hintKey: "cap.activityKindHint.team_building" },
+  { value: "tech_share", labelKey: "cap.activityKind.tech_share", hintKey: "cap.activityKindHint.tech_share" },
+  { value: "meeting", labelKey: "cap.activityKind.meeting", hintKey: "cap.activityKindHint.meeting" },
+  { value: "training", labelKey: "cap.activityKind.training", hintKey: "cap.activityKindHint.training" },
+  { value: "retro", labelKey: "cap.activityKind.retro", hintKey: "cap.activityKindHint.retro" },
+  { value: "cross_team", labelKey: "cap.activityKind.cross_team", hintKey: "cap.activityKindHint.cross_team" },
+  { value: "recruiting", labelKey: "cap.activityKind.recruiting", hintKey: "cap.activityKindHint.recruiting" },
 ];
 
-export const activityKindLabel: Record<string, string> = Object.fromEntries(
-  activityKinds.map((k) => [k.value, k.label]),
+export const activityKindLabelKey: Record<string, string> = Object.fromEntries(
+  activityKinds.map((k) => [k.value, k.labelKey]),
 );
 
 /** 能力建设类活动：这些活动会直接标记到能力清单上 */
@@ -65,7 +66,7 @@ export function daysAgo(n: number) {
 export type BuildingStats = {
   recent: Activity[];
   recentCount: number;
-  byKind: { kind: string; label: string; count: number }[];
+  byKind: { kind: string; count: number }[];
   participationRate: number;
   perPersonAvg: number;
   topPeople: { person: Person; count: number }[];
@@ -99,7 +100,7 @@ export function buildingStats(
     recent,
     recentCount: recent.length,
     byKind: activityKinds
-      .map((k) => ({ kind: k.value, label: k.label, count: byKindMap.get(k.value) ?? 0 }))
+      .map((k) => ({ kind: k.value, count: byKindMap.get(k.value) ?? 0 }))
       .filter((k) => k.count > 0),
     participationRate: onboard.length ? Math.round((joined.length / onboard.length) * 100) : 0,
     perPersonAvg: onboard.length ? Math.round((totalJoins / onboard.length) * 10) / 10 : 0,
