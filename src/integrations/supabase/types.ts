@@ -128,6 +128,7 @@ export type Database = {
           detail: string | null
           entity: string | null
           id: string
+          person_id: string | null
         }
         Insert: {
           action: string
@@ -136,6 +137,7 @@ export type Database = {
           detail?: string | null
           entity?: string | null
           id?: string
+          person_id?: string | null
         }
         Update: {
           action?: string
@@ -144,8 +146,17 @@ export type Database = {
           detail?: string | null
           entity?: string | null
           id?: string
+          person_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       capability_snapshots: {
         Row: {
@@ -521,6 +532,56 @@ export type Database = {
             columns: ["role_id"]
             isOneToOne: false
             referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      performance_records: {
+        Row: {
+          created_at: string
+          highlights: string | null
+          id: string
+          improvements: string | null
+          period: string
+          person_id: string
+          rating: string
+          recorded_on: string
+          reviewer: string | null
+          summary: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          highlights?: string | null
+          id?: string
+          improvements?: string | null
+          period: string
+          person_id: string
+          rating?: string
+          recorded_on?: string
+          reviewer?: string | null
+          summary?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          highlights?: string | null
+          id?: string
+          improvements?: string | null
+          period?: string
+          person_id?: string
+          rating?: string
+          recorded_on?: string
+          reviewer?: string | null
+          summary?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_records_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
             referencedColumns: ["id"]
           },
         ]

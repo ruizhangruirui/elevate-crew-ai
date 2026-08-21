@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Pencil, ExternalLink, AlertTriangle, Check } from "lucide-react";
+import { Pencil, ExternalLink, AlertTriangle, Check, ChevronRight, Plus, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   coverageOf,
@@ -127,17 +127,50 @@ function Fact({ label, value, tone }: { label: string; value: string; tone?: "ok
   );
 }
 
-function Module({ title, actions, children }: { title: string; actions?: React.ReactNode; children: React.ReactNode }) {
+function Module({
+  title,
+  actions,
+  children,
+  collapsible = false,
+  defaultOpen = true,
+  badge,
+}: {
+  title: string;
+  actions?: React.ReactNode;
+  children: React.ReactNode;
+  collapsible?: boolean;
+  defaultOpen?: boolean;
+  badge?: string;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const shown = collapsible ? open : true;
   return (
     <section className="panel p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-display text-base font-semibold">{title}</h3>
-        {actions}
+        {collapsible ? (
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="flex items-center gap-2 text-left font-display text-base font-semibold hover:text-brand"
+          >
+            <ChevronRight className={`size-4 transition-transform ${open ? "rotate-90" : ""}`} />
+            {title}
+            {badge && (
+              <span className="rounded-full border border-border/70 px-2 py-0.5 text-[10px] font-normal text-muted-foreground">
+                {badge}
+              </span>
+            )}
+          </button>
+        ) : (
+          <h3 className="font-display text-base font-semibold">{title}</h3>
+        )}
+        {shown && actions}
       </div>
-      <div className="mt-4">{children}</div>
+      {shown && <div className="mt-4">{children}</div>}
     </section>
   );
 }
+
 
 export function PersonDetailSheet({
   person,
@@ -178,6 +211,76 @@ export function PersonDetailSheet({
       return data ?? [];
     },
   });
+
+  const perfRecords = useQuery({
+    queryKey: ["person-perf", person?.id],
+    enabled: !!person && open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("performance_records")
+        .select("*")
+        .eq("person_id", person!.id)
+        .order("recorded_on", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const history = useQuery({
+    queryKey: ["person-audit", person?.id],
+    enabled: !!person && open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("audit_log")
+        .select("*")
+        .eq("person_id", person!.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const [perfForm, setPerfForm] = useState({
+    period: "",
+    rating: "meets",
+    summary: "",
+    highlights: "",
+    improvements: "",
+    reviewer: "",
+  });
+  const [perfOpen, setPerfOpen] = useState(false);
+
+  const addPerf = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("performance_records").insert({
+        person_id: person!.id,
+        period: perfForm.period.trim() || new Date().getFullYear().toString(),
+        rating: perfForm.rating,
+        summary: perfForm.summary || null,
+        highlights: perfForm.highlights || null,
+        improvements: perfForm.improvements || null,
+        reviewer: perfForm.reviewer || null,
+      });
+      if (error) throw error;
+      await supabase.from("audit_log").insert({
+        person_id: person!.id,
+        action: t("sheet.person.perfAddAction"),
+        entity: person!.name,
+        detail: `${perfForm.period} · ${perfLabelOf(t, perfForm.rating)}`,
+      });
+    },
+    onSuccess: () => {
+      toast.success(t("sheet.person.perfSaved"));
+      setPerfOpen(false);
+      setPerfForm({ period: "", rating: "meets", summary: "", highlights: "", improvements: "", reviewer: "" });
+      perfRecords.refetch();
+      history.refetch();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+
 
   // 该人员承载的组织能力（来自其岗位画像），按「能力关键度 × 人员可替代性」分级
   const carried = useMemo(() => {
@@ -258,12 +361,20 @@ export function PersonDetailSheet({
         .update({ assessed_skills: own as unknown as never, assessed_at: new Date().toISOString() })
         .eq("id", person!.id);
       if (error) throw error;
+      await supabase.from("audit_log").insert({
+        person_id: person!.id,
+        action: t("sheet.person.skillChangeAction"),
+        entity: person!.name,
+        detail: `${skill}: ${level ?? "—"}`,
+      });
     },
     onSuccess: () => {
       toast.success(t("sheet.person.levelSaved"));
+      history.refetch();
       onDone();
     },
     onError: (e: unknown) => toast.error(String((e as Error)?.message ?? e)),
+
   });
 
 
@@ -350,17 +461,40 @@ export function PersonDetailSheet({
         const nameOf = (id: string | null) =>
           id ? (orgNodes.data ?? []).find((n) => n.id === id)?.name ?? id : t("sheet.person.unassigned");
         await supabase.from("audit_log").insert({
+          person_id: person!.id,
           action: t("sheet.person.orgMoveAction"),
           entity: t("sheet.person.orgMoveEntity").replace("{name}", person!.name),
           detail: `${nameOf(person!.org_node_id ?? null)} → ${nameOf(nextNode)}`,
+        });
+      }
+
+      const diffs: string[] = [];
+      const cmp = (label: string, before: string, after: string) => {
+        if ((before || "—") !== (after || "—")) diffs.push(`${label}: ${before || "—"} → ${after || "—"}`);
+      };
+      cmp(t("sheet.person.performance"), perfLabelOf(t, person!.performance ?? ""), perfLabelOf(t, form.performance));
+      cmp(t("sheet.person.level"), person!.level != null ? String(person!.level) : "", form.level);
+      cmp(t("sheet.person.status"), person!.status ?? "", form.status);
+      cmp(t("sheet.person.readiness"), readinessLabelOf(t, person!.readiness ?? "unknown"), readinessLabelOf(t, form.readiness));
+      cmp(t("sheet.person.attritionRisk"), riskLabelOf(t, person!.attrition_risk ?? "unknown"), riskLabelOf(t, form.attrition_risk));
+      cmp(t("sheet.person.contractType"), person!.contract_type ?? "", form.contract_type === "unset" ? "" : form.contract_type);
+      cmp(t("sheet.person.tags"), (person!.tags ?? []).join(", "), form.tags);
+      if (diffs.length > 0) {
+        await supabase.from("audit_log").insert({
+          person_id: person!.id,
+          action: t("sheet.person.profileUpdateAction"),
+          entity: person!.name,
+          detail: diffs.join(" · "),
         });
       }
     },
     onSuccess: () => {
       toast.success(t("sheet.person.assessmentSaved"));
       setEditing(false);
+      history.refetch();
       onDone();
     },
+
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -599,6 +733,154 @@ export function PersonDetailSheet({
           )}
 
           <Module
+            collapsible
+            defaultOpen={false}
+            badge={String((perfRecords.data ?? []).length)}
+            title={t("sheet.person.perfRecordTitle")}
+            actions={
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setPerfOpen((v) => !v)}>
+                <Plus className="size-4" /> {t("sheet.person.perfAdd")}
+              </Button>
+            }
+          >
+            {perfOpen && (
+              <div className="mb-4 space-y-3 rounded-lg border border-border/60 bg-surface-raised/40 p-3">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="space-y-1.5">
+                    <Label>{t("sheet.person.perfPeriod")}</Label>
+                    <Input
+                      value={perfForm.period}
+                      placeholder="2026 H1"
+                      onChange={(e) => setPerfForm({ ...perfForm, period: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>{t("sheet.person.perfRating")}</Label>
+                    <Select value={perfForm.rating} onValueChange={(v) => setPerfForm({ ...perfForm, rating: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="exceeds">{t("sheet.person.exceedsExpectation")}</SelectItem>
+                        <SelectItem value="meets">{t("sheet.person.meetsExpectation")}</SelectItem>
+                        <SelectItem value="below">{t("sheet.person.belowExpectation")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>{t("sheet.person.perfReviewer")}</Label>
+                    <Input
+                      value={perfForm.reviewer}
+                      onChange={(e) => setPerfForm({ ...perfForm, reviewer: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>{t("sheet.person.perfSummary")}</Label>
+                  <Textarea
+                    rows={2}
+                    value={perfForm.summary}
+                    onChange={(e) => setPerfForm({ ...perfForm, summary: e.target.value })}
+                  />
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label>{t("sheet.person.perfHighlights")}</Label>
+                    <Textarea
+                      rows={2}
+                      value={perfForm.highlights}
+                      onChange={(e) => setPerfForm({ ...perfForm, highlights: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>{t("sheet.person.perfImprovements")}</Label>
+                    <Textarea
+                      rows={2}
+                      value={perfForm.improvements}
+                      onChange={(e) => setPerfForm({ ...perfForm, improvements: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => addPerf.mutate()} disabled={addPerf.isPending}>
+                    {t("sheet.save")}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setPerfOpen(false)}>
+                    {t("sheet.cancel")}
+                  </Button>
+                </div>
+              </div>
+            )}
+            {perfRecords.isLoading ? (
+              <p className="text-sm text-muted-foreground">{t("sheet.loading")}</p>
+            ) : (perfRecords.data ?? []).length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("sheet.person.noPerfRecords")}</p>
+            ) : (
+              <ul className="space-y-2">
+                {(perfRecords.data ?? []).map((r) => (
+                  <li key={r.id} className="rounded-lg border border-border/60 bg-surface-raised/40 p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-display text-sm font-semibold">{r.period}</span>
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-[11px] ${
+                          r.rating === "exceeds"
+                            ? "border-ok/50 bg-ok/10 text-ok"
+                            : r.rating === "below"
+                              ? "border-danger/50 bg-danger/10 text-danger"
+                              : "border-border/70 text-muted-foreground"
+                        }`}
+                      >
+                        {perfLabelOf(t, r.rating)}
+                      </span>
+                    </div>
+                    {r.summary && <p className="mt-1 text-xs text-foreground/85">{r.summary}</p>}
+                    {r.highlights && (
+                      <p className="mt-1 text-xs text-ok">+ {r.highlights}</p>
+                    )}
+                    {r.improvements && (
+                      <p className="mt-1 text-xs text-warn">△ {r.improvements}</p>
+                    )}
+                    <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                      {new Date(r.created_at).toLocaleString()}
+                      {r.reviewer ? ` · ${r.reviewer}` : ""}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Module>
+
+          <Module
+            collapsible
+            defaultOpen={false}
+            badge={String((history.data ?? []).length)}
+            title={t("sheet.person.historyTitle")}
+          >
+            {history.isLoading ? (
+              <p className="text-sm text-muted-foreground">{t("sheet.loading")}</p>
+            ) : (history.data ?? []).length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("sheet.person.noHistory")}</p>
+            ) : (
+              <ul className="space-y-2">
+                {(history.data ?? []).map((h) => (
+                  <li key={h.id} className="flex gap-2 rounded-lg border border-border/60 bg-surface-raised/40 px-3 py-2">
+                    <History className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+                    <div className="min-w-0">
+                      <p className="text-sm">{h.action}</p>
+                      {h.detail && <p className="text-xs text-muted-foreground">{h.detail}</p>}
+                      <p className="mt-0.5 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                        {new Date(h.created_at).toLocaleString()} · {h.actor}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Module>
+
+
+
+          <Module
+            collapsible
+            defaultOpen={false}
             title={t("sheet.person.currentRole")}
             actions={
               role && onOpenRole ? (
@@ -665,7 +947,7 @@ export function PersonDetailSheet({
           </Module>
 
           {role && (
-            <Module title={t("sheet.person.skillMatchTitle")}>
+            <Module collapsible defaultOpen={false} badge={String(skillMatch.length)} title={t("sheet.person.skillMatchTitle")}>
               {skillMatch.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("sheet.person.noSkillRequirements")}</p>
               ) : (
@@ -749,7 +1031,7 @@ export function PersonDetailSheet({
           )}
 
           {role && (
-            <Module title={t("sheet.person.carriedCapabilities")}>
+            <Module collapsible defaultOpen={false} title={t("sheet.person.carriedCapabilities")}>
               {carried.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("sheet.person.noRelatedCapabilities")}</p>
               ) : (
@@ -789,7 +1071,7 @@ export function PersonDetailSheet({
           )}
 
 
-          <Module title={t("sheet.person.aiFitRecordsTitle")}>
+          <Module collapsible defaultOpen={false} badge={String((fits.data ?? []).length)} title={t("sheet.person.aiFitRecordsTitle")}>
             {fits.isLoading ? (
               <p className="text-sm text-muted-foreground">{t("sheet.loading")}</p>
             ) : (fits.data ?? []).length === 0 ? (
@@ -830,7 +1112,7 @@ export function PersonDetailSheet({
           </Module>
 
           {(person.prior_experience ?? []).length > 0 && (
-            <Module title={t("sheet.person.priorExperienceTitle")}>
+            <Module collapsible defaultOpen={false} title={t("sheet.person.priorExperienceTitle")}>
               <ul className="space-y-1.5 text-sm text-foreground/85">
                 {(person.prior_experience ?? []).map((e) => (
                   <li key={e}>· {e}</li>
@@ -840,7 +1122,7 @@ export function PersonDetailSheet({
           )}
 
           {person.note && (
-            <Module title={t("sheet.person.noteTitle")}>
+            <Module collapsible defaultOpen={false} title={t("sheet.person.noteTitle")}>
               <p className="text-sm text-foreground/85">{person.note}</p>
             </Module>
           )}
