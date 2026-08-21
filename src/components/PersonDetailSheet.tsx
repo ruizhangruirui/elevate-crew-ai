@@ -735,6 +735,152 @@ export function PersonDetailSheet({
           <Module
             collapsible
             defaultOpen={false}
+            badge={String((perfRecords.data ?? []).length)}
+            title={t("sheet.person.perfRecordTitle")}
+            actions={
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setPerfOpen((v) => !v)}>
+                <Plus className="size-4" /> {t("sheet.person.perfAdd")}
+              </Button>
+            }
+          >
+            {perfOpen && (
+              <div className="mb-4 space-y-3 rounded-lg border border-border/60 bg-surface-raised/40 p-3">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="space-y-1.5">
+                    <Label>{t("sheet.person.perfPeriod")}</Label>
+                    <Input
+                      value={perfForm.period}
+                      placeholder="2026 H1"
+                      onChange={(e) => setPerfForm({ ...perfForm, period: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>{t("sheet.person.perfRating")}</Label>
+                    <Select value={perfForm.rating} onValueChange={(v) => setPerfForm({ ...perfForm, rating: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="exceeds">{t("sheet.person.exceedsExpectation")}</SelectItem>
+                        <SelectItem value="meets">{t("sheet.person.meetsExpectation")}</SelectItem>
+                        <SelectItem value="below">{t("sheet.person.belowExpectation")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>{t("sheet.person.perfReviewer")}</Label>
+                    <Input
+                      value={perfForm.reviewer}
+                      onChange={(e) => setPerfForm({ ...perfForm, reviewer: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>{t("sheet.person.perfSummary")}</Label>
+                  <Textarea
+                    rows={2}
+                    value={perfForm.summary}
+                    onChange={(e) => setPerfForm({ ...perfForm, summary: e.target.value })}
+                  />
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label>{t("sheet.person.perfHighlights")}</Label>
+                    <Textarea
+                      rows={2}
+                      value={perfForm.highlights}
+                      onChange={(e) => setPerfForm({ ...perfForm, highlights: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>{t("sheet.person.perfImprovements")}</Label>
+                    <Textarea
+                      rows={2}
+                      value={perfForm.improvements}
+                      onChange={(e) => setPerfForm({ ...perfForm, improvements: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => addPerf.mutate()} disabled={addPerf.isPending}>
+                    {t("sheet.save")}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setPerfOpen(false)}>
+                    {t("sheet.cancel")}
+                  </Button>
+                </div>
+              </div>
+            )}
+            {perfRecords.isLoading ? (
+              <p className="text-sm text-muted-foreground">{t("sheet.loading")}</p>
+            ) : (perfRecords.data ?? []).length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("sheet.person.noPerfRecords")}</p>
+            ) : (
+              <ul className="space-y-2">
+                {(perfRecords.data ?? []).map((r) => (
+                  <li key={r.id} className="rounded-lg border border-border/60 bg-surface-raised/40 p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-display text-sm font-semibold">{r.period}</span>
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-[11px] ${
+                          r.rating === "exceeds"
+                            ? "border-ok/50 bg-ok/10 text-ok"
+                            : r.rating === "below"
+                              ? "border-danger/50 bg-danger/10 text-danger"
+                              : "border-border/70 text-muted-foreground"
+                        }`}
+                      >
+                        {perfLabelOf(t, r.rating)}
+                      </span>
+                    </div>
+                    {r.summary && <p className="mt-1 text-xs text-foreground/85">{r.summary}</p>}
+                    {r.highlights && (
+                      <p className="mt-1 text-xs text-ok">+ {r.highlights}</p>
+                    )}
+                    {r.improvements && (
+                      <p className="mt-1 text-xs text-warn">△ {r.improvements}</p>
+                    )}
+                    <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                      {new Date(r.created_at).toLocaleString()}
+                      {r.reviewer ? ` · ${r.reviewer}` : ""}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Module>
+
+          <Module
+            collapsible
+            defaultOpen={false}
+            badge={String((history.data ?? []).length)}
+            title={t("sheet.person.historyTitle")}
+          >
+            {history.isLoading ? (
+              <p className="text-sm text-muted-foreground">{t("sheet.loading")}</p>
+            ) : (history.data ?? []).length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("sheet.person.noHistory")}</p>
+            ) : (
+              <ul className="space-y-2">
+                {(history.data ?? []).map((h) => (
+                  <li key={h.id} className="flex gap-2 rounded-lg border border-border/60 bg-surface-raised/40 px-3 py-2">
+                    <History className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+                    <div className="min-w-0">
+                      <p className="text-sm">{h.action}</p>
+                      {h.detail && <p className="text-xs text-muted-foreground">{h.detail}</p>}
+                      <p className="mt-0.5 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                        {new Date(h.created_at).toLocaleString()} · {h.actor}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Module>
+
+
+
+          <Module
+            collapsible
+            defaultOpen={false}
             title={t("sheet.person.currentRole")}
             actions={
               role && onOpenRole ? (
