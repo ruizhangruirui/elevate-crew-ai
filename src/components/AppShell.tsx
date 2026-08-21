@@ -4,14 +4,15 @@ import { useEffect, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n";
 
 const nav = [
-  { to: "/", label: "战略岗位视图", icon: LayoutGrid },
-  { to: "/capability", label: "组织能力视图", icon: Network },
-  { to: "/org", label: "组织视图", icon: FolderTree },
-  { to: "/people", label: "人员视图", icon: Users },
-  { to: "/actions", label: "待办中心", icon: ListChecks },
-  { to: "/settings", label: "系统设置", icon: Settings },
+  { to: "/", key: "nav.index", icon: LayoutGrid },
+  { to: "/capability", key: "nav.capability", icon: Network },
+  { to: "/org", key: "nav.org", icon: FolderTree },
+  { to: "/people", key: "nav.people", icon: Users },
+  { to: "/actions", key: "nav.actions", icon: ListChecks },
+  { to: "/settings", key: "nav.settings", icon: Settings },
 ] as const;
 
 export function AppShell({
