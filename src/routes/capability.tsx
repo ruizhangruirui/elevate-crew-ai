@@ -630,7 +630,7 @@ function BuildingPanel({
               <li key={a.id} className="space-y-1.5 px-5 py-4 text-sm">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                   <span className="rounded bg-brand/15 px-1.5 py-0.5 text-[10px] text-brand">
-                    {t(`cap.actKind.${a.kind}`)}
+                    {t(`cap.activityKind.${a.kind}`)}
                   </span>
                   <span className="font-medium">{a.title}</span>
                   <span className="text-xs tabular-nums text-muted-foreground">{a.happened_on}</span>
