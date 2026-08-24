@@ -14,6 +14,7 @@ import { settingsDict } from "./i18n-dicts/settings";
 import { sheetsDict } from "./i18n-dicts/sheets";
 import { personPageDict } from "./i18n-dicts/person-page";
 import { lifecycleDict } from "./i18n-dicts/lifecycle";
+import { growthDict } from "./i18n-dicts/growth";
 
 export const dict: Dict = {
   ...coreDict,

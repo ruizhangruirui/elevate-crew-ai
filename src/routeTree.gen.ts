@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ActionsRouteImport } from './routes/actions'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CapabilityRouteImport } from './routes/capability'
+import { Route as GrowthRouteImport } from './routes/growth'
 import { Route as OrgRouteImport } from './routes/org'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as PeopleIndexRouteImport } from './routes/people.index'
@@ -36,6 +37,11 @@ const AuthRoute = AuthRouteImport.update({
 const CapabilityRoute = CapabilityRouteImport.update({
   id: '/capability',
   path: '/capability',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GrowthRoute = GrowthRouteImport.update({
+  id: '/growth',
+  path: '/growth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrgRoute = OrgRouteImport.update({
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/actions': typeof ActionsRoute
   '/auth': typeof AuthRoute
   '/capability': typeof CapabilityRoute
+  '/growth': typeof GrowthRoute
   '/org': typeof OrgRoute
   '/settings': typeof SettingsRoute
   '/people/$personId': typeof PeoplePersonIdRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/actions': typeof ActionsRoute
   '/auth': typeof AuthRoute
   '/capability': typeof CapabilityRoute
+  '/growth': typeof GrowthRoute
   '/org': typeof OrgRoute
   '/settings': typeof SettingsRoute
   '/people/$personId': typeof PeoplePersonIdRoute
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/actions': typeof ActionsRoute
   '/auth': typeof AuthRoute
   '/capability': typeof CapabilityRoute
+  '/growth': typeof GrowthRoute
   '/org': typeof OrgRoute
   '/settings': typeof SettingsRoute
   '/people/$personId': typeof PeoplePersonIdRoute
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/actions'
     | '/auth'
     | '/capability'
+    | '/growth'
     | '/org'
     | '/settings'
     | '/people/$personId'
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/actions'
     | '/auth'
     | '/capability'
+    | '/growth'
     | '/org'
     | '/settings'
     | '/people/$personId'
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/actions'
     | '/auth'
     | '/capability'
+    | '/growth'
     | '/org'
     | '/settings'
     | '/people/$personId'
@@ -128,6 +140,7 @@ export interface RootRouteChildren {
   ActionsRoute: typeof ActionsRoute
   AuthRoute: typeof AuthRoute
   CapabilityRoute: typeof CapabilityRoute
+  GrowthRoute: typeof GrowthRoute
   OrgRoute: typeof OrgRoute
   SettingsRoute: typeof SettingsRoute
   PeoplePersonIdRoute: typeof PeoplePersonIdRoute
@@ -162,6 +175,13 @@ declare module '@tanstack/react-router' {
       path: '/capability'
       fullPath: '/capability'
       preLoaderRoute: typeof CapabilityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/growth': {
+      id: '/growth'
+      path: '/growth'
+      fullPath: '/growth'
+      preLoaderRoute: typeof GrowthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/org': {
@@ -200,6 +220,7 @@ const rootRouteChildren: RootRouteChildren = {
   ActionsRoute: ActionsRoute,
   AuthRoute: AuthRoute,
   CapabilityRoute: CapabilityRoute,
+  GrowthRoute: GrowthRoute,
   OrgRoute: OrgRoute,
   SettingsRoute: SettingsRoute,
   PeoplePersonIdRoute: PeoplePersonIdRoute,
