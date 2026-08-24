@@ -14,7 +14,6 @@ import {
 import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/lib/i18n";
 import { ConfirmAction } from "@/components/ConfirmAction";
-import { StatTile } from "@/components/StatTile";
 import { RoleDetailSheet } from "@/components/RoleDetailSheet";
 import {
   coverageOf,
@@ -128,15 +127,6 @@ function StrategyBoard() {
   const active = directions.find((d) => d.id === activeId) ?? directions[0] ?? null;
   const activeRoles = active ? roles.filter((r) => r.direction_id === active.id) : [];
 
-  const totalSeats = roles.reduce((n, r) => n + r.target_count, 0);
-  const activeRoleIds = new Set(roles.map((role) => role.id));
-  const totalFilled = people.filter(
-    (person) =>
-      person.status === "onboard" &&
-      person.role_id !== null &&
-      activeRoleIds.has(person.role_id),
-  ).length;
-  const totalGap = Math.max(0, totalSeats - totalFilled);
 
   const dirStats = (dirId: string) => {
     const rs = roles.filter((r) => r.direction_id === dirId);
@@ -186,13 +176,8 @@ function StrategyBoard() {
             </div>
           </div>
           <div className="self-start">
-            <div className="grid grid-cols-2 gap-3">
-              <StatTile label={t("idx.statDirections")} value={directions.length} />
-              <StatTile label={t("idx.statRoleTypes")} value={roles.length} />
-              <StatTile label={t("idx.statTargetSeats")} value={totalSeats} />
-              <StatTile label={t("idx.statCurrentGap")} value={totalGap} tone={totalGap ? "danger" : "ok"} />
-            </div>
-            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+
               <Link to="/org" className="text-brand hover:underline">
                 {t("idx.linkOrg")}
               </Link>
