@@ -581,8 +581,6 @@ function BuildingPanel({
     [activities, participants, data.people],
   );
 
-  
-
   const remove = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("org_activities").delete().eq("id", id);
@@ -647,7 +645,6 @@ function BuildingPanel({
           </div>
         </div>
       </section>
-
 
       <section className="panel overflow-hidden">
         <div className="flex flex-wrap items-center gap-3 border-b border-border/50 px-5 py-4">
@@ -1016,9 +1013,7 @@ function HeadcountFlow() {
                 <ul className="mt-2 space-y-1 text-xs leading-relaxed text-muted-foreground">
                   {voluntary > 0 && <li>· {t("lc.analysis.suggestVoluntary")}</li>}
                   {termination > 0 && <li>· {t("lc.analysis.suggestTermination")}</li>}
-                  {countOf("internship_end") > 0 && (
-                    <li>· {t("lc.analysis.suggestInternship")}</li>
-                  )}
+                  {countOf("internship_end") > 0 && <li>· {t("lc.analysis.suggestInternship")}</li>}
                   {countOf("contract_end") > 0 && <li>· {t("lc.analysis.suggestContract")}</li>}
                   {stats.net90 < 0 && <li>· {t("lc.analysis.suggestNet")}</li>}
                 </ul>
