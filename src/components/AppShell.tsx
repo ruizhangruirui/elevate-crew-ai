@@ -11,6 +11,7 @@ const nav = [
   { to: "/capability", key: "nav.capability", icon: Network },
   { to: "/org", key: "nav.org", icon: FolderTree },
   { to: "/people", key: "nav.people", icon: Users },
+  { to: "/growth", key: "nav.growth", icon: TrendingUp },
   { to: "/actions", key: "nav.actions", icon: ListChecks },
   { to: "/settings", key: "nav.settings", icon: Settings },
 ] as const;
