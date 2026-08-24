@@ -127,15 +127,6 @@ function StrategyBoard() {
   const active = directions.find((d) => d.id === activeId) ?? directions[0] ?? null;
   const activeRoles = active ? roles.filter((r) => r.direction_id === active.id) : [];
 
-  const totalSeats = roles.reduce((n, r) => n + r.target_count, 0);
-  const activeRoleIds = new Set(roles.map((role) => role.id));
-  const totalFilled = people.filter(
-    (person) =>
-      person.status === "onboard" &&
-      person.role_id !== null &&
-      activeRoleIds.has(person.role_id),
-  ).length;
-  const totalGap = Math.max(0, totalSeats - totalFilled);
 
   const dirStats = (dirId: string) => {
     const rs = roles.filter((r) => r.direction_id === dirId);
