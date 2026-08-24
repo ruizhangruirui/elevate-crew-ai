@@ -32,7 +32,12 @@ import { TeamDiagnosisDialog } from "@/components/TeamDiagnosisDialog";
 import { OrgChart } from "@/components/OrgChart";
 import { useI18n } from "@/lib/i18n";
 import { contractLabel } from "@/lib/contract";
-import { effectiveImportance, IMPORTANCE_TONE, type Importance } from "@/lib/importance";
+import {
+  badgeImportance,
+  effectiveImportance,
+  IMPORTANCE_TONE,
+  type Importance,
+} from "@/lib/importance";
 
 export const Route = createFileRoute("/org")({
   head: () => ({
@@ -63,8 +68,15 @@ function OrgPage() {
   );
 }
 
-function ImportanceChip({ level, leader }: { level: Importance; leader?: boolean }) {
+function ImportanceChip({ level, leader }: { level: Importance | null; leader?: boolean }) {
   const { t } = useI18n();
+  if (!level) {
+    return leader ? (
+      <span className="shrink-0 rounded-md bg-brand/12 px-1.5 py-0.5 text-[10px] text-brand">
+        {t("importance.leaderBadge")}
+      </span>
+    ) : null;
+  }
   return (
     <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] ${IMPORTANCE_TONE[level]}`}>
       {t(`importance.${level}`)}
@@ -119,7 +131,7 @@ function PersonRow({
           </p>
         )}
       </div>
-      <ImportanceChip level={effectiveImportance(person, roles)} leader={!!person.is_leader} />
+      <ImportanceChip level={badgeImportance(person, roles)} leader={!!person.is_leader} />
       {person.status !== "onboard" && (
         <span className="shrink-0 rounded-md bg-warn/12 px-1.5 py-0.5 text-[10px] text-warn">
           {t("common.candidate")}

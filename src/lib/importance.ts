@@ -30,6 +30,12 @@ export function effectiveImportance(person: Person, roles: Role[] = []): Importa
   return deriveImportance(person, roles);
 }
 
+/** 只有「核心 / 关键」才展示标签，其余不显示重要性标签。 */
+export function badgeImportance(person: Person, roles: Role[] = []): "core" | "key" | null {
+  const v = effectiveImportance(person, roles);
+  return v === "core" || v === "key" ? v : null;
+}
+
 export function importanceLabel(t: (k: string) => string, value: Importance): string {
   return t(`importance.${value}`);
 }

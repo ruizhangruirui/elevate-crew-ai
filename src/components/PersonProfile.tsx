@@ -27,7 +27,7 @@ import { useI18n } from "@/lib/i18n";
 import { fetchLifecycleEvents, recordJoin } from "@/lib/lifecycle";
 import { ArchivePersonDialog } from "@/components/ArchivePersonDialog";
 import { contractLabel } from "@/lib/contract";
-import { effectiveImportance } from "@/lib/importance";
+import { badgeImportance } from "@/lib/importance";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -596,7 +596,16 @@ export function PersonProfile({
         />
         <Fact
           label={t("importance.label")}
-          value={`${t(`importance.${effectiveImportance(person, roles)}`)}${person.is_leader ? ` · ${t("importance.leaderBadge")}` : ""}`}
+          value={
+            [
+              badgeImportance(person, roles)
+                ? t(`importance.${badgeImportance(person, roles)}`)
+                : t("importance.none"),
+              person.is_leader ? t("importance.leaderBadge") : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")
+          }
         />
         <Fact
           label={t("sheet.person.team")}
@@ -782,8 +791,7 @@ export function PersonProfile({
                         <SelectItem value="auto">{t("importance.auto")}</SelectItem>
                         <SelectItem value="core">{t("importance.core")}</SelectItem>
                         <SelectItem value="key">{t("importance.key")}</SelectItem>
-                        <SelectItem value="standard">{t("importance.standard")}</SelectItem>
-                        <SelectItem value="peripheral">{t("importance.peripheral")}</SelectItem>
+                        <SelectItem value="standard">{t("importance.none")}</SelectItem>
                       </SelectContent>
                     </Select>
                     <p className="text-[11px] text-muted-foreground">{t("importance.autoHint")}</p>
