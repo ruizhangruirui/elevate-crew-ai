@@ -35,6 +35,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { GrowthSummary } from "@/components/GrowthSummary";
 import {
   Select,
   SelectContent,
@@ -1200,6 +1201,10 @@ export function PersonProfile({
               </div>
             </Module>
           )}
+
+          <Module title={t("growth.card.title")}>
+            <GrowthSummary person={person} />
+          </Module>
 
           <Module
             badge={String((perfRecords.data ?? []).length)}
