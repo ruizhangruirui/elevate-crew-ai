@@ -9,7 +9,7 @@ export const capabilityDict: Dict = {
   "cap.loading": { zh: "加载中…", en: "Loading…" },
   "cap.tab.health": { zh: "能力与缺口", en: "Capability Gaps" },
   "cap.tab.building": { zh: "团队 / 文化建设", en: "Team / Culture" },
-  "cap.tab.trend": { zh: "进展追踪", en: "Progress" },
+  "cap.tab.trend": { zh: "入离职追踪", en: "Joins & Exits" },
   "cap.scopeLabel": { zh: "范围", en: "Scope" },
   "cap.scopeAll": { zh: "全组织", en: "Whole Org" },
   "cap.scopeNotePrefix": { zh: "仅统计", en: "Only counting roles held by onboard staff within" },

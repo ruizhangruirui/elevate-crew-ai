@@ -582,8 +582,7 @@ function BuildingPanel({
     [activities, participants, data.people],
   );
 
-  const caps = useMemo(() => buildCapabilities(data.roles, data.people), [data]);
-  const singleRisk = caps.filter((c) => c.status === "single").slice(0, 4);
+  
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
@@ -625,10 +624,9 @@ function BuildingPanel({
         />
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-3">
-        <div className="panel p-5 lg:col-span-2">
+      <section className="grid gap-6">
+        <div className="panel p-5">
           <h3 className="font-display text-base font-semibold">{t("cap.structure.title")}</h3>
-          <p className="mt-1 text-xs text-muted-foreground">{t("cap.structure.desc")}</p>
           <div className="mt-4 space-y-2">
             {stats.byKind.length === 0 && (
               <p className="text-sm text-muted-foreground">{t("cap.structure.empty")}</p>
@@ -649,69 +647,8 @@ function BuildingPanel({
             ))}
           </div>
         </div>
-
-        <div className="panel space-y-4 p-5">
-          <div>
-            <h3 className="font-display text-base font-semibold">{t("cap.vibe.title")}</h3>
-            <p className="mt-1 text-xs text-muted-foreground">{t("cap.vibe.desc")}</p>
-          </div>
-          <div className="space-y-1 text-sm">
-            {stats.topPeople.map(({ person, count }) => (
-              <div key={person.id} className="flex justify-between">
-                <span>{person.name}</span>
-                <span className="tabular-nums text-muted-foreground">
-                  {count} {t("cap.unit.times")}
-                </span>
-              </div>
-            ))}
-            {stats.topPeople.length === 0 && (
-              <p className="text-xs text-muted-foreground">{t("cap.vibe.empty")}</p>
-            )}
-          </div>
-          {stats.dormant.length > 0 && (
-            <div className="rounded-lg border border-warn/40 bg-warn/10 p-3 text-xs">
-              <p className="font-medium text-warn">{t("cap.vibe.dormantTitle")}</p>
-              <p className="mt-1 text-muted-foreground">
-                {stats.dormant.map((p) => p.name).join("、")}
-              </p>
-            </div>
-          )}
-        </div>
       </section>
 
-      {singleRisk.length > 0 && (
-        <section className="panel p-5">
-          <h3 className="font-display text-base font-semibold">{t("cap.suggestBuild.title")}</h3>
-          <p className="mt-1 text-xs text-muted-foreground">{t("cap.suggestBuild.desc")}</p>
-          <div className="mt-4 space-y-2">
-            {singleRisk.map((c) => (
-              <div
-                key={c.key}
-                className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border/60 px-4 py-2.5 text-sm"
-              >
-                <span className="font-medium">{c.label}</span>
-                <span className="text-xs text-muted-foreground">
-                  {t("cap.suggestBuild.carriedPrefix")}{" "}
-                  {c.carriers.map((x) => x.person.name).join("、")}{" "}
-                  {t("cap.suggestBuild.carriedSuffix")}
-                </span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="ml-auto gap-1.5 text-xs"
-                  onClick={() => {
-                    setEditing(null);
-                    setOpen(true);
-                  }}
-                >
-                  <Plus className="size-3.5" />
-                  {t("cap.suggestBuild.action")}
-                </Button>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
 
       <section className="panel overflow-hidden">
         <div className="flex flex-wrap items-center gap-3 border-b border-border/50 px-5 py-4">
@@ -978,36 +915,6 @@ function TrendPanel({ data, activities }: { data: Workspace; activities: Activit
         <p className="text-sm text-muted-foreground">{t("cap.trend.needTwo")}</p>
       )}
 
-      {list.length > 0 && (
-        <section className="panel overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="border-b border-border/50 text-left text-xs text-muted-foreground">
-              <tr>
-                <th className="px-4 py-2.5 font-normal">{t("cap.table.date")}</th>
-                <th className="px-4 py-2.5 font-normal">{t("cap.table.coverageRate")}</th>
-                <th className="px-4 py-2.5 font-normal">{t("cap.table.blank")}</th>
-                <th className="px-4 py-2.5 font-normal">{t("cap.table.single")}</th>
-                <th className="px-4 py-2.5 font-normal">{t("cap.table.onboardVsTarget")}</th>
-                <th className="px-4 py-2.5 font-normal">{t("cap.table.activities90d")}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/40">
-              {[...list].reverse().map((s) => (
-                <tr key={s.id}>
-                  <td className="px-4 py-2.5 tabular-nums">{s.taken_on}</td>
-                  <td className="px-4 py-2.5 tabular-nums">{s.coverage_rate}%</td>
-                  <td className="px-4 py-2.5 tabular-nums">{s.blank_caps}</td>
-                  <td className="px-4 py-2.5 tabular-nums">{s.single_caps}</td>
-                  <td className="px-4 py-2.5 tabular-nums">
-                    {s.onboard_people} / {s.target_seats}
-                  </td>
-                  <td className="px-4 py-2.5 tabular-nums">{s.activities_90d}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-      )}
     </div>
   );
 }
@@ -1075,28 +982,77 @@ function Sparkline({ snaps }: { snaps: Snapshot[] }) {
 
 /* -------------------------------- 人员流动 -------------------------------- */
 
+const RANGE_OPTIONS = [3, 6, 12, 24];
+
 function HeadcountFlow() {
   const { t } = useI18n();
+  const [months, setMonths] = useState(6);
   const { data: events } = useQuery({ queryKey: ["lifecycle"], queryFn: fetchLifecycleEvents });
   const { data: ws } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
   const { data: archived } = useQuery({
     queryKey: ["archived-people"],
     queryFn: fetchArchivedPeople,
   });
-  const list = events ?? [];
-  const stats = useMemo(() => flowStats(list), [list]);
+  const all = events ?? [];
+  const since = useMemo(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - (months - 1));
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+  }, [months]);
+  const list = useMemo(() => all.filter((e) => e.effective_on >= since), [all, since]);
+  const stats = useMemo(() => flowStats(list, months), [list, months]);
   const nameOf = (id: string) =>
     ws?.people.find((p) => p.id === id)?.name ??
     (archived ?? []).find((p) => p.id === id)?.name ??
     "—";
   const max = Math.max(1, ...stats.byMonth.map((m) => Math.max(m.joins, m.exits)));
 
+  const exitTotal = stats.exitReasons.reduce((a, b) => a + b.count, 0);
+  const countOf = (r: string) => stats.exitReasons.find((x) => x.reason === r)?.count ?? 0;
+  const voluntary = countOf("voluntary");
+  const termination = countOf("termination");
+  const involuntaryLike = termination + countOf("contract_end") + countOf("internship_end");
+  const onboardNow = (ws?.people ?? []).filter((p) => p.status === "onboard").length;
+  const turnover = onboardNow ? Math.round((exitTotal / onboardNow) * 100) : 0;
+  const topReason = stats.exitReasons[0];
+
+  const insights: string[] = [];
+  if (exitTotal > 0) {
+    insights.push(
+      `${t("lc.analysis.turnoverPrefix")} ${turnover}% ${t("lc.analysis.turnoverSuffix")}`,
+    );
+    if (topReason) {
+      insights.push(
+        `${t("lc.analysis.topPrefix")}${t(`lc.reason.${topReason.reason}`)}${t("lc.analysis.topMid")}${Math.round((topReason.count / exitTotal) * 100)}%${t("lc.analysis.topSuffix")}`,
+      );
+    }
+    if (voluntary / exitTotal >= 0.5) insights.push(t("lc.analysis.voluntaryHigh"));
+    if (involuntaryLike / exitTotal >= 0.5) insights.push(t("lc.analysis.involuntaryHigh"));
+    if (stats.net90 < 0) insights.push(t("lc.analysis.netNegative"));
+  }
+
   return (
     <section className="panel p-6">
-      <h3 className="font-display text-base font-semibold">{t("lc.flow.title")}</h3>
-      <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
-        {t("lc.flow.desc")}
-      </p>
+      <div className="flex flex-wrap items-center gap-3">
+        <h3 className="font-display text-base font-semibold">{t("lc.flow.title")}</h3>
+        <div className="ml-auto flex items-center gap-1.5">
+          <span className="text-xs text-muted-foreground">{t("lc.flow.range")}</span>
+          {RANGE_OPTIONS.map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMonths(m)}
+              className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
+                months === m
+                  ? "border-brand bg-brand/10 text-brand"
+                  : "border-border/70 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {m} {t("lc.flow.monthsUnit")}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         <TrendTile label={t("lc.flow.joins90")} value={String(stats.joins90)} delta={null} />
@@ -1110,7 +1066,7 @@ function HeadcountFlow() {
 
       <div className="mt-6">
         <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-          {t("lc.flow.byMonth")}
+          {t("lc.flow.rangeLabelPrefix")} {months} {t("lc.flow.monthsUnit")}
         </p>
         <div className="mt-3 flex items-end gap-4">
           {stats.byMonth.map((m) => (
@@ -1142,23 +1098,56 @@ function HeadcountFlow() {
         </div>
       </div>
 
-      {stats.exitReasons.length > 0 && (
-        <div className="mt-6">
-          <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-            {t("lc.flow.reasons")}
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {stats.exitReasons.map((r) => (
-              <span
-                key={r.reason}
-                className="rounded-full border border-border/70 px-2.5 py-1 text-xs text-muted-foreground"
-              >
-                {t(`lc.reason.${r.reason}`)} · {r.count}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
+      <div className="mt-6">
+        <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+          {t("lc.flow.reasons")}
+        </p>
+        {exitTotal === 0 ? (
+          <p className="mt-2 text-sm text-muted-foreground">{t("lc.analysis.noExits")}</p>
+        ) : (
+          <>
+            <div className="mt-3 space-y-2">
+              {stats.exitReasons.map((r) => (
+                <div key={r.reason} className="flex items-center gap-3 text-sm">
+                  <span className="w-28 shrink-0 text-muted-foreground">
+                    {t(`lc.reason.${r.reason}`)}
+                  </span>
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted/30">
+                    <div
+                      className="h-full bg-danger"
+                      style={{ width: `${(r.count / exitTotal) * 100}%` }}
+                    />
+                  </div>
+                  <span className="w-20 text-right tabular-nums text-xs text-muted-foreground">
+                    {r.count} · {Math.round((r.count / exitTotal) * 100)}%
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {insights.length > 0 && (
+              <div className="mt-4 rounded-lg border border-border/60 bg-surface-raised/60 p-4">
+                <p className="text-xs font-medium">{t("lc.analysis.title")}</p>
+                <ul className="mt-2 space-y-1 text-xs leading-relaxed text-muted-foreground">
+                  {insights.map((s, i) => (
+                    <li key={i}>· {s}</li>
+                  ))}
+                </ul>
+                <p className="mt-3 text-xs font-medium">{t("lc.analysis.suggestTitle")}</p>
+                <ul className="mt-2 space-y-1 text-xs leading-relaxed text-muted-foreground">
+                  {voluntary > 0 && <li>· {t("lc.analysis.suggestVoluntary")}</li>}
+                  {termination > 0 && <li>· {t("lc.analysis.suggestTermination")}</li>}
+                  {countOf("internship_end") > 0 && (
+                    <li>· {t("lc.analysis.suggestInternship")}</li>
+                  )}
+                  {countOf("contract_end") > 0 && <li>· {t("lc.analysis.suggestContract")}</li>}
+                  {stats.net90 < 0 && <li>· {t("lc.analysis.suggestNet")}</li>}
+                </ul>
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       <div className="mt-6">
         <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
