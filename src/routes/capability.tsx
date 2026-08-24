@@ -582,7 +582,6 @@ function BuildingPanel({
     [activities, participants, data.people],
   );
 
-  const caps = useMemo(() => buildCapabilities(data.roles, data.people), [data]);
   
 
   const remove = useMutation({
