@@ -26,7 +26,6 @@ import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchOrgNodes, peopleInSubtree, type OrgNode } from "@/lib/org-tree";
-import { fetchSnapshots, recordSnapshot, type Snapshot } from "@/lib/snapshots";
 import { fetchArchivedPeople, fetchLifecycleEvents, flowStats } from "@/lib/lifecycle";
 
 export const Route = createFileRoute("/capability")({
@@ -582,8 +581,6 @@ function BuildingPanel({
     [activities, participants, data.people],
   );
 
-  
-
   const remove = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("org_activities").delete().eq("id", id);
@@ -648,7 +645,6 @@ function BuildingPanel({
           </div>
         </div>
       </section>
-
 
       <section className="panel overflow-hidden">
         <div className="flex flex-wrap items-center gap-3 border-b border-border/50 px-5 py-4">
@@ -822,99 +818,10 @@ function Legend({ className, label }: { className: string; label: string }) {
 
 /* ----------------------------------- 趋势 ---------------------------------- */
 
-function TrendPanel({ data, activities }: { data: Workspace; activities: Activity[] }) {
-  const { t } = useI18n();
-  const qc = useQueryClient();
-  const { data: snaps } = useQuery({ queryKey: ["snapshots"], queryFn: fetchSnapshots });
-
-  const caps = useMemo(() => buildCapabilities(data.roles, data.people), [data]);
-  const health = capabilityHealth(caps);
-  const onboard = data.people.filter((p) => p.status === "onboard").length;
-  const targetSeats = data.roles.reduce((n, r) => n + r.target_count, 0);
-  const since = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
-  const acts90 = activities.filter((a) => a.happened_on >= since).length;
-
-  const save = useMutation({
-    mutationFn: () =>
-      recordSnapshot({
-        scope_node_id: null,
-        total_caps: health.total,
-        covered_caps: health.covered,
-        blank_caps: health.blank,
-        single_caps: health.single,
-        coverage_rate: health.coverageRate,
-        onboard_people: onboard,
-        target_seats: targetSeats,
-        activities_90d: acts90,
-      }),
-    onSuccess: () => {
-      toast.success(t("cap.trend.saveToast"));
-      qc.invalidateQueries({ refetchType: "all" });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const list = snaps ?? [];
-  const first = list[0];
-  const last = list[list.length - 1];
-
+function TrendPanel(_: { data: Workspace; activities: Activity[] }) {
   return (
     <div className="space-y-6">
       <HeadcountFlow />
-
-      <section className="panel p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h3 className="font-display text-base font-semibold">{t("cap.trend.title")}</h3>
-            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
-              {t("cap.trend.desc")}
-            </p>
-          </div>
-          <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending}>
-            <Plus className="size-4" /> {t("cap.trend.save")}
-          </Button>
-        </div>
-
-        <div className="mt-6 grid gap-3 sm:grid-cols-4">
-          <TrendTile
-            label={t("cap.trend.coverageRate")}
-            value={`${health.coverageRate}%`}
-            delta={first ? health.coverageRate - first.coverage_rate : null}
-            unit="%"
-          />
-          <TrendTile
-            label={t("cap.trend.onboard")}
-            value={String(onboard)}
-            delta={first ? onboard - first.onboard_people : null}
-          />
-          <TrendTile
-            label={t("cap.trend.blank")}
-            value={String(health.blank)}
-            delta={first ? health.blank - first.blank_caps : null}
-            invert
-          />
-          <TrendTile
-            label={t("cap.trend.activities90d")}
-            value={String(acts90)}
-            delta={first ? acts90 - first.activities_90d : null}
-          />
-        </div>
-      </section>
-
-      {list.length >= 2 ? (
-        <section className="panel p-6">
-          <h3 className="font-display text-base font-semibold">{t("cap.trend.curveTitle")}</h3>
-          <Sparkline snaps={list} />
-          <p className="mt-2 text-xs text-muted-foreground">
-            {first?.taken_on} → {last?.taken_on}
-            {t("cap.trend.periodMid")}
-            {list.length} {t("cap.trend.periodSuffix")}
-          </p>
-        </section>
-      ) : (
-        <p className="text-sm text-muted-foreground">{t("cap.trend.needTwo")}</p>
-      )}
-
     </div>
   );
 }
@@ -946,37 +853,6 @@ function TrendTile({
         </p>
       )}
     </div>
-  );
-}
-
-function Sparkline({ snaps }: { snaps: Snapshot[] }) {
-  const { t } = useI18n();
-  const w = 600;
-  const h = 120;
-  const pts = snaps.map((s, i) => {
-    const x = (i / Math.max(1, snaps.length - 1)) * (w - 20) + 10;
-    const y = h - 10 - (s.coverage_rate / 100) * (h - 20);
-    return `${x},${y}`;
-  });
-  return (
-    <svg
-      viewBox={`0 0 ${w} ${h}`}
-      className="mt-4 w-full"
-      role="img"
-      aria-label={t("cap.trend.curveAriaLabel")}
-    >
-      <polyline
-        points={pts.join(" ")}
-        fill="none"
-        stroke="var(--color-brand)"
-        strokeWidth="2.5"
-        strokeLinejoin="round"
-      />
-      {pts.map((p, i) => {
-        const [x, y] = p.split(",");
-        return <circle key={i} cx={x} cy={y} r="3" fill="var(--color-brand)" />;
-      })}
-    </svg>
   );
 }
 
@@ -1137,9 +1013,7 @@ function HeadcountFlow() {
                 <ul className="mt-2 space-y-1 text-xs leading-relaxed text-muted-foreground">
                   {voluntary > 0 && <li>· {t("lc.analysis.suggestVoluntary")}</li>}
                   {termination > 0 && <li>· {t("lc.analysis.suggestTermination")}</li>}
-                  {countOf("internship_end") > 0 && (
-                    <li>· {t("lc.analysis.suggestInternship")}</li>
-                  )}
+                  {countOf("internship_end") > 0 && <li>· {t("lc.analysis.suggestInternship")}</li>}
                   {countOf("contract_end") > 0 && <li>· {t("lc.analysis.suggestContract")}</li>}
                   {stats.net90 < 0 && <li>· {t("lc.analysis.suggestNet")}</li>}
                 </ul>
