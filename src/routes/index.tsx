@@ -14,7 +14,6 @@ import {
 import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/lib/i18n";
 import { ConfirmAction } from "@/components/ConfirmAction";
-import { StatTile } from "@/components/StatTile";
 import { RoleDetailSheet } from "@/components/RoleDetailSheet";
 import {
   coverageOf,
