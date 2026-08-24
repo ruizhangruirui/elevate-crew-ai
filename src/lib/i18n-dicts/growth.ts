@@ -50,4 +50,14 @@ export const growthDict: Dict = {
   "growth.card.gridPos": { zh: "九宫格位置", en: "Talent grid" },
   "growth.card.none": { zh: "未评估", en: "Not assessed" },
   "growth.card.viewAll": { zh: "查看全组织绩效与成长", en: "View org-wide growth" },
+  // review entry
+  "growth.review.title": { zh: "记录绩效评估", en: "Record a performance review" },
+  "growth.review.hint": {
+    zh: "选择成员并填写本次考核结论，保存后会写入该成员的绩效记录与操作日志。",
+    en: "Pick a member and record this review. It is saved to their performance records and audit log.",
+  },
+  "growth.review.person": { zh: "被评估人", en: "Person" },
+  "growth.review.pickPerson": { zh: "请选择成员", en: "Select a member" },
+  "growth.review.new": { zh: "发起评估", en: "New review" },
+  "growth.review.quick": { zh: "评估", en: "Review" },
 };
