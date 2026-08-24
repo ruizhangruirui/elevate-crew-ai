@@ -185,7 +185,7 @@ export function ReviewDialog({
         <FormActions
           onCancel={() => onOpenChange(false)}
           onSave={() => save.mutate()}
-          saving={save.isPending}
+          pending={save.isPending}
           disabled={!form.person_id}
         />
       </DialogContent>
