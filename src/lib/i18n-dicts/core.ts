@@ -23,6 +23,13 @@ export const coreDict: Dict = {
   "common.candidate": { zh: "候选人", en: "Candidate" },
   "common.vacantSeat": { zh: "空缺席位", en: "Vacant seat" },
 
+  // ---- org chart ----
+  "chart.search": { zh: "搜人 / 团队 / 岗位", en: "Search people / team / role" },
+  "chart.tree": { zh: "树状", en: "Tree" },
+  "chart.compact": { zh: "紧凑", en: "Compact" },
+  "chart.wholeOrg": { zh: "全组织", en: "Whole org" },
+  "chart.focusHint": { zh: "双击节点可聚焦到该分支", en: "Double-click a node to focus on it" },
+
   // ---- org view ----
   "org.title": { zh: "组织视图", en: "Org Structure" },
   "org.subtitle": {
