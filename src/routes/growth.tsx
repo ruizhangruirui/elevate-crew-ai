@@ -71,6 +71,12 @@ function GrowthPage() {
   const byId = useMemo(() => new Map(people.map((p) => [p.id, p])), [people]);
 
   const loading = ws.isLoading || growth.isLoading;
+  const [reviewFor, setReviewFor] = useState<string | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const openReview = (id: string | null) => {
+    setReviewFor(id);
+    setReviewOpen(true);
+  };
 
   return (
     <AppShell title={t("growth.title")} subtitle={t("growth.subtitle")}>
@@ -78,6 +84,19 @@ function GrowthPage() {
         <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
       ) : (
         <div className="space-y-8">
+          <div className="flex justify-end">
+            <Button className="gap-2" onClick={() => openReview(null)}>
+              <ClipboardCheck className="size-4" /> {t("growth.review.new")}
+            </Button>
+          </div>
+
+          <ReviewDialog
+            open={reviewOpen}
+            onOpenChange={setReviewOpen}
+            people={people}
+            personId={reviewFor}
+          />
+
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             <StatTile
               label={t("growth.stat.coverage")}
