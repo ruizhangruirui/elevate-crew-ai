@@ -132,7 +132,10 @@ export function OrgChart({ nodes, people, roles, rolesByNode, onPerson, onRole }
       return n + Math.max(0, r.target_count - filled);
     }, 0);
     const tiers = { core: 0, key: 0, support: 0, peripheral: 0 } as Record<string, number>;
-    for (const p of onboard) tiers[effectiveImportance(p, roles)]++;
+    for (const p of onboard) {
+      const k = effectiveImportance(p, roles);
+      tiers[k] = (tiers[k] ?? 0) + 1;
+    }
     const direct = peopleOf.get(node.id) ?? [];
     const Icon = node.type === "Team" ? Users : Building2;
     const open = isOpen(node.id, depth);
