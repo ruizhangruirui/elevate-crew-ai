@@ -26,6 +26,7 @@ export const dict: Dict = {
   ...sheetsDict,
   ...personPageDict,
   ...lifecycleDict,
+  ...growthDict,
 };
 
 type Ctx = { lang: Lang; setLang: (l: Lang) => void; t: (key: string) => string };
