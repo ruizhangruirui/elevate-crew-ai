@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { LayoutGrid, Users, Settings, LogOut, Loader2, Network, FolderTree, ListChecks } from "lucide-react";
+import { LayoutGrid, Users, Settings, LogOut, Loader2, Network, FolderTree, ListChecks, TrendingUp } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
