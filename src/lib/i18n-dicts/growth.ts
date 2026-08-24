@@ -49,7 +49,7 @@ export const growthDict: Dict = {
   "growth.card.lastPromotion": { zh: "最近一次晋升", en: "Last promotion" },
   "growth.card.gridPos": { zh: "九宫格位置", en: "Talent grid" },
   "growth.card.none": { zh: "未评估", en: "Not assessed" },
-  "growth.card.viewAll": { zh: "查看全组织绩效与成长", en: "View org-wide growth" },,
+  "growth.card.viewAll": { zh: "查看全组织绩效与成长", en: "View org-wide growth" },
   // review entry
   "growth.review.title": { zh: "记录绩效评估", en: "Record a performance review" },
   "growth.review.hint": {
