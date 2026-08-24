@@ -186,13 +186,8 @@ function StrategyBoard() {
             </div>
           </div>
           <div className="self-start">
-            <div className="grid grid-cols-2 gap-3">
-              <StatTile label={t("idx.statDirections")} value={directions.length} />
-              <StatTile label={t("idx.statRoleTypes")} value={roles.length} />
-              <StatTile label={t("idx.statTargetSeats")} value={totalSeats} />
-              <StatTile label={t("idx.statCurrentGap")} value={totalGap} tone={totalGap ? "danger" : "ok"} />
-            </div>
-            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+
               <Link to="/org" className="text-brand hover:underline">
                 {t("idx.linkOrg")}
               </Link>
