@@ -1201,6 +1201,10 @@ export function PersonProfile({
             </Module>
           )}
 
+          <Module title={t("growth.card.title")}>
+            <GrowthSummary person={person} />
+          </Module>
+
           <Module
             badge={String((perfRecords.data ?? []).length)}
             title={t("sheet.person.perfRecordTitle")}
