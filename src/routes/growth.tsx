@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
-import { Award, TrendingUp, GraduationCap, Sparkles } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Award, TrendingUp, GraduationCap, Sparkles, ClipboardCheck } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { Button } from "@/components/ui/button";
+import { ReviewDialog } from "@/components/ReviewDialog";
 import { StatTile } from "@/components/StatTile";
 import { useI18n } from "@/lib/i18n";
 import { fetchWorkspace, type Person } from "@/lib/talent";
