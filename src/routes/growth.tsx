@@ -294,7 +294,19 @@ function GrowthPage() {
             ) : (
               <div className="mt-4 flex flex-wrap gap-1.5">
                 {stats.unreviewed.map((p) => (
-                  <PersonChip key={p.id} person={p} rating={latestRating(p, records)} />
+                  <span
+                    key={p.id}
+                    className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-background/40 py-0.5 pl-0.5 pr-1"
+                  >
+                    <PersonChip person={p} rating={latestRating(p, records)} />
+                    <button
+                      type="button"
+                      onClick={() => openReview(p.id)}
+                      className="rounded-full px-1.5 text-[11px] text-brand hover:underline"
+                    >
+                      {t("growth.review.quick")}
+                    </button>
+                  </span>
                 ))}
               </div>
             )}
