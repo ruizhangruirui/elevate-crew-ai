@@ -523,7 +523,7 @@ function OrgTreeBody() {
         </section>
       )}
 
-      {people.length > 0 && unassigned.length === 0 && (
+      {people.length > 0 && unassigned.length === 0 && view === "list" && (
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Button
             variant="ghost"
