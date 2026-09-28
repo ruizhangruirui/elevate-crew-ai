@@ -23,7 +23,7 @@ import {
   type Org,
   type Role,
 } from "@/lib/talent";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/lib/db-client";
 import { fetchOrgNodes, type OrgNode } from "@/lib/org-tree";
 import { ArchivedBinDialog } from "@/components/ArchivedBinDialog";
 import { FormActions } from "@/components/FormActions";

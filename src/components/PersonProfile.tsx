@@ -12,7 +12,7 @@ import {
   TrendingUp,
   LogOut,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/lib/db-client";
 import {
   coverageOf,
   criticalityLabel,

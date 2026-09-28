@@ -16,7 +16,7 @@ import { completeness } from "@/lib/org-tree";
 import { Link } from "@tanstack/react-router";
 import { StatTile } from "@/components/StatTile";
 import { fetchWorkspace, type Person } from "@/lib/talent";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/lib/db-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

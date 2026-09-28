@@ -2,7 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { LayoutGrid, Users, Settings, LogOut, Loader2, Network, FolderTree, ListChecks, TrendingUp } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/lib/db-client";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 

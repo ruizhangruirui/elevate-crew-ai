@@ -7,7 +7,7 @@ import { AppShell } from "@/components/AppShell";
 import { ActivityDialog } from "@/components/ActivityDialog";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { AddActionButton } from "@/components/AddActionButton";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/lib/db-client";
 import { fetchWorkspace, criticalityLabel } from "@/lib/talent";
 import {
   buildCapabilities,

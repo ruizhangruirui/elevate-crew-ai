@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/lib/db-client";
 import { useI18n } from "@/lib/i18n";
 import type { Person } from "@/lib/talent";
 import { PERF_KEYS } from "@/lib/growth";

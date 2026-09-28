@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { UserPlus, UserMinus, Pencil, Sparkles, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/lib/db-client";
 import { coverageOf, criticalityLabel, type Person, type Role, type Skill } from "@/lib/talent";
 import { analyzeRoleFit, generateRoleProfile, type FitResult } from "@/lib/ai.functions";
 import { ConfirmAction } from "@/components/ConfirmAction";

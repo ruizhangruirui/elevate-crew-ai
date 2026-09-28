@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/lib/db-client";
 import type { Direction, Person, Role } from "./talent";
 import { buildCapabilities } from "./capability";
 
