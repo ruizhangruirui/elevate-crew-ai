@@ -1,8 +1,8 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { LayoutGrid, Users, Settings, LogOut, Loader2, Network, FolderTree, ListChecks, TrendingUp } from "lucide-react";
-import { useEffect, type ReactNode } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { LayoutGrid, Users, Settings, LogOut, Loader2, KeyRound, Network, FolderTree, ListChecks, TrendingUp } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { useAuth, useSignOut } from "@/hooks/useAuth";
+import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 
@@ -28,6 +28,8 @@ export function AppShell({
   const { session, user, loading } = useAuth();
   const navigate = useNavigate();
   const { lang, setLang, t } = useI18n();
+  const signOut = useSignOut();
+  const [pwOpen, setPwOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/auth" });
@@ -93,14 +95,28 @@ export function AppShell({
         </nav>
 
         <div className="mt-auto space-y-2 border-t border-sidebar-border pt-4">
-          <p className="truncate px-3 text-xs text-muted-foreground">{user?.email}</p>
+          <div className="px-3">
+            <p className="truncate text-sm font-medium">{user?.name}</p>
+            <p className="truncate text-xs text-muted-foreground">
+              {user?.email} · {t(`access.role.${user?.role ?? "manager"}`)}
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start gap-2 text-muted-foreground"
+            onClick={() => setPwOpen(true)}
+          >
+            <KeyRound className="size-4" />
+            {t("pw.title")}
+          </Button>
           <Button
             variant="ghost"
             size="sm"
             className="w-full justify-start gap-2 text-muted-foreground"
             onClick={async () => {
-              await supabase.auth.signOut();
-              navigate({ to: "/auth" });
+              await signOut();
+              navigate({ to: "/auth", replace: true });
             }}
           >
             <LogOut className="size-4" />
@@ -110,6 +126,15 @@ export function AppShell({
       </aside>
 
       <main className="min-w-0 flex-1">
+        {user?.must_change_password && (
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-warn/40 bg-warn/10 px-6 py-2 text-sm md:px-10">
+            <span>{t("pw.initialBanner")}</span>
+            <Button size="sm" variant="outline" onClick={() => setPwOpen(true)}>
+              {t("pw.title")}
+            </Button>
+          </div>
+        )}
+        <ChangePasswordDialog open={pwOpen} onOpenChange={setPwOpen} />
         <header className="border-b border-border/60 px-6 py-8 md:px-10">
           <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl">{title}</h1>
           {subtitle && (

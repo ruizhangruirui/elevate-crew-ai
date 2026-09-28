@@ -13,7 +13,7 @@ import {
   Briefcase,
   UserPlus,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/lib/db-client";
 import { AppShell } from "@/components/AppShell";
 import { RoleDetailSheet } from "@/components/RoleDetailSheet";
 import { StatTile } from "@/components/StatTile";

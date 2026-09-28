@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Archive, RotateCcw } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/lib/db-client";
 import { useI18n } from "@/lib/i18n";
 import { toastError, toastSaved } from "@/lib/ui-feedback";
 import { Button } from "@/components/ui/button";

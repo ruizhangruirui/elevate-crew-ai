@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/lib/db-client";
 import type { Direction, Person, Role } from "./talent";
 import { buildCapabilities } from "./capability";
 
@@ -15,7 +15,7 @@ export type OrgNode = {
 export async function fetchOrgNodes() {
   const { data, error } = await supabase.from("org_nodes").select("*").order("sort_order");
   if (error) throw error;
-  return (data ?? []).filter((n) => !n.archived) as OrgNode[];
+  return (data ?? []).filter((n: any) => !n.archived) as OrgNode[];
 }
 
 export function childrenMap(nodes: OrgNode[]) {

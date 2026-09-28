@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/lib/db-client";
 
 export type ActionSourceKind = "capability" | "vacancy" | "ai" | "data" | "manual";
 export type ActionStatus = "todo" | "doing" | "done" | "cancelled";

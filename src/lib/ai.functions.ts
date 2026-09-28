@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireAppAuth } from "./app-auth-middleware";
 
 export type RoleProfileDraft = {
   domains: string[];
@@ -33,7 +33,7 @@ function langRule(lang: AiLang = "en") {
 }
 
 export const generateRoleProfile = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAppAuth])
   .inputValidator((input: { roleId: string; lang?: AiLang }) => {
     if (!input?.roleId) throw new Error("缺少岗位");
     return input;
@@ -106,7 +106,7 @@ export const generateRoleProfile = createServerFn({ method: "POST" })
   });
 
 export const analyzeRoleFit = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAppAuth])
   .inputValidator((input: { roleId: string; lang?: AiLang }) => {
     if (!input?.roleId) throw new Error("缺少岗位");
     return input;
@@ -208,7 +208,7 @@ export type TeamDiagnosis = {
 };
 
 export const diagnoseTeam = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAppAuth])
   .inputValidator((input: { nodeId: string; lang?: AiLang }) => {
     if (!input?.nodeId) throw new Error("缺少组织节点");
     return input;

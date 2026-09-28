@@ -120,6 +120,80 @@ export type Database = {
           },
         ]
       }
+      app_sessions: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          token_hash: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          token_hash: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          token_hash?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      app_users: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          last_login_at: string | null
+          must_change_password: boolean
+          name: string
+          password_hash: string
+          role: string
+          scope_node_ids: string[]
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          last_login_at?: string | null
+          must_change_password?: boolean
+          name: string
+          password_hash: string
+          role?: string
+          scope_node_ids?: string[]
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          last_login_at?: string | null
+          must_change_password?: boolean
+          name?: string
+          password_hash?: string
+          role?: string
+          scope_node_ids?: string[]
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           action: string

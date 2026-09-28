@@ -3,7 +3,7 @@ import * as XLSX from "xlsx";
 import { toast } from "sonner";
 import { Download, Upload, FileSpreadsheet, AlertTriangle } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/lib/db-client";
 import { useI18n } from "@/lib/i18n";
 import { fetchWorkspace } from "@/lib/talent";
 import { recordJoin } from "@/lib/lifecycle";

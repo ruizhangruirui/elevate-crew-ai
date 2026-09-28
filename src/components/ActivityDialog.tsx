@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/lib/db-client";
 import { activityKinds, type Activity } from "@/lib/org-building";
 import type { Direction, Person } from "@/lib/talent";
 import { Button } from "@/components/ui/button";

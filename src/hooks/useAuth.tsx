@@ -1,22 +1,39 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import type { Session } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { getMe, logout } from "@/lib/auth.functions";
+import { clearToken, getToken } from "@/lib/session-client";
+
+export type CurrentUser = NonNullable<Awaited<ReturnType<typeof getMe>>>;
 
 export function useAuth() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+  const q = useQuery({
+    queryKey: ["auth", "me"],
+    queryFn: async () => (getToken() ? await getMe() : null),
+    enabled: hydrated,
+    staleTime: 60_000,
+  });
+  const user = (q.data ?? null) as CurrentUser | null;
+  return {
+    session: user,
+    user,
+    loading: !hydrated || q.isLoading,
+    isOwner: user?.role === "owner",
+    canManageStructure: user?.role === "owner" || user?.role === "hr",
+  };
+}
 
-  useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
-      setSession(s);
-      setLoading(false);
-    });
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLoading(false);
-    });
-    return () => sub.subscription.unsubscribe();
-  }, []);
-
-  return { session, user: session?.user ?? null, loading };
+export function useSignOut() {
+  const qc = useQueryClient();
+  return async () => {
+    try {
+      await logout();
+    } catch {
+      /* ignore */
+    }
+    clearToken();
+    await qc.cancelQueries();
+    qc.clear();
+  };
 }
