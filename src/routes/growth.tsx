@@ -11,12 +11,9 @@ import { fetchWorkspace, type Person } from "@/lib/talent";
 import {
   fetchGrowthData,
   growthStats,
-  nineBox,
-  PERF_KEYS,
-  READINESS_KEYS,
   latestRating,
 } from "@/lib/growth";
-import { perfLabel, readinessLabel, ratingChipClass } from "@/components/GrowthSummary";
+import { perfLabel, ratingChipClass } from "@/components/GrowthSummary";
 
 export const Route = createFileRoute("/growth")({
   head: () => ({
@@ -24,12 +21,12 @@ export const Route = createFileRoute("/growth")({
       { title: "绩效与成长 · 战略岗位与人才管理系统" },
       {
         name: "description",
-        content: "组织级绩效评估覆盖率、人才九宫格、晋升与奖项成长轨迹。",
+        content: "组织级绩效评估覆盖率、晋升与奖项成长轨迹。",
       },
       { property: "og:title", content: "绩效与成长 · 战略岗位与人才管理系统" },
       {
         property: "og:description",
-        content: "组织级绩效评估覆盖率、人才九宫格、晋升与奖项成长轨迹。",
+        content: "组织级绩效评估覆盖率、晋升与奖项成长轨迹。",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -67,7 +64,6 @@ function GrowthPage() {
     () => growthStats(people, records, milestones),
     [people, records, milestones],
   );
-  const grid = useMemo(() => nineBox(people, records), [people, records]);
   const byId = useMemo(() => new Map(people.map((p) => [p.id, p])), [people]);
 
   const loading = ws.isLoading || growth.isLoading;
@@ -117,74 +113,6 @@ function GrowthPage() {
             <StatTile label={t("growth.stat.readyNow")} value={stats.readyNow} tone="ok" />
           </div>
 
-          {/* 9-box grid */}
-          <section className="rounded-xl border border-border/70 bg-surface-raised/40 p-4 md:p-5">
-            <h2 className="font-display text-lg font-semibold">{t("growth.grid.title")}</h2>
-            <p className="mt-1 text-xs text-muted-foreground">{t("growth.grid.hint")}</p>
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full min-w-[620px] border-separate border-spacing-1">
-                <thead>
-                  <tr>
-                    <th className="w-24 text-left text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                      {t("growth.grid.axisPerf")} \ {t("growth.grid.axisReadiness")}
-                    </th>
-                    {READINESS_KEYS.map((rd) => (
-                      <th
-                        key={rd}
-                        className="text-left text-[10px] uppercase tracking-[0.12em] text-muted-foreground"
-                      >
-                        {readinessLabel(t, rd)}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {PERF_KEYS.map((perf) => (
-                    <tr key={perf}>
-                      <th className="align-top text-left text-xs font-medium text-muted-foreground">
-                        {perfLabel(t, perf)}
-                      </th>
-                      {READINESS_KEYS.map((rd) => {
-                        const cell = grid.get(`${perf}:${rd}`) ?? [];
-                        const highlight =
-                          perf === "exceeds" && rd === "ready"
-                            ? "border-ok/50 bg-ok/5"
-                            : perf === "below" && rd === "ready_2y"
-                              ? "border-danger/40 bg-danger/5"
-                              : "border-border/60";
-                        return (
-                          <td
-                            key={rd}
-                            className={`min-w-[160px] rounded-lg border p-2 align-top ${highlight}`}
-                          >
-                            {cell.length === 0 ? (
-                              <span className="text-xs text-muted-foreground">
-                                {t("growth.grid.empty")}
-                              </span>
-                            ) : (
-                              <div className="flex flex-wrap gap-1">
-                                {cell.slice(0, 8).map((p) => (
-                                  <PersonChip key={p.id} person={p} rating={perf} />
-                                ))}
-                                {cell.length > 8 && (
-                                  <span className="text-[11px] text-muted-foreground">
-                                    {t("growth.grid.more").replace(
-                                      "{n}",
-                                      String(cell.length - 8),
-                                    )}
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
 
           <div className="grid gap-6 lg:grid-cols-2">
             {/* growth timeline */}

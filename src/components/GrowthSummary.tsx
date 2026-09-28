@@ -59,9 +59,6 @@ export function GrowthSummary({ person }: { person: Person }) {
         <span className={`rounded-full border px-2.5 py-1 text-xs ${ratingChipClass(rating)}`}>
           {t("growth.card.latest")}: {perfLabel(t, rating)}
         </span>
-        <span className="rounded-full border border-border/70 px-2.5 py-1 text-xs text-muted-foreground">
-          {t("growth.card.gridPos")}: {perfLabel(t, rating)} · {readinessLabel(t, person.readiness ?? null)}
-        </span>
       </div>
 
       <div className="grid gap-2 sm:grid-cols-3">
