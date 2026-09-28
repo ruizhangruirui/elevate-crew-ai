@@ -49,7 +49,7 @@ const specSchema = z.object({
   single: z.enum(["single", "maybe"]).optional(),
 });
 export type DbSpec = z.infer<typeof specSchema>;
-export type DbResult = { data: any; error: { message: string; code?: string } | null; count: number | null };
+export type DbResult = { data: any; error: { message: string; code?: string | undefined } | null; count: number | null };
 
 function applyFilters(q: any, filters: DbSpec["filters"]) {
   for (const f of filters) q = q[f.m](...f.args);

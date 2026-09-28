@@ -75,7 +75,7 @@ class Query implements PromiseLike<DbResult> {
     onok?: ((v: DbResult) => A | PromiseLike<A>) | null,
     onerr?: ((e: unknown) => B | PromiseLike<B>) | null,
   ): PromiseLike<A | B> {
-    const run = dbQuery({ data: this.spec }).catch(
+    const run = (dbQuery({ data: this.spec }) as Promise<DbResult>).catch(
       (e: unknown): DbResult => ({
         data: null,
         error: { message: e instanceof Error ? e.message : String(e) },

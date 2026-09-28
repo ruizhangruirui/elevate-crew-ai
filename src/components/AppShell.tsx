@@ -1,8 +1,8 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { LayoutGrid, Users, Settings, LogOut, Loader2, KeyRound, Network, FolderTree, ListChecks, TrendingUp } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { db as supabase } from "@/lib/db-client";
+import { useAuth, useSignOut } from "@/hooks/useAuth";
+import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 

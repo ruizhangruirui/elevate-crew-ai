@@ -149,7 +149,7 @@ function UserDialog({
 }: {
   user: U | null;
   nodes: Node[];
-  selfId?: string;
+  selfId?: string | undefined;
   onClose: () => void;
 }) {
   const { t } = useI18n();
