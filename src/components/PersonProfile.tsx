@@ -1022,7 +1022,7 @@ export function PersonProfile({
               <p className="text-sm text-muted-foreground">{t("pp.ms.empty")}</p>
             ) : (
               <ul className="space-y-2">
-                {(milestones.data ?? []).map((m) => (
+                {(milestones.data ?? []).map((m: any) => (
                   <li
                     key={m.id}
                     className="flex items-start gap-3 rounded-lg border border-border/60 bg-surface-raised/40 p-3"
@@ -1099,7 +1099,7 @@ export function PersonProfile({
               <p className="text-sm text-muted-foreground">{t("sheet.person.noHistory")}</p>
             ) : (
               <ul className="space-y-2">
-                {(history.data ?? []).map((h) => (
+                {(history.data ?? []).map((h: any) => (
                   <li
                     key={h.id}
                     className="flex gap-2 rounded-lg border border-border/60 bg-surface-raised/40 px-3 py-2"
@@ -1299,7 +1299,7 @@ export function PersonProfile({
               <p className="text-sm text-muted-foreground">{t("sheet.person.noPerfRecords")}</p>
             ) : (
               <ul className="space-y-2">
-                {(perfRecords.data ?? []).map((r) => (
+                {(perfRecords.data ?? []).map((r: any) => (
                   <li
                     key={r.id}
                     className="rounded-lg border border-border/60 bg-surface-raised/40 p-3"

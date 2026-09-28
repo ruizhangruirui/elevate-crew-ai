@@ -416,7 +416,7 @@ function PeopleOpsSection() {
     const { data: rows } = await supabase.from("people").select("*");
     const csv = [
       "name,level,status,note",
-      ...(rows ?? []).map((r) => `${r.name},${r.level ?? ""},${r.status},${r.note ?? ""}`),
+      ...(rows ?? []).map((r: any) => `${r.name},${r.level ?? ""},${r.status},${r.note ?? ""}`),
     ].join("\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
     const a = document.createElement("a");
