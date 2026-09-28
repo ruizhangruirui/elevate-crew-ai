@@ -11,12 +11,9 @@ import { fetchWorkspace, type Person } from "@/lib/talent";
 import {
   fetchGrowthData,
   growthStats,
-  nineBox,
-  PERF_KEYS,
-  READINESS_KEYS,
   latestRating,
 } from "@/lib/growth";
-import { perfLabel, readinessLabel, ratingChipClass } from "@/components/GrowthSummary";
+import { perfLabel, ratingChipClass } from "@/components/GrowthSummary";
 
 export const Route = createFileRoute("/growth")({
   head: () => ({
@@ -24,12 +21,12 @@ export const Route = createFileRoute("/growth")({
       { title: "绩效与成长 · 战略岗位与人才管理系统" },
       {
         name: "description",
-        content: "组织级绩效评估覆盖率、人才九宫格、晋升与奖项成长轨迹。",
+        content: "组织级绩效评估覆盖率、晋升与奖项成长轨迹。",
       },
       { property: "og:title", content: "绩效与成长 · 战略岗位与人才管理系统" },
       {
         property: "og:description",
-        content: "组织级绩效评估覆盖率、人才九宫格、晋升与奖项成长轨迹。",
+        content: "组织级绩效评估覆盖率、晋升与奖项成长轨迹。",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
