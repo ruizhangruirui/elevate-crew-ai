@@ -4,12 +4,12 @@ export const growthDict: Dict = {
   "nav.growth": { zh: "绩效与成长", en: "Performance & Growth" },
   "growth.title": { zh: "绩效与成长", en: "Performance & Growth" },
   "growth.subtitle": {
-    zh: "全员绩效评估进度、人才九宫格、晋升与奖项成长轨迹，点击任何人可进入个人页面继续维护。",
-    en: "Review progress, the talent grid, and promotion / award growth across the org. Click anyone to open their profile.",
+    zh: "全员绩效评估进度、晋升与奖项成长轨迹，点击任何人可进入个人页面继续维护。",
+    en: "Review progress and promotion / award growth across the org. Click anyone to open their profile.",
   },
   "growth.metaDesc": {
-    zh: "查看组织绩效评估覆盖率、绩效分布、人才九宫格与近 12 个月的晋升奖项记录。",
-    en: "Review coverage, rating distribution, the 9-box talent grid and the last 12 months of promotions and awards.",
+    zh: "查看组织绩效评估覆盖率、绩效分布与近 12 个月的晋升奖项记录。",
+    en: "Review coverage, rating distribution and the last 12 months of promotions and awards.",
   },
 
   "growth.stat.coverage": { zh: "评估覆盖率", en: "Review coverage" },
