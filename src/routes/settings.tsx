@@ -4,6 +4,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Plus, Pencil, Archive, Download } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { UserAccessSection } from "@/components/UserAccessSection";
+import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/lib/i18n";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { db as supabase } from "@/lib/db-client";
@@ -81,13 +83,6 @@ type ConfigItem = {
   active: boolean;
   sort_order: number;
 };
-type AccessUser = {
-  id: string;
-  name: string;
-  role_label: string;
-  scope: string[];
-  status: string;
-};
 type AuditRow = {
   id: string;
   actor: string;
@@ -111,18 +106,16 @@ const CONFIG_GROUPS: [string, string][] = [
 ];
 
 async function fetchSettings() {
-  const [orgNodes, config, users, audit] = await Promise.all([
+  const [orgNodes, config, audit] = await Promise.all([
     supabase.from("org_nodes").select("*").order("sort_order"),
     supabase.from("config_items").select("*").order("sort_order"),
-    supabase.from("access_users").select("*").order("created_at"),
     supabase.from("audit_log").select("*").order("created_at", { ascending: false }).limit(50),
   ]);
-  const err = orgNodes.error || config.error || users.error || audit.error;
+  const err = orgNodes.error || config.error || audit.error;
   if (err) throw err;
   return {
     orgNodes: (orgNodes.data ?? []) as OrgNode[],
     config: (config.data ?? []) as ConfigItem[],
-    users: (users.data ?? []) as AccessUser[],
     audit: (audit.data ?? []) as AuditRow[],
   };
 }
@@ -151,13 +144,22 @@ const SECTION_LABEL_KEYS: Record<Section, string> = {
 
 function SettingsBody() {
   const { t } = useI18n();
-  const [section, setSection] = useState<Section>("组织管理");
+  const { user } = useAuth();
+  const visible = SECTIONS.filter((s) =>
+    user?.role === "owner"
+      ? true
+      : user?.role === "hr"
+        ? s !== "权限管理"
+        : s === "操作记录" || s === "系统设置",
+  );
+  const [picked, setSection] = useState<Section>("组织管理");
+  const section: Section = visible.includes(picked) ? picked : (visible[0] ?? "系统设置");
   const { data } = useQuery({ queryKey: ["settings"], queryFn: fetchSettings });
 
   return (
     <div className="grid gap-6 lg:grid-cols-[200px_minmax(0,1fr)]">
       <nav className="flex flex-wrap gap-1 lg:flex-col">
-        {SECTIONS.map((s) => (
+        {visible.map((s) => (
           <button
             key={s}
             onClick={() => setSection(s)}
@@ -180,7 +182,7 @@ function SettingsBody() {
         ) : section === "人员管理" ? (
           <PeopleOpsSection />
         ) : section === "权限管理" ? (
-          <AccessSection users={data.users} />
+          <UserAccessSection nodes={data.orgNodes} />
         ) : section === "人才配置" ? (
           <ConfigSection items={data.config} />
         ) : section === "操作记录" ? (
@@ -447,105 +449,6 @@ function PeopleOpsSection() {
   );
 }
 
-/* ---------------- 权限管理 ---------------- */
-
-function AccessSection({ users }: { users: AccessUser[] }) {
-  const { t } = useI18n();
-  const ROLE_DEFS: [string, string][] = [
-    ["System Owner", "All Research Center data"],
-    ["Viewer", "All Research Center review access"],
-    ["Lab Manager", t("set.access.roleLabScope")],
-    ["Team Manager", t("set.access.roleTeamScope")],
-    ["HRBP", t("set.access.roleHrbpScope")],
-  ];
-  const qc = useQueryClient();
-  const toggle = useMutation({
-    mutationFn: async (u: AccessUser) => {
-      const status = u.status === "Active" ? "Inactive" : "Active";
-      const { error } = await supabase.from("access_users").update({ status }).eq("id", u.id);
-      if (error) throw error;
-      await logAudit("Permission Change", "权限管理", `${u.name} → ${status}`);
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ refetchType: "all" });
-      toast.success(t("set.access.updated"));
-    },
-  });
-
-  return (
-    <>
-      <SectionHeader title={t("set.access.title")} desc={t("set.access.desc")} />
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>User</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Scope</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {users.map((u) => (
-            <TableRow key={u.id}>
-              <TableCell className="font-medium">{u.name}</TableCell>
-              <TableCell>{u.role_label}</TableCell>
-              <TableCell className="text-muted-foreground">{u.scope.join(", ")}</TableCell>
-              <TableCell>
-                <Badge variant={u.status === "Active" ? "default" : "secondary"}>{u.status}</Badge>
-              </TableCell>
-              <TableCell className="text-right">
-                <ConfirmAction
-                  title={t("set.access.confirmToggleTitle")
-                    .replace(
-                      "{action}",
-                      u.status === "Active" ? t("set.access.actionDisable") : t("set.access.actionEnable"),
-                    )
-                    .replace("{name}", u.name)}
-                  description={
-                    <p>
-                      {u.status === "Active"
-                        ? t("set.access.confirmDisableDesc")
-                        : t("set.access.confirmEnableDesc")}
-                    </p>
-                  }
-                  confirmLabel={t("set.access.confirmChangeLabel")}
-                  onConfirm={() => toggle.mutate(u)}
-                >
-                  <Button size="sm" variant="ghost">
-                    {u.status === "Active" ? t("set.access.actionDisable") : t("set.access.actionEnable")}
-                  </Button>
-                </ConfirmAction>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-
-      <h3 className="mt-8 mb-3 font-display text-base font-semibold">Role definitions</h3>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Role</TableHead>
-            <TableHead>Access scope</TableHead>
-            <TableHead>Assigned people</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {ROLE_DEFS.map(([label, scope]) => (
-            <TableRow key={label}>
-              <TableCell className="font-medium">{label}</TableCell>
-              <TableCell className="text-muted-foreground">{scope}</TableCell>
-              <TableCell className="text-muted-foreground">
-                {users.filter((u) => u.role_label === label).map((u) => u.name).join("、") || "-"}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </>
-  );
-}
 
 /* ---------------- 人才配置 ---------------- */
 
