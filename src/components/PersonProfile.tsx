@@ -26,6 +26,7 @@ import { fetchOrgNodes } from "@/lib/org-tree";
 import { useI18n } from "@/lib/i18n";
 import { fetchLifecycleEvents, recordJoin } from "@/lib/lifecycle";
 import { ArchivePersonDialog } from "@/components/ArchivePersonDialog";
+import { useAuth } from "@/hooks/useAuth";
 import { contractLabel } from "@/lib/contract";
 import { badgeImportance } from "@/lib/importance";
 import { ConfirmAction } from "@/components/ConfirmAction";
@@ -117,9 +118,9 @@ function Fact({
           ? "text-danger"
           : "";
   return (
-    <div className="rounded-lg border border-border/60 bg-surface-raised/50 px-3 py-2">
-      <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
-      <p className={`mt-0.5 font-display text-sm font-semibold ${toneCls}`}>{value}</p>
+    <div className="min-w-0 border-b border-border/50 py-2">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className={`mt-0.5 break-words text-sm font-medium ${toneCls}`}>{value}</p>
     </div>
   );
 }
@@ -142,7 +143,7 @@ function Module({
   const [open, setOpen] = useState(defaultOpen);
   const shown = collapsible ? open : true;
   return (
-    <section className="panel p-5">
+    <section className="border-b border-border/60 py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         {collapsible ? (
           <button
@@ -163,7 +164,7 @@ function Module({
         )}
         {shown && actions}
       </div>
-      {shown && <div className="mt-4">{children}</div>}
+      {shown && <div className="mt-3">{children}</div>}
     </section>
   );
 }
@@ -184,6 +185,7 @@ export function PersonProfile({
   onOpenRole?: (roleId: string) => void;
 }) {
   const { t } = useI18n();
+  const { user } = useAuth();
   const [editingHr, setEditingHr] = useState(false);
   const [editingMgr, setEditingMgr] = useState(false);
   const orgNodes = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
@@ -574,8 +576,8 @@ export function PersonProfile({
   );
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-x-5 sm:grid-cols-3 lg:grid-cols-5">
         <Fact
           label={t("sheet.person.level")}
           value={person.level != null ? `Level ${person.level}` : "—"}
@@ -642,6 +644,7 @@ export function PersonProfile({
         />
       </div>
 
+      <div className="flex flex-wrap items-center justify-between gap-3">
       {(person.tags ?? []).length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {(person.tags ?? []).map((tag) => (
@@ -654,6 +657,14 @@ export function PersonProfile({
           ))}
         </div>
       )}
+      {user?.role !== "manager" && (
+        <ArchivePersonDialog personId={person.id} personName={person.name}>
+          <Button variant="ghost" size="sm" className="ml-auto gap-1.5 text-muted-foreground hover:text-danger">
+            <LogOut className="size-3.5" /> {t("lc.archive.action")}
+          </Button>
+        </ArchivePersonDialog>
+      )}
+      </div>
 
       <Tabs defaultValue="hr">
         <TabsList>
@@ -662,8 +673,7 @@ export function PersonProfile({
         </TabsList>
 
         {/* ---------------- HR ---------------- */}
-        <TabsContent value="hr" className="mt-5 space-y-5">
-          <p className="text-xs text-muted-foreground">{t("pp.hr.hint")}</p>
+        <TabsContent value="hr" className="mt-3 space-y-3">
 
           {!editingHr ? (
             <Button
@@ -795,7 +805,6 @@ export function PersonProfile({
                         <SelectItem value="standard">{t("importance.none")}</SelectItem>
                       </SelectContent>
                     </Select>
-                    <p className="text-[11px] text-muted-foreground">{t("importance.autoHint")}</p>
                   </div>
                   <div className="space-y-2">
                     <Label>{t("importance.isLeader")}</Label>
@@ -1122,8 +1131,7 @@ export function PersonProfile({
         </TabsContent>
 
         {/* ---------------- Manager ---------------- */}
-        <TabsContent value="manager" className="mt-5 space-y-5">
-          <p className="text-xs text-muted-foreground">{t("pp.mgr.hint")}</p>
+        <TabsContent value="manager" className="mt-3 space-y-3">
 
           {!editingMgr ? (
             <Button
@@ -1345,7 +1353,6 @@ export function PersonProfile({
               </Button>
             }
           >
-            <p className="mb-3 text-xs text-muted-foreground">{t("pp.skill.hint")}</p>
             {skillOpen && (
               <div className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-border/60 bg-surface-raised/40 p-3">
                 <div className="min-w-[200px] flex-1 space-y-1.5">
@@ -1488,7 +1495,6 @@ export function PersonProfile({
                   />
                 </>
               )}
-              <p className="mt-3 text-xs text-muted-foreground">{t("sheet.person.riskFootnote")}</p>
             </Module>
           )}
 
@@ -1511,13 +1517,6 @@ function LifecycleModule({ personId, personName }: { personId: string; personNam
       collapsible
       defaultOpen={false}
       badge={String(mine.length)}
-      actions={
-        <ArchivePersonDialog personId={personId} personName={personName}>
-          <Button variant="outline" size="sm" className="gap-1.5 text-danger">
-            <LogOut className="size-3.5" /> {t("lc.archive.action")}
-          </Button>
-        </ArchivePersonDialog>
-      }
     >
       {mine.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("lc.person.empty")}</p>
