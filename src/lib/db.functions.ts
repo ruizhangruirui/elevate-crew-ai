@@ -116,6 +116,8 @@ async function checkManager(
 
   if (spec.table === "people") {
     if (spec.op !== "update") return "Managers cannot add or delete people";
+    if (rows.some((r) => r.archived !== undefined || r.archived_at !== undefined || r.status === "left"))
+      return "Managers cannot archive or restore people";
     if (rows.some((r) => r.org_node_id && !scope.nodeIds.has(r.org_node_id)))
       return "Cannot move a person outside your scope";
   }

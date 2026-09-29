@@ -75,7 +75,7 @@ function GrowthPage() {
   };
 
   return (
-    <AppShell title={t("growth.title")} subtitle={t("growth.subtitle")}>
+    <AppShell title={t("growth.title")}>
       {loading ? (
         <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
       ) : (

@@ -78,10 +78,7 @@ export const Route = createFileRoute("/")({
 function Index() {
   const { t } = useI18n();
   return (
-    <AppShell
-      title={t("nav.index")}
-      subtitle={t("idx.subtitle")}
-    >
+    <AppShell title={t("nav.index")}>
       <StrategyBoard />
     </AppShell>
   );
@@ -197,7 +194,6 @@ function StrategyBoard() {
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="font-display text-xl font-semibold">{t("idx.directionsHeading")}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{t("idx.directionsHint")}</p>
           </div>
           <div className="flex items-center gap-1">
             <ArchivedBinDialog />

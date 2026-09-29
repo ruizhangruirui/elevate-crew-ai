@@ -128,7 +128,7 @@ async function logAudit(action: string, entity: string, detail: string) {
 function SettingsPage() {
   const { t } = useI18n();
   return (
-    <AppShell title={t("set.title")} subtitle={t("set.subtitle")}>
+    <AppShell title={t("set.title")}>
       <SettingsBody />
     </AppShell>
   );

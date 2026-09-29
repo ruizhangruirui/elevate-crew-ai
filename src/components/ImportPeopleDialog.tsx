@@ -288,7 +288,7 @@ export function ImportPeopleDialog({ children }: { children?: React.ReactNode })
             confirmLabel={t("imp.confirm").replace("{n}", String(valid.length))}
             onConfirm={() => importRows.mutate()}
           >
-            <Button disabled={!valid.length || importRows.isPending}>
+            <Button disabled={!valid.length || valid.length > 500 || importRows.isPending}>
               {t("imp.confirm").replace("{n}", String(valid.length))}
             </Button>
           </ConfirmAction>
