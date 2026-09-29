@@ -1,0 +1,4 @@
+- [ ] Remove explanatory copy from everyday people/settings screens and tighten person profile layout.
+- [ ] Move bulk import into Settings → People and enforce Owner-only submission.
+- [ ] Move person archive action from list rows into the person profile.
+- [ ] Verify relevant screens and permission flow.

@@ -6,7 +6,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { db as supabase } from "@/lib/db-client";
 import { useI18n } from "@/lib/i18n";
 import { fetchWorkspace } from "@/lib/talent";
-import { recordJoin } from "@/lib/lifecycle";
 import { importPeople } from "@/lib/import-people.functions";
 import { useAuth } from "@/hooks/useAuth";
 import { ConfirmAction } from "@/components/ConfirmAction";
@@ -57,7 +56,7 @@ export function ImportPeopleDialog({ children }: { children?: React.ReactNode })
   const [fileName, setFileName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { data: ws } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
+  const { data: ws } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace, enabled: isOwner });
   const { data: nodes } = useQuery({
     queryKey: ["org-nodes-import"],
     enabled: isOwner,

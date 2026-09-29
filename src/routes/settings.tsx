@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Plus, Pencil, Archive, Download } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { UserAccessSection } from "@/components/UserAccessSection";
+import { ImportPeopleDialog } from "@/components/ImportPeopleDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/lib/i18n";
 import { ConfirmAction } from "@/components/ConfirmAction";
@@ -180,7 +181,7 @@ function SettingsBody() {
         ) : section === "组织管理" ? (
           <OrgSection nodes={data.orgNodes} />
         ) : section === "人员管理" ? (
-          <PeopleOpsSection />
+          <PeopleOpsSection isOwner={user?.role === "owner"} />
         ) : section === "权限管理" ? (
           <UserAccessSection nodes={data.orgNodes} />
         ) : section === "人才配置" ? (
@@ -208,7 +209,7 @@ function SectionHeader({
     <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
       <div>
         <h2 className="font-display text-xl font-semibold">{title}</h2>
-        <p className="mt-1 text-sm text-muted-foreground">{desc}</p>
+        {desc && <p className="mt-1 text-sm text-muted-foreground">{desc}</p>}
       </div>
       <div className="flex flex-wrap gap-2">{children}</div>
     </div>
@@ -400,7 +401,7 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
 
 /* ---------------- 人员管理 ---------------- */
 
-function PeopleOpsSection() {
+function PeopleOpsSection({ isOwner }: { isOwner: boolean }) {
   const { t } = useI18n();
   const { data } = useQuery({
     queryKey: ["people-count"],
@@ -432,6 +433,7 @@ function PeopleOpsSection() {
     <>
       <SectionHeader title={t("set.people.title")} desc={t("set.people.desc")} />
       <div className="flex flex-wrap gap-2">
+        {isOwner && <ImportPeopleDialog />}
         <Button variant="secondary" size="sm" asChild>
           <a href="/people">{t("set.people.goToPeople")}</a>
         </Button>
