@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -186,6 +187,7 @@ export function PersonProfile({
 }) {
   const { t } = useI18n();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [editingHr, setEditingHr] = useState(false);
   const [editingMgr, setEditingMgr] = useState(false);
   const orgNodes = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
@@ -658,7 +660,7 @@ export function PersonProfile({
           </div>
         )}
         {user?.role !== "manager" && (
-          <ArchivePersonDialog personId={person.id} personName={person.name}>
+          <ArchivePersonDialog personId={person.id} personName={person.name} onDone={() => navigate({ to: "/people" })}>
             <Button variant="ghost" size="sm" className="ml-auto gap-1.5 text-muted-foreground hover:text-danger">
               <LogOut className="size-3.5" /> {t("lc.archive.action")}
             </Button>
