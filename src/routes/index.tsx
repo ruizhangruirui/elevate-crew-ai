@@ -36,6 +36,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -123,13 +124,16 @@ function StrategyBoard() {
   const active = directions.find((d) => d.id === activeId) ?? directions[0] ?? null;
   const activeRoles = active ? roles.filter((r) => r.direction_id === active.id) : [];
 
+
   const dirStats = (dirId: string) => {
     const rs = roles.filter((r) => r.direction_id === dirId);
     const roleIds = new Set(rs.map((role) => role.id));
     const seats = rs.reduce((n, role) => n + role.target_count, 0);
     const filled = people.filter(
       (person) =>
-        person.status === "onboard" && person.role_id !== null && roleIds.has(person.role_id),
+        person.status === "onboard" &&
+        person.role_id !== null &&
+        roleIds.has(person.role_id),
     ).length;
     const gap = Math.max(0, seats - filled);
     return { count: rs.length, gap };
@@ -138,17 +142,21 @@ function StrategyBoard() {
   return (
     <div className="space-y-10">
       {/* Org overview */}
-      <section className="panel relative overflow-hidden p-6 md:p-7">
+      <section className="panel relative overflow-hidden p-8">
+        <div
+          className="pointer-events-none absolute -right-24 -top-24 size-64 rounded-full opacity-25 blur-3xl"
+          style={{ backgroundImage: "var(--gradient-brand)" }}
+        />
         <div className="relative grid gap-8 lg:grid-cols-[1.4fr_1fr]">
           <div>
             <div className="flex items-center gap-2">
-              <p className="text-xs font-medium text-muted-foreground">
+              <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
                 {org?.tagline ?? t("idx.orgTaglineDefault")}
               </p>
               {org && <EditOrgDialog org={org} onDone={invalidate} />}
             </div>
-            <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.02em] text-foreground md:text-4xl">
-              {org?.name}
+            <h2 className="mt-2 font-display text-4xl font-bold">
+              <span className="brand-gradient-text">{org?.name}</span>
             </h2>
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
               {org?.description}
@@ -157,7 +165,7 @@ function StrategyBoard() {
               {org?.tags.map((t) => (
                 <span
                   key={t}
-                  className="rounded-full border border-border bg-background px-3 py-1 text-xs font-medium text-muted-foreground"
+                  className="rounded-full border border-brand/40 bg-brand/10 px-3 py-1 text-xs font-medium text-foreground"
                 >
                   {t}
                 </span>
@@ -166,17 +174,14 @@ function StrategyBoard() {
           </div>
           <div className="self-start">
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-              <Link to="/org" className="text-brand underline-offset-4 hover:underline">
+
+              <Link to="/org" className="text-brand hover:underline">
                 {t("idx.linkOrg")}
               </Link>
-              <Link
-                to="/capability"
-                search={{ scope: undefined }}
-                className="text-brand underline-offset-4 hover:underline"
-              >
+              <Link to="/capability" search={{ scope: undefined }} className="text-brand hover:underline">
                 {t("idx.linkCapability")}
               </Link>
-              <Link to="/people" className="text-brand underline-offset-4 hover:underline">
+              <Link to="/people" className="text-brand hover:underline">
                 {t("idx.linkPeople")}
               </Link>
             </div>
@@ -203,8 +208,8 @@ function StrategyBoard() {
             return (
               <div
                 key={d.id}
-                className={`panel group relative h-full transition-colors duration-200 ${
-                  selected ? "border-brand/70 bg-brand/5" : "hover:border-brand/40"
+                className={`panel group relative h-full transition-all duration-200 hover:-translate-y-0.5 ${
+                  selected ? "border-brand/70 shadow-[var(--glow-brand)]" : "hover:border-brand/40"
                 }`}
               >
                 <button
@@ -212,24 +217,18 @@ function StrategyBoard() {
                   className="block h-full w-full p-5 text-left"
                 >
                   <div className="flex items-center gap-2 text-[11px]">
-                    <span className="rounded-full border border-border bg-background px-2.5 py-1 font-medium text-muted-foreground">
+                    <span className="rounded-md bg-surface-raised px-2 py-1 text-muted-foreground">
                       {t("idx.roleTypesCount").replace("{count}", String(s.count))}
                     </span>
                     <span
-                      className={`rounded-full border px-2.5 py-1 font-medium ${
-                        s.gap
-                          ? "border-danger/20 bg-danger/10 text-danger"
-                          : "border-ok/20 bg-ok/10 text-ok"
+                      className={`rounded-md px-2 py-1 font-medium ${
+                        s.gap ? "bg-danger/12 text-danger" : "bg-ok/12 text-ok"
                       }`}
                     >
-                      {s.gap
-                        ? t("idx.criticalGapCount").replace("{count}", String(s.gap))
-                        : t("idx.fullCoverage")}
+                      {s.gap ? t("idx.criticalGapCount").replace("{count}", String(s.gap)) : t("idx.fullCoverage")}
                     </span>
                   </div>
-                  <h3 className="mt-3 pr-7 font-display text-base font-semibold leading-snug">
-                    {d.title}
-                  </h3>
+                  <h3 className="mt-3 pr-7 font-display text-base font-semibold">{d.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                     {d.description}
                   </p>
@@ -293,8 +292,7 @@ function StrategyBoard() {
         role={roles.find((r) => r.id === openRoleId) ?? null}
         people={people}
         directionTitle={
-          directions.find((d) => d.id === roles.find((r) => r.id === openRoleId)?.direction_id)
-            ?.title ?? ""
+          directions.find((d) => d.id === roles.find((r) => r.id === openRoleId)?.direction_id)?.title ?? ""
         }
         open={!!openRoleId}
         onOpenChange={(v) => !v && setOpenRoleId(null)}
@@ -425,46 +423,37 @@ function RoleCard({
   const state = gap === 0 ? "full" : filled === 0 ? "empty" : "partial";
   const stateStyle =
     state === "full"
-      ? "border-ok/20 bg-ok/10 text-ok"
+      ? "bg-ok/12 text-ok"
       : state === "partial"
-        ? "border-warn/20 bg-warn/10 text-warn"
-        : "border-danger/20 bg-danger/10 text-danger";
-  const stateLabel =
-    state === "full" ? "Fully Covered" : state === "partial" ? "Partially Covered" : "Not Covered";
+        ? "bg-warn/12 text-warn"
+        : "bg-danger/12 text-danger";
+  const stateLabel = state === "full" ? "Fully Covered" : state === "partial" ? "Partially Covered" : "Not Covered";
 
   return (
-    <article className="panel group relative flex h-full flex-col p-4 transition-colors hover:border-brand/35">
+    <article className="panel group relative flex h-full flex-col p-3.5">
       <RoleMenu role={role} orgNodes={orgNodes} onArchive={onArchive} onSaved={onSaved} />
       <div className="flex items-start justify-between gap-2">
-        <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${stateStyle}`}>
+        <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${stateStyle}`}>
           {stateLabel}
         </span>
-        <span className="rounded-full border border-border bg-background px-2 py-0.5 pr-7 text-[10px] font-medium text-muted-foreground">
+        <span className="pr-6 text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
           {criticalityLabel[role.criticality] ?? role.criticality}
         </span>
       </div>
 
-      <h3 className="mt-3 pr-2 font-display text-[15px] font-semibold leading-snug">
-        {role.title}
-      </h3>
+      <h3 className="mt-2.5 font-display text-sm font-semibold leading-snug">{role.title}</h3>
       <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
         {role.description}
       </p>
 
-      <div className="mt-4 grid grid-cols-3 gap-2 text-[11px] tabular-nums">
-        <span className="rounded-md border border-border/70 bg-background px-2 py-1.5 text-muted-foreground">
+      <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground tabular-nums">
+        <span>
           {t("idx.targetLevel")} L{role.level_min}–{role.level_max}
         </span>
-        <span className="rounded-md border border-border/70 bg-background px-2 py-1.5 text-muted-foreground">
+        <span>
           {t("idx.currentCoverage")} {filled}/{role.target_count}
         </span>
-        <span
-          className={`rounded-md border px-2 py-1.5 font-semibold ${
-            gap > 0 ? "border-danger/20 bg-danger/10 text-danger" : "border-ok/20 bg-ok/10 text-ok"
-          }`}
-        >
-          Gap {gap}
-        </span>
+        <span className={gap > 0 ? "text-danger" : "text-ok"}>Gap {gap}</span>
       </div>
 
       <div className="mt-2">
@@ -472,7 +461,7 @@ function RoleCard({
       </div>
 
       {teams.length > 0 && (
-        <p className="mt-3 flex items-center gap-1.5 truncate text-[11px] text-muted-foreground">
+        <p className="mt-2 flex items-center gap-1 truncate text-[11px] text-muted-foreground">
           <Building2 className="size-3 shrink-0" />
           <span className="truncate">
             {t("idx.teamsLabel")}
@@ -482,25 +471,21 @@ function RoleCard({
       )}
 
       {members.length > 0 && (
-        <p className="mt-1.5 flex items-center gap-1.5 truncate text-[11px] text-muted-foreground">
+        <p className="mt-1 flex items-center gap-1 truncate text-[11px] text-muted-foreground">
           <Users className="size-3 shrink-0" />
           <span className="truncate">{members.join("、")}</span>
         </p>
       )}
 
       <div className="mt-auto pt-3">
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-8 w-full justify-between gap-1 px-2.5 text-xs"
-          onClick={onOpen}
-        >
+        <Button size="sm" variant="outline" className="h-7 gap-1 px-2 text-xs" onClick={onOpen}>
           {t("idx.viewRoleProfile")} <ArrowUpRight className="size-3" />
         </Button>
       </div>
     </article>
   );
 }
+
 
 function RoleMenu({
   role,
@@ -676,7 +661,9 @@ function RoleMenu({
               </Select>
             </div>
 
-            <p className="text-xs text-muted-foreground">{t("idx.roleProfileHint")}</p>
+            <p className="text-xs text-muted-foreground">
+              {t("idx.roleProfileHint")}
+            </p>
           </div>
           <FormActions
             onCancel={() => setEditing(false)}
@@ -826,9 +813,7 @@ function DirectionMenu({
       <Dialog open={confirming} onOpenChange={setConfirming}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {t("idx.archiveDirectionConfirmTitle").replace("{title}", direction.title)}
-            </DialogTitle>
+            <DialogTitle>{t("idx.archiveDirectionConfirmTitle").replace("{title}", direction.title)}</DialogTitle>
           </DialogHeader>
           <div className="space-y-2 text-sm text-muted-foreground">
             <p>{t("idx.archiveDirectionDesc1")}</p>
@@ -1032,6 +1017,7 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
           pending={create.isPending}
           disabled={!form.title.trim()}
         />
+
       </DialogContent>
     </Dialog>
   );
