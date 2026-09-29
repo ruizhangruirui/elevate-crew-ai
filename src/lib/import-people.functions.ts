@@ -33,8 +33,8 @@ export const importPeople = createServerFn({ method: "POST" })
       if (row.role && !roleMap.has(row.role)) throw new Error(`Unknown role: ${row.role}`);
       return {
         org_id: orgId, name: row.name, level: row.level, status: row.status,
-        contract_type: row.contract_type, org_node_id: row.team ? teamMap.get(row.team) : null,
-        role_id: row.role ? roleMap.get(row.role) : null, tags: row.tags, note: row.note,
+        contract_type: row.contract_type, org_node_id: row.team ? (teamMap.get(row.team) ?? null) : null,
+        role_id: row.role ? (roleMap.get(row.role) ?? null) : null, tags: row.tags, note: row.note,
       };
     });
     const { data: inserted, error } = await db.from("people").insert(payload).select("id,status");

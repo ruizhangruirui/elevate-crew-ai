@@ -72,6 +72,8 @@ export const dbQuery = createServerFn({ method: "POST" })
     if (payload !== undefined) payload = Array.isArray(payload) ? payload.map(stamp) : stamp(payload);
 
     if (spec.table === "access_users" && spec.op !== "select") return fail("access_users is deprecated", "403");
+    if (spec.table === "people" && spec.op === "insert" && Array.isArray(payload) && user.role !== "owner")
+      return fail("Only the Owner can bulk import people", "403");
 
     const scope = user.role === "manager" ? await managerScope(user) : null;
     if (scope) {

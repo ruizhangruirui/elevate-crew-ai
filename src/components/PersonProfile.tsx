@@ -645,25 +645,25 @@ export function PersonProfile({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-      {(person.tags ?? []).length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {(person.tags ?? []).map((tag) => (
-            <span
-              key={tag}
-              className="rounded-md border border-brand/40 bg-brand/10 px-2 py-0.5 text-xs text-brand"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
-      {user?.role !== "manager" && (
-        <ArchivePersonDialog personId={person.id} personName={person.name}>
-          <Button variant="ghost" size="sm" className="ml-auto gap-1.5 text-muted-foreground hover:text-danger">
-            <LogOut className="size-3.5" /> {t("lc.archive.action")}
-          </Button>
-        </ArchivePersonDialog>
-      )}
+        {(person.tags ?? []).length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {(person.tags ?? []).map((tag) => (
+              <span
+                key={tag}
+                className="rounded-md border border-brand/40 bg-brand/10 px-2 py-0.5 text-xs text-brand"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+        {user?.role !== "manager" && (
+          <ArchivePersonDialog personId={person.id} personName={person.name}>
+            <Button variant="ghost" size="sm" className="ml-auto gap-1.5 text-muted-foreground hover:text-danger">
+              <LogOut className="size-3.5" /> {t("lc.archive.action")}
+            </Button>
+          </ArchivePersonDialog>
+        )}
       </div>
 
       <Tabs defaultValue="hr">
@@ -1127,7 +1127,7 @@ export function PersonProfile({
             )}
           </Module>
 
-          <LifecycleModule personId={person.id} personName={person.name} />
+          <LifecycleModule personId={person.id} />
         </TabsContent>
 
         {/* ---------------- Manager ---------------- */}
@@ -1506,7 +1506,7 @@ export function PersonProfile({
   );
 }
 
-function LifecycleModule({ personId, personName }: { personId: string; personName: string }) {
+function LifecycleModule({ personId }: { personId: string }) {
   const { t } = useI18n();
   const { data: events } = useQuery({ queryKey: ["lifecycle"], queryFn: fetchLifecycleEvents });
   const mine = (events ?? []).filter((e) => e.person_id === personId);
