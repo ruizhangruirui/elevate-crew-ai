@@ -70,4 +70,7 @@ export const peopleDict: Dict = {
   "imp.err.empty": { zh: "表格中没有数据", en: "No rows found in the sheet" },
   "imp.err.parse": { zh: "无法解析该文件", en: "Could not parse this file" },
   "imp.toast.done": { zh: "已导入 {n} 人", en: "Imported {n} people" },
+  "imp.ownerOnly": { zh: "仅 Owner 可批量导入", en: "Only the Owner can bulk import" },
+  "imp.confirmTitle": { zh: "确认批量导入人员？", en: "Confirm bulk import?" },
+  "imp.confirmDesc": { zh: "即将新增 {n} 人，并写入入职记录。请确认预览结果无误；提交后无法批量撤销。", en: "This will add {n} people and record their arrivals. Check the preview carefully; the import cannot be undone in bulk." },
 };

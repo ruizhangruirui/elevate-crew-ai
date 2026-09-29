@@ -64,7 +64,7 @@ export const Route = createFileRoute("/actions")({
 function ActionsPage() {
   const { t } = useI18n();
   return (
-    <AppShell title={t("act.title")} subtitle={t("act.subtitle")}>
+    <AppShell title={t("act.title")}>
       <ActionsBoard />
     </AppShell>
   );

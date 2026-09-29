@@ -2,18 +2,14 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { LogOut, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Plus, RotateCcw, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/lib/i18n";
 import { contractLabel } from "@/lib/contract";
 import { badgeImportance, IMPORTANCE_TONE } from "@/lib/importance";
 import { ConfirmAction } from "@/components/ConfirmAction";
-import { ImportPeopleDialog } from "@/components/ImportPeopleDialog";
-
-import { ArchivePersonDialog } from "@/components/ArchivePersonDialog";
 import { fetchArchivedPeople, fetchLifecycleEvents, recordJoin, restorePerson } from "@/lib/lifecycle";
 import { completeness } from "@/lib/org-tree";
-import { Link } from "@tanstack/react-router";
 import { StatTile } from "@/components/StatTile";
 import { fetchWorkspace, type Person } from "@/lib/talent";
 import { db as supabase } from "@/lib/db-client";
@@ -56,7 +52,7 @@ export const Route = createFileRoute("/people/")({
 function PeoplePage() {
   const { t } = useI18n();
   return (
-    <AppShell title={t("ppl.title")} subtitle={t("ppl.subtitle")}>
+    <AppShell title={t("ppl.title")}>
       <PeopleBody />
     </AppShell>
   );
@@ -146,17 +142,8 @@ function PeopleBody() {
 
       <div className="panel overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-6 py-4">
-          <div>
-            <h2 className="font-display text-lg font-semibold">{t("ppl.list.title")}</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              {t("ppl.list.desc.pre")}
-              <Link to="/org" className="ml-1 text-brand hover:underline">
-                {t("ppl.list.desc.link")}
-              </Link>
-            </p>
-          </div>
+          <h2 className="font-display text-lg font-semibold">{t("ppl.list.title")}</h2>
           <div className="flex items-center gap-2">
-          <ImportPeopleDialog />
           <Dialog open={open} onOpenChange={setOpen}>
 
             <DialogTrigger asChild>
@@ -309,19 +296,6 @@ function PeopleBody() {
                   {t("ppl.incomplete")} {incomplete.get(p.id)} {t("ppl.incomplete.items")}
                 </span>
               )}
-              <div onClick={(e) => e.stopPropagation()}>
-                <ArchivePersonDialog personId={p.id} personName={p.name}>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-muted-foreground hover:text-danger"
-                    aria-label={`${t("lc.archive.action")} ${p.name}`}
-                    title={t("lc.archive.action")}
-                  >
-                    <LogOut className="size-4" />
-                  </Button>
-                </ArchivePersonDialog>
-              </div>
             </div>
           ))}
           {data.people.length === 0 && (

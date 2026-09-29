@@ -54,7 +54,7 @@ export const Route = createFileRoute("/capability")({
 function CapabilityPage() {
   const { t } = useI18n();
   return (
-    <AppShell title={t("cap.title")} subtitle={t("cap.subtitle")}>
+    <AppShell title={t("cap.title")}>
       <CapabilityBody />
     </AppShell>
   );

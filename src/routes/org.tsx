@@ -62,7 +62,7 @@ export const Route = createFileRoute("/org")({
 function OrgPage() {
   const { t } = useI18n();
   return (
-    <AppShell title={t("org.title")} subtitle={t("org.subtitle")}>
+    <AppShell title={t("org.title")}>
       <OrgTreeBody />
     </AppShell>
   );

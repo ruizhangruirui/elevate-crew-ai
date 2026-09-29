@@ -72,6 +72,8 @@ export const dbQuery = createServerFn({ method: "POST" })
     if (payload !== undefined) payload = Array.isArray(payload) ? payload.map(stamp) : stamp(payload);
 
     if (spec.table === "access_users" && spec.op !== "select") return fail("access_users is deprecated", "403");
+    if (spec.table === "people" && spec.op === "insert" && Array.isArray(payload) && user.role !== "owner")
+      return fail("Only the Owner can bulk import people", "403");
 
     const scope = user.role === "manager" ? await managerScope(user) : null;
     if (scope) {
@@ -114,6 +116,8 @@ async function checkManager(
 
   if (spec.table === "people") {
     if (spec.op !== "update") return "Managers cannot add or delete people";
+    if (rows.some((r) => r.archived !== undefined || r.archived_at !== undefined || r.status === "left"))
+      return "Managers cannot archive or restore people";
     if (rows.some((r) => r.org_node_id && !scope.nodeIds.has(r.org_node_id)))
       return "Cannot move a person outside your scope";
   }

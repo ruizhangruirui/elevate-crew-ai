@@ -49,7 +49,7 @@ function PersonPage() {
         role ? `${direction?.title ?? ""} · ${role.title}` : t("sheet.person.unassignedRole")
       }
     >
-      <div className="space-y-6">
+      <div className="space-y-4">
         <Button asChild variant="ghost" size="sm" className="gap-1.5 -ml-2">
           <Link to="/people">
             <ArrowLeft className="size-4" /> {t("pp.back")}

@@ -3,8 +3,8 @@ import type { Dict } from "../i18n-types";
 export const settingsDict: Dict = {
   "set.title": { zh: "系统设置", en: "System Settings" },
   "set.subtitle": {
-    zh: "集中管理组织、人员、权限、配置、确认变更与审计记录。",
-    en: "Manage organization, people, permissions, configuration, and audit records in one place.",
+    zh: "",
+    en: "",
   },
   "set.nav.org": { zh: "组织管理", en: "Organization" },
   "set.nav.people": { zh: "人员管理", en: "People" },
@@ -16,8 +16,8 @@ export const settingsDict: Dict = {
 
   "set.org.title": { zh: "组织管理", en: "Organization" },
   "set.org.desc": {
-    zh: "维护 VNRC / Lab / Team 结构，组织变更会写入操作记录。",
-    en: "Maintain the VNRC / Lab / Team structure; changes are recorded in the audit log.",
+    zh: "",
+    en: "",
   },
   "set.org.addLab": { zh: "新增 Lab", en: "Add Lab" },
   "set.org.addTeam": { zh: "新增 Team", en: "Add Team" },
@@ -40,8 +40,8 @@ export const settingsDict: Dict = {
 
   "set.people.title": { zh: "人员管理", en: "People" },
   "set.people.desc": {
-    zh: "新增、导出与归档员工数据，明细操作在人员视图中完成。",
-    en: "Add, export, and archive employee data; detailed operations are done in the People view.",
+    zh: "",
+    en: "",
   },
   "set.people.goToPeople": { zh: "前往人员视图新增 / 编辑", en: "Go to People view to add / edit" },
   "set.people.exported": { zh: "已导出员工数据", en: "Employee data exported" },
@@ -75,8 +75,8 @@ export const settingsDict: Dict = {
 
   "set.config.title": { zh: "人才配置", en: "Talent Configuration" },
   "set.config.desc": {
-    zh: "维护标签、奖项、岗位关键性、覆盖状态、Readiness、Future Role 关系与记录类型。",
-    en: "Maintain tags, awards, role criticality, coverage status, readiness, future role relationships, and record types.",
+    zh: "",
+    en: "",
   },
   "set.config.empty": { zh: "暂无配置项", en: "No configuration items" },
   "set.config.confirmDeactivateTitle": { zh: "确认停用配置项「{name}」？", en: 'Deactivate configuration item "{name}"?' },
@@ -96,8 +96,8 @@ export const settingsDict: Dict = {
 
   "set.audit.title": { zh: "操作记录", en: "Audit Log" },
   "set.audit.desc": {
-    zh: "Create / Edit / Delete / Archive / Transfer / Permission Change 自动记录。",
-    en: "Create / Edit / Delete / Archive / Transfer / Permission Change are recorded automatically.",
+    zh: "",
+    en: "",
   },
   "set.audit.time": { zh: "时间", en: "Time" },
   "set.audit.actor": { zh: "操作人", en: "Actor" },
@@ -108,8 +108,8 @@ export const settingsDict: Dict = {
 
   "set.system.title": { zh: "系统设置", en: "System" },
   "set.system.desc": {
-    zh: "语言、外观与数据导出等系统级配置。",
-    en: "System-level settings such as language, appearance, and data export.",
+    zh: "",
+    en: "",
   },
   "set.system.appearanceValue": { zh: "Midnight Indigo（深色主题）", en: "Midnight Indigo (dark theme)" },
   "set.system.data": { zh: "数据", en: "Data" },
