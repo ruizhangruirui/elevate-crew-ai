@@ -1,4 +1,4 @@
-- [ ] Remove explanatory copy from everyday people/settings screens and tighten person profile layout.
-- [ ] Move bulk import into Settings → People and enforce Owner-only submission.
-- [ ] Move person archive action from list rows into the person profile.
-- [ ] Verify relevant screens and permission flow.
+- [x] Remove explanatory copy from everyday people/settings screens and tighten person profile layout.
+- [x] Move bulk import into Settings → People and enforce Owner-only submission.
+- [x] Move person archive action from list rows into the person profile.
+- [ ] Verify the signed-in import and archive flows (blocked: no app-owned test account is available in this preview).
