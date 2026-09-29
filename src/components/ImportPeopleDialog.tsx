@@ -7,6 +7,9 @@ import { db as supabase } from "@/lib/db-client";
 import { useI18n } from "@/lib/i18n";
 import { fetchWorkspace } from "@/lib/talent";
 import { recordJoin } from "@/lib/lifecycle";
+import { importPeople } from "@/lib/import-people.functions";
+import { useAuth } from "@/hooks/useAuth";
+import { ConfirmAction } from "@/components/ConfirmAction";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -47,6 +50,7 @@ type OrgNode = { id: string; name: string };
 
 export function ImportPeopleDialog({ children }: { children?: React.ReactNode }) {
   const { t } = useI18n();
+  const { isOwner } = useAuth();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -56,6 +60,7 @@ export function ImportPeopleDialog({ children }: { children?: React.ReactNode })
   const { data: ws } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
   const { data: nodes } = useQuery({
     queryKey: ["org-nodes-import"],
+    enabled: isOwner,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("org_nodes")
@@ -159,29 +164,8 @@ export function ImportPeopleDialog({ children }: { children?: React.ReactNode })
 
   const importRows = useMutation({
     mutationFn: async () => {
-      if (!ws?.org) throw new Error(t("ppl.error.orgNotInit"));
-      const payload = valid.map((r) => ({
-        org_id: ws.org!.id,
-        name: r.name,
-        level: r.level,
-        status: r.status,
-        contract_type: r.contract_type,
-        org_node_id: r.team ? ((nodes ?? []).find((n) => n.name === r.team)?.id ?? null) : null,
-        role_id: r.role ? ((ws.roles ?? []).find((x) => x.title === r.role)?.id ?? null) : null,
-        tags: r.tags,
-        note: r.note,
-      }));
-      const { data: inserted, error } = await supabase.from("people").insert(payload).select("id,status");
-      if (error) throw error;
-      for (const p of inserted ?? []) {
-        if (p.status === "onboard") await recordJoin(p.id, { reason: "new_hire" });
-      }
-      await supabase.from("audit_log").insert({
-        action: "import_people",
-        entity: "people",
-        detail: `${payload.length} rows imported from ${fileName}`,
-      });
-      return payload.length;
+      if (!isOwner) throw new Error(t("imp.ownerOnly"));
+      return importPeople({ data: { rows: valid.map(({ error: _error, ...row }) => row), fileName } });
     },
     onSuccess: (n) => {
       toast.success(t("imp.toast.done").replace("{n}", String(n)));
@@ -192,6 +176,8 @@ export function ImportPeopleDialog({ children }: { children?: React.ReactNode })
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  if (!isOwner) return null;
 
   return (
     <Dialog
@@ -297,12 +283,16 @@ export function ImportPeopleDialog({ children }: { children?: React.ReactNode })
         </div>
 
         <DialogFooter>
-          <Button
-            onClick={() => importRows.mutate()}
-            disabled={!valid.length || importRows.isPending}
+          <ConfirmAction
+            title={t("imp.confirmTitle")}
+            description={<p>{t("imp.confirmDesc").replace("{n}", String(valid.length))}</p>}
+            confirmLabel={t("imp.confirm").replace("{n}", String(valid.length))}
+            onConfirm={() => importRows.mutate()}
           >
-            {t("imp.confirm").replace("{n}", String(valid.length))}
-          </Button>
+            <Button disabled={!valid.length || importRows.isPending}>
+              {t("imp.confirm").replace("{n}", String(valid.length))}
+            </Button>
+          </ConfirmAction>
         </DialogFooter>
       </DialogContent>
     </Dialog>
