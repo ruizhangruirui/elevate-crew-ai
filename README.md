@@ -72,13 +72,21 @@ Security rules in the current codebase:
 
 Create a local `.env` or deployment secret set with the variables below. Do not commit real secrets.
 
+Two database modes are supported:
+
+- **Direct PostgreSQL (recommended for on-prem).** Set only `DATABASE_URL`. The server talks straight to your local PostgreSQL through the built-in adapter (`src/lib/pg.server.ts`) — no Supabase runtime, no Supabase keys.
+- **Managed cloud database (Lovable preview).** Without `DATABASE_URL`, the app falls back to the cloud database client and needs the Supabase values below.
+
 ```bash
-# Public/browser-safe Supabase values
+# Direct PostgreSQL mode — the only variable the on-prem data layer needs
+DATABASE_URL=postgres://app_user:CHANGE_ME@localhost:5432/talent_app
+
+# Public/browser-safe Supabase values (cloud mode only)
 VITE_SUPABASE_URL=
 VITE_SUPABASE_PUBLISHABLE_KEY=
 VITE_SUPABASE_PROJECT_ID=
 
-# Server-side Supabase values
+# Server-side Supabase values (cloud mode only)
 SUPABASE_URL=
 SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_PROJECT_ID=
@@ -90,9 +98,9 @@ LOVABLE_API_KEY=
 
 Variable guidance:
 
-- `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` are available to browser code.
-- `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` are used by server-side integrations and middleware.
-- `SUPABASE_SERVICE_ROLE_KEY` is required for privileged server-side database access.
+- `DATABASE_URL` selects direct-PostgreSQL mode. Add `?sslmode=require` (or higher) only when the connection leaves the machine; plain local connections work without it.
+- `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` are available to browser code (cloud mode).
+- `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are used by server-side integrations in cloud mode only.
 - `LOVABLE_API_KEY` is required for AI features that call the Lovable AI Gateway.
 - If migrating away from Lovable credits or Lovable AI Gateway, replace `src/lib/ai-gateway.server.ts` with an internal AI gateway or direct OpenAI-compatible provider before production cutover.
 
