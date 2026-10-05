@@ -331,23 +331,25 @@ class Builder implements PromiseLike<PgResult> {
     return data;
   }
 
-  private serializeParam(col: string, v: unknown): string {
+  private serializeInto(params: unknown[], col: string, v: unknown): string {
     if (v === null || v === undefined) return "NULL";
     const s = serialize(this.table, col, v);
-    this.mParams!.push(s.text === "$" ? s.value : JSON.stringify(v));
-    return `$${this.mParams!.length}${s.text.slice(1)}`;
+    params.push(s.text === "$" ? s.value : JSON.stringify(v));
+    return `$${params.length}${s.text.slice(1)}`;
   }
 
-  private mParams: unknown[] | null = null;
-
-  private ndfWhere(row: Record<string, unknown>, cols: string[]): string {
+  private ndfWhere(params: unknown[], row: Record<string, unknown>, cols: string[]): string {
     return cols
       .map((c) => {
         ident(c, "column");
         const v = row[c];
-        return v === null || v === undefined ? `${c} IS NULL` : `${c} IS NOT DISTINCT FROM ${this.serializeParam(c, v)}`;
+        return v === null || v === undefined ? `${c} IS NULL` : `${c} IS NOT DISTINCT FROM ${this.serializeInto(params, c, v)}`;
       })
       .join(" AND ");
+  }
+
+  private returningSql(): string {
+    return ` RETURNING ${this.columns === "*" ? "*" : selectList(this.columns)}`;
   }
 
   /** Fallback upsert: NULL-safe match via IS NOT DISTINCT FROM, then UPDATE or INSERT. */
@@ -356,37 +358,31 @@ class Builder implements PromiseLike<PgResult> {
     const t = ident(this.table, "table");
     const data: any[] = [];
     for (const row of rows) {
-      this.mParams = [];
-      const ndf = this.ndfWhere(row, conflictCols);
-      const params = this.mParams;
-      const ex = await db.query(`SELECT EXISTS(SELECT 1 FROM ${t} WHERE ${ndf}) AS found`, params);
+      const findP: unknown[] = [];
+      const ndf = this.ndfWhere(findP, row, conflictCols);
+      const ex = await db.query(`SELECT EXISTS(SELECT 1 FROM ${t} WHERE ${ndf}) AS found`, findP);
       if (ex.rows[0]?.found) {
         if (this.upsertOpts?.ignoreDuplicates) continue;
         const updCols = Object.keys(row).filter((k) => row[k] !== undefined && !conflictCols.includes(k));
         if (!updCols.length) continue;
-        this.mParams = [];
-        const ndf2 = this.ndfWhere(row, conflictCols);
-        const sets = updCols.map((k) => `${ident(k, "column")} = ${this.serializeParam(k, row[k])}`).join(", ");
-        const res = await db.query(`UPDATE ${t} SET ${sets} WHERE ${ndf2}${returningOf(this)}`, params!);
+        const updP: unknown[] = [];
+        const ndf2 = this.ndfWhere(updP, row, conflictCols);
+        const sets = updCols.map((k) => `${ident(k, "column")} = ${this.serializeInto(updP, k, row[k])}`).join(", ");
+        const res = await db.query(`UPDATE ${t} SET ${sets} WHERE ${ndf2}${this.returningSql()}`, updP);
         data.push(...res.rows);
       } else {
-        this.mParams = [];
+        const insP: unknown[] = [];
         const keys = Object.keys(row).filter((k) => row[k] !== undefined);
         const values = keys.map((k) => {
           ident(k, "column");
-          return this.serializeParam(k, row[k]);
+          return this.serializeInto(insP, k, row[k]);
         });
-        const res = await db.query(`INSERT INTO ${t} (${keys.join(", ")}) VALUES (${values.join(", ")})${returningOf(this)}`, this.mParams);
+        const res = await db.query(`INSERT INTO ${t} (${keys.join(", ")}) VALUES (${values.join(", ")})${this.returningSql()}`, insP);
         data.push(...res.rows);
       }
     }
     return { data: this.applySingle(data), error: null, count: null };
   }
-}
-
-function returningOf(b: Builder): string {
-  const cols = (b as unknown as { columns: string }).columns;
-  return ` RETURNING ${cols === "*" ? "*" : selectList(cols)}`;
 }
 
 /** Query-builder client with the same call surface the app's server code already uses. */
