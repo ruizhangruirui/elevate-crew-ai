@@ -39,15 +39,14 @@ export const importPeople = createServerFn({ method: "POST" })
     const payload = data.rows.map((row) => {
       if (taken.has(row.staff_id) || seen.has(row.staff_id)) throw new Error(`Duplicate Staff ID: ${row.staff_id}`);
       seen.add(row.staff_id);
+      // No hard validation against existing org structure or roles:
+      // assign when a match is found, otherwise leave unassigned.
       const lab = labs.find((l) => l.name === row.lab);
-      if (!lab) throw new Error(`Unknown lab: ${row.lab}`);
-      let nodeId = lab.id;
-      if (row.team) {
+      let nodeId: string | null = lab?.id ?? null;
+      if (lab && row.team) {
         const team = teams.find((tm) => tm.name === row.team && tm.parent_id === lab.id);
-        if (!team) throw new Error(`Team "${row.team}" is not under ${row.lab}`);
-        nodeId = team.id;
+        nodeId = team?.id ?? lab.id;
       }
-      if (row.role && !roleMap.has(row.role)) throw new Error(`Unknown role: ${row.role}`);
       return {
         org_id: orgId,
         staff_id: row.staff_id,
