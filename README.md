@@ -198,11 +198,9 @@ The current `vite.config.ts` uses `@lovable.dev/vite-tanstack-config`, whose inc
 
 1. Freeze Lovable as an editor during the migration window, or clearly decide whether GitHub or Lovable is the source of truth.
 2. Pull the latest GitHub `main` branch onto the deployment/build machine.
-3. Choose the database path:
-   - Short term: hosted Supabase.
-   - Longer term/on-prem: self-hosted Supabase.
-4. Apply `supabase/migrations/` to the selected database.
-5. Configure server secrets: Supabase URL, publishable key, service role key, and AI gateway key.
+3. Install PostgreSQL on the VM (or point at an internal database VM) and create an app user/database, e.g. `talent_app`.
+4. Apply the full schema: `PGDATABASE=talent_app scripts/deploy/apply-migrations.sh`.
+5. Configure server secrets: `DATABASE_URL` (direct-PostgreSQL mode) and the AI gateway key if AI features are used.
 6. Build the app with the selected package manager.
 7. Run a smoke test:
    - login / first owner setup
