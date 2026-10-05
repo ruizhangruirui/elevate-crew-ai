@@ -13,6 +13,9 @@ import { completeness } from "@/lib/org-tree";
 import { StatTile } from "@/components/StatTile";
 import { fetchWorkspace, type Person } from "@/lib/talent";
 import { db as supabase } from "@/lib/db-client";
+import { bulkDeletePeople } from "@/lib/import-people.functions";
+import { useAuth } from "@/hooks/useAuth";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -65,6 +68,26 @@ function PeopleBody() {
   const { data: archived } = useQuery({ queryKey: ["archived-people"], queryFn: fetchArchivedPeople });
   const { data: lifecycle } = useQuery({ queryKey: ["lifecycle"], queryFn: fetchLifecycleEvents });
   const [showArchived, setShowArchived] = useState(false);
+  const { isOwner } = useAuth();
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const toggle = (id: string) =>
+    setSelected((s) => {
+      const n = new Set(s);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+  const bulkDelete = useMutation({
+    mutationFn: () => bulkDeletePeople({ data: { ids: [...selected] } }),
+    onSuccess: (n) => {
+      toast.success(t("ppl.bulk.done").replace("{n}", String(n)));
+      setSelected(new Set());
+      setSelecting(false);
+      qc.invalidateQueries({ refetchType: "all" });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const openPerson = (id: string) =>
@@ -144,6 +167,28 @@ function PeopleBody() {
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-6 py-4">
           <h2 className="font-display text-lg font-semibold">{t("ppl.list.title")}</h2>
           <div className="flex items-center gap-2">
+          {isOwner && selecting && (
+            <>
+              <Button variant="ghost" size="sm" onClick={() => setSelected(selected.size === data.people.length ? new Set() : new Set(data.people.map((p) => p.id)))}>
+                {selected.size === data.people.length ? t("ppl.bulk.none") : t("ppl.bulk.all")}
+              </Button>
+              <ConfirmAction
+                title={t("ppl.bulk.confirmTitle").replace("{n}", String(selected.size))}
+                description={<p>{t("ppl.bulk.confirmDesc")}</p>}
+                confirmLabel={t("ppl.bulk.delete").replace("{n}", String(selected.size))}
+                onConfirm={() => bulkDelete.mutate()}
+              >
+                <Button variant="destructive" size="sm" className="gap-1.5" disabled={!selected.size || bulkDelete.isPending}>
+                  <Trash2 className="size-4" /> {t("ppl.bulk.delete").replace("{n}", String(selected.size))}
+                </Button>
+              </ConfirmAction>
+            </>
+          )}
+          {isOwner && (
+            <Button variant="outline" size="sm" onClick={() => { setSelecting((v) => !v); setSelected(new Set()); }}>
+              {selecting ? t("ppl.bulk.cancel") : t("ppl.bulk.select")}
+            </Button>
+          )}
           <Dialog open={open} onOpenChange={setOpen}>
 
             <DialogTrigger asChild>
@@ -228,15 +273,19 @@ function PeopleBody() {
               key={p.id}
               role="button"
               tabIndex={0}
-              onClick={() => openPerson(p.id)}
+              onClick={() => (selecting ? toggle(p.id) : openPerson(p.id))}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
-                  openPerson(p.id);
+                  if (selecting) toggle(p.id);
+                  else openPerson(p.id);
                 }
               }}
               className="flex cursor-pointer flex-wrap items-center gap-4 px-6 py-4 transition-colors hover:bg-surface-raised/50"
             >
+              {selecting && (
+                <Checkbox checked={selected.has(p.id)} onClick={(e) => e.stopPropagation()} onCheckedChange={() => toggle(p.id)} aria-label={p.name} />
+              )}
               <div
                 className="grid size-10 shrink-0 place-items-center rounded-full border border-border/70 bg-surface-raised font-display text-sm font-semibold"
                 aria-hidden

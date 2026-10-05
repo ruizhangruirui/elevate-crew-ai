@@ -36,7 +36,8 @@ export const importPeople = createServerFn({ method: "POST" })
     if (!orgId) throw new Error("Organization not initialized");
     const labs = (nodes.data ?? []).filter((n) => n.type === "Lab");
     const teams = (nodes.data ?? []).filter((n) => n.type === "Team");
-    const roleMap = new Map((roles.data ?? []).map((r) => [r.title, r.id]));
+    const norm = (s: string) => s.trim().replace(/\s+/g, " ").toLowerCase();
+    const roleMap = new Map((roles.data ?? []).map((r) => [norm(r.title as string), r.id]));
     const taken = new Set((existing.data ?? []).map((p) => p.staff_id as string | null).filter(Boolean) as string[]);
     const seen = new Set<string>();
 
@@ -45,10 +46,10 @@ export const importPeople = createServerFn({ method: "POST" })
       seen.add(row.staff_id);
       // No hard validation against existing org structure or roles:
       // assign when a match is found, otherwise leave unassigned.
-      const lab = labs.find((l) => l.name === row.lab);
+      const lab = labs.find((l) => norm(l.name) === norm(row.lab));
       let nodeId: string | null = lab?.id ?? null;
       if (lab && row.team) {
-        const team = teams.find((tm) => tm.name === row.team && tm.parent_id === lab.id);
+        const team = teams.find((tm) => norm(tm.name) === norm(row.team) && tm.parent_id === lab.id);
         nodeId = team?.id ?? lab.id;
       }
       return {
@@ -60,7 +61,7 @@ export const importPeople = createServerFn({ method: "POST" })
         contract_type: row.contract_type,
         hire_date: row.hire_date,
         org_node_id: nodeId,
-        role_id: row.role ? (roleMap.get(row.role) ?? null) : null,
+        role_id: row.role ? (roleMap.get(norm(row.role)) ?? null) : null,
       };
     });
 
@@ -85,4 +86,23 @@ export const importPeople = createServerFn({ method: "POST" })
     });
     if (auditError) throw new Error(`People imported, but audit record failed: ${auditError.message}`);
     return payload.length;
+  });
+
+export const bulkDeletePeople = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({ ids: z.array(z.string().uuid()).min(1).max(1000) }).parse(input))
+  .handler(async ({ data }) => {
+    const user = await requireUser(["owner"]);
+    const db = await admin();
+    for (const t of ["performance_records", "person_milestones", "person_lifecycle_events", "person_role_fit", "org_activity_participants"] as const) {
+      const { error } = await db.from(t).delete().in("person_id", data.ids);
+      if (error) throw new Error(error.message);
+    }
+    for (const t of ["actions", "audit_log"] as const) {
+      const { error } = await db.from(t).update({ person_id: null }).in("person_id", data.ids);
+      if (error) throw new Error(error.message);
+    }
+    const { error } = await db.from("people").delete().in("id", data.ids);
+    if (error) throw new Error(error.message);
+    await db.from("audit_log").insert({ actor: user.name, action: "bulk_delete_people", entity: "people", detail: `${data.ids.length} people deleted` });
+    return data.ids.length;
   });
