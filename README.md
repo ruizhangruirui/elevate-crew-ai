@@ -138,21 +138,28 @@ npm run preview
 
 ## Database Setup
 
-The application currently expects Supabase-compatible APIs and Postgres tables.
+The application talks to a PostgreSQL database through its own server-side data layer. On-prem, use a plain local PostgreSQL — no Supabase stack is required.
 
-Database migrations live in:
+Database migrations (schema only) live in two directories and are applied in filename order:
 
 ```text
-supabase/migrations/
+supabase/migrations/     # core product schema
+drizzle/migrations/      # app_users / app_sessions (auth)
 ```
+
+Apply them all with the idempotent helper script:
+
+```bash
+PGHOST=127.0.0.1 PGDATABASE=talent_app PGUSER=postgres \
+  scripts/deploy/apply-migrations.sh
+```
+
+The script creates the `anon` / `authenticated` / `service_role` roles the migration files reference, applies every migration once, and tracks applied files in `public._migrations_applied` so it is safe to re-run on every deploy. Add `-?` none; it changes only the schema, never your data.
 
 Recommended database paths:
 
-1. Hosted Supabase for fastest migration: keep using Supabase as the database while moving the application runtime from Lovable/Vercel to the company VM.
-2. Self-hosted Supabase for stronger internal control: run Supabase services on company infrastructure, apply the migrations, and provide the app with the internal Supabase URL and keys.
-3. Direct Postgres is possible but not recommended as the first migration step, because the current app uses the Supabase JS client and service role patterns. Direct Postgres would require rewriting the data access layer.
-
-For a full on-prem deployment, self-hosted Supabase is the cleanest technical match because it preserves the current application architecture.
+1. **Direct PostgreSQL (recommended):** a local PostgreSQL instance on the VM, `DATABASE_URL` set, migrations applied with the script above. This is the architecture the data layer is built and tested for.
+2. Hosted Supabase (cloud mode): keep the Supabase values instead of `DATABASE_URL` while still developing in the Lovable preview.
 
 ## Recommended VM Deployment
 
