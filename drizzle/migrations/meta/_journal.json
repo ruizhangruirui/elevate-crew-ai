@@ -29,6 +29,13 @@
       "when": 1791211707202,
       "tag": "0003_recruiting_candidates",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791641707202,
+      "tag": "0004_candidates_contract_type",
+      "breakpoints": true
     }
   ]
 }

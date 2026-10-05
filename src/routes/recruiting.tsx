@@ -63,6 +63,14 @@ const OUTCOME_TONE: Record<string, string> = {
   withdrawn: "bg-danger/10 text-danger",
 };
 
+const CONTRACT_TYPE_EMPLOYEE = "Employee";
+const CONTRACT_TYPE_LEASED = "Leased Employee";
+const CONTRACT_TYPES = [CONTRACT_TYPE_EMPLOYEE, CONTRACT_TYPE_LEASED] as const;
+function ctLabel(t: (k: string) => string, v: string | null): string {
+  if (!v) return "—";
+  return (CONTRACT_TYPES as readonly string[]).includes(v) ? t(`rec.ct.${v}`) : v;
+}
+
 export type Candidate = {
   id: string;
   role_id: string;
@@ -82,6 +90,7 @@ export type Candidate = {
   next_step: string | null;
   next_step_on: string | null;
   notes: string | null;
+  contract_type: string | null;
   person_id: string | null;
   updated_at: string;
 };
@@ -288,6 +297,7 @@ function RecruitingBody() {
                     <th className="px-3 py-2">{t("rec.c.name")}</th>
                     <th className="px-3 py-2">{t("rec.c.current")}</th>
                     <th className="px-3 py-2">{t("rec.c.source")}</th>
+                    <th className="px-3 py-2 whitespace-nowrap">{t("rec.c.contract")}</th>
                     <th className="px-3 py-2">{t("rec.c.stage")}</th>
                     <th className="px-3 py-2">{t("rec.c.outcome")}</th>
                     <th className="px-3 py-2">{t("rec.c.next")}</th>
@@ -317,6 +327,7 @@ function RecruitingBody() {
                           {[c.current_company, c.current_title].filter(Boolean).join(" · ") || "—"}
                         </td>
                         <td className="px-3 py-1.5 text-xs">{c.source || "—"}</td>
+                        <td className="px-3 py-1.5 text-xs">{ctLabel(t, c.contract_type)}</td>
                         <td className="px-3 py-1.5">
                           <Select
                             value={c.stage ?? ""}
@@ -370,7 +381,7 @@ function RecruitingBody() {
                   })}
                   {rows.length === 0 && (
                     <tr>
-                      <td colSpan={10} className="px-6 py-12 text-center text-sm text-muted-foreground">{t("rec.empty")}</td>
+                      <td colSpan={11} className="px-6 py-12 text-center text-sm text-muted-foreground">{t("rec.empty")}</td>
                     </tr>
                   )}
                 </tbody>
@@ -429,6 +440,7 @@ function CandidateDialog({
     next_step: candidate?.next_step ?? "",
     next_step_on: candidate?.next_step_on ?? "",
     notes: candidate?.notes ?? "",
+    contract_type: candidate?.contract_type ?? "",
   });
   const [ev, setEv] = useState({ note: "", interviewer: "", happened_on: new Date().toISOString().slice(0, 10) });
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setF({ ...f, [k]: e.target.value });
@@ -468,6 +480,7 @@ function CandidateDialog({
       next_step: n(f.next_step),
       next_step_on: n(f.next_step_on),
       notes: n(f.notes),
+      contract_type: n(f.contract_type),
     };
   };
 
@@ -580,6 +593,19 @@ function CandidateDialog({
           {field("current_title", t("rec.f.jobTitle"))}
           {field("location", t("rec.f.location"))}
           {field("source", t("rec.c.source"))}
+          <div className="space-y-1">
+            <Label className="text-xs">{t("rec.c.contract")}</Label>
+            <Select value={f.contract_type} onValueChange={(v) => setF({ ...f, contract_type: v })} disabled={!canEdit}>
+              <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={CONTRACT_TYPE_EMPLOYEE}>{ctLabel(t, CONTRACT_TYPE_EMPLOYEE)}</SelectItem>
+                <SelectItem value={CONTRACT_TYPE_LEASED}>{ctLabel(t, CONTRACT_TYPE_LEASED)}</SelectItem>
+                {f.contract_type && ![CONTRACT_TYPE_EMPLOYEE, CONTRACT_TYPE_LEASED].includes(f.contract_type) && (
+                  <SelectItem value={f.contract_type}>{f.contract_type}</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
           {field("recruiter", t("rec.c.recruiter"))}
           {field("rating", t("rec.f.rating"), "number")}
           <div className="space-y-1">
