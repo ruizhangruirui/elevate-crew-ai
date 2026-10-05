@@ -191,7 +191,7 @@ class Builder implements PromiseLike<PgResult> {
         const ors: string[] = [];
         for (const p of parts) {
           const m = p.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\.(eq|neq|gt|gte|lt|lte|like|ilike|is)\.(.+)$/);
-          if (!m) throw new Error(`Unsupported or() expression: ${p}`);
+          if (!m || !m[1] || !m[2] || !m[3]) throw new Error(`Unsupported or() expression: ${p}`);
           const key = ident(m[1], "column");
           if (m[2] === "is") {
             ors.push(`${key} IS ${m[3] === "null" ? "NULL" : m[3].toUpperCase()}`);
@@ -269,8 +269,9 @@ class Builder implements PromiseLike<PgResult> {
         });
         valueRows.push(`(${placeholders.join(", ")})`);
       }
-      const cols = colSets[0];
-      if (colSets.some((k) => k.join(",") !== cols.join(","))) throw new Error("All inserted rows must have the same columns");
+      const cols = colSets[0] ?? [];
+      if (!cols.length || colSets.some((k) => k.join(",") !== cols.join(",")))
+        throw new Error("All inserted rows must have the same columns");
       let sql = `INSERT INTO ${t} (${cols.join(", ")}) VALUES ${valueRows.join(", ")}`;
       if (this.op === "upsert") {
         if (conflictCols.length) {
