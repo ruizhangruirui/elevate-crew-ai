@@ -46,10 +46,10 @@ export const importPeople = createServerFn({ method: "POST" })
       seen.add(row.staff_id);
       // No hard validation against existing org structure or roles:
       // assign when a match is found, otherwise leave unassigned.
-      const lab = labs.find((l) => l.name === row.lab);
+      const lab = labs.find((l) => norm(l.name) === norm(row.lab));
       let nodeId: string | null = lab?.id ?? null;
       if (lab && row.team) {
-        const team = teams.find((tm) => tm.name === row.team && tm.parent_id === lab.id);
+        const team = teams.find((tm) => norm(tm.name) === norm(row.team) && tm.parent_id === lab.id);
         nodeId = team?.id ?? lab.id;
       }
       return {
@@ -61,7 +61,7 @@ export const importPeople = createServerFn({ method: "POST" })
         contract_type: row.contract_type,
         hire_date: row.hire_date,
         org_node_id: nodeId,
-        role_id: row.role ? (roleMap.get(row.role) ?? null) : null,
+        role_id: row.role ? (roleMap.get(norm(row.role)) ?? null) : null,
       };
     });
 
