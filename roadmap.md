@@ -1,3 +1,4 @@
+- [ ] Present internal assignment and sourcing equally for vacant seats; hide Gap/Risk/KPA/Action for uncovered roles.
 - [x] Remove explanatory copy from everyday people/settings screens and tighten person profile layout.
 - [x] Move bulk import into Settings → People and enforce Owner-only submission.
 - [x] Move person archive action from list rows into the person profile.

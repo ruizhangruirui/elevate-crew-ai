@@ -453,7 +453,7 @@ function RoleCard({
         <span>
           {t("idx.currentCoverage")} {filled}/{role.target_count}
         </span>
-        <span className={gap > 0 ? "text-danger" : "text-ok"}>Gap {gap}</span>
+        {state !== "empty" && <span className={gap > 0 ? "text-danger" : "text-ok"}>Gap {gap}</span>}
       </div>
 
       <div className="mt-2">
