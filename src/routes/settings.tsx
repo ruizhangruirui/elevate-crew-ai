@@ -94,6 +94,7 @@ type AuditRow = {
 };
 
 const CONFIG_GROUPS: [string, string][] = [
+  ["candidateStages", "Candidate Pipeline Stages"],
   ["tags", "Talent Tags"],
   ["awards", "Awards"],
   ["criticalities", "Strategic Role Criticality"],

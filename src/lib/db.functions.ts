@@ -19,6 +19,8 @@ const TABLES = [
   "person_role_fit",
   "roles",
   "access_users",
+  "candidates",
+  "candidate_events",
 ] as const;
 
 const FILTERS = ["eq", "neq", "gt", "gte", "lt", "lte", "in", "is", "like", "ilike", "contains", "not", "or", "match", "filter"] as const;
@@ -33,7 +35,7 @@ const PERSON_TABLES = new Set([
   "audit_log",
 ]);
 /** Structure tables managers may read but never change. */
-const MANAGER_READONLY = new Set(["org_nodes", "roles", "directions", "orgs", "config_items", "access_users", "capability_snapshots"]);
+const MANAGER_READONLY = new Set(["org_nodes", "roles", "directions", "orgs", "config_items", "access_users", "capability_snapshots", "candidates", "candidate_events"]);
 
 const specSchema = z.object({
   table: z.enum(TABLES),
@@ -67,7 +69,7 @@ export const dbQuery = createServerFn({ method: "POST" })
 
     // Stamp the real actor on audit entries.
     const stamp = (row: any) =>
-      spec.table === "audit_log" && row && typeof row === "object" ? { ...row, actor: user.name } : row;
+      (spec.table === "audit_log" || spec.table === "candidate_events") && row && typeof row === "object" ? { ...row, actor: user.name } : row;
     let payload = spec.payload;
     if (payload !== undefined) payload = Array.isArray(payload) ? payload.map(stamp) : stamp(payload);
 
