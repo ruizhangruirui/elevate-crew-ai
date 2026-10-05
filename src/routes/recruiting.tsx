@@ -63,6 +63,14 @@ const OUTCOME_TONE: Record<string, string> = {
   withdrawn: "bg-danger/10 text-danger",
 };
 
+const CONTRACT_TYPE_EMPLOYEE = "Employee";
+const CONTRACT_TYPE_LEASED = "Leased Employee";
+const CONTRACT_TYPES = [CONTRACT_TYPE_EMPLOYEE, CONTRACT_TYPE_LEASED] as const;
+function ctLabel(t: (k: string) => string, v: string | null): string {
+  if (!v) return "—";
+  return (CONTRACT_TYPES as readonly string[]).includes(v) ? t(`rec.ct.${v}`) : v;
+}
+
 export type Candidate = {
   id: string;
   role_id: string;
@@ -373,7 +381,7 @@ function RecruitingBody() {
                   })}
                   {rows.length === 0 && (
                     <tr>
-                      <td colSpan={10} className="px-6 py-12 text-center text-sm text-muted-foreground">{t("rec.empty")}</td>
+                      <td colSpan={11} className="px-6 py-12 text-center text-sm text-muted-foreground">{t("rec.empty")}</td>
                     </tr>
                   )}
                 </tbody>
