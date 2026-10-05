@@ -72,13 +72,21 @@ Security rules in the current codebase:
 
 Create a local `.env` or deployment secret set with the variables below. Do not commit real secrets.
 
+Two database modes are supported:
+
+- **Direct PostgreSQL (recommended for on-prem).** Set only `DATABASE_URL`. The server talks straight to your local PostgreSQL through the built-in adapter (`src/lib/pg.server.ts`) — no Supabase runtime, no Supabase keys.
+- **Managed cloud database (Lovable preview).** Without `DATABASE_URL`, the app falls back to the cloud database client and needs the Supabase values below.
+
 ```bash
-# Public/browser-safe Supabase values
+# Direct PostgreSQL mode — the only variable the on-prem data layer needs
+DATABASE_URL=postgres://app_user:CHANGE_ME@localhost:5432/talent_app
+
+# Public/browser-safe Supabase values (cloud mode only)
 VITE_SUPABASE_URL=
 VITE_SUPABASE_PUBLISHABLE_KEY=
 VITE_SUPABASE_PROJECT_ID=
 
-# Server-side Supabase values
+# Server-side Supabase values (cloud mode only)
 SUPABASE_URL=
 SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_PROJECT_ID=
@@ -90,9 +98,9 @@ LOVABLE_API_KEY=
 
 Variable guidance:
 
-- `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` are available to browser code.
-- `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` are used by server-side integrations and middleware.
-- `SUPABASE_SERVICE_ROLE_KEY` is required for privileged server-side database access.
+- `DATABASE_URL` selects direct-PostgreSQL mode. Add `?sslmode=require` (or higher) only when the connection leaves the machine; plain local connections work without it.
+- `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` are available to browser code (cloud mode).
+- `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are used by server-side integrations in cloud mode only.
 - `LOVABLE_API_KEY` is required for AI features that call the Lovable AI Gateway.
 - If migrating away from Lovable credits or Lovable AI Gateway, replace `src/lib/ai-gateway.server.ts` with an internal AI gateway or direct OpenAI-compatible provider before production cutover.
 
@@ -130,21 +138,28 @@ npm run preview
 
 ## Database Setup
 
-The application currently expects Supabase-compatible APIs and Postgres tables.
+The application talks to a PostgreSQL database through its own server-side data layer. On-prem, use a plain local PostgreSQL — no Supabase stack is required.
 
-Database migrations live in:
+Database migrations (schema only) live in two directories and are applied in filename order:
 
 ```text
-supabase/migrations/
+supabase/migrations/     # core product schema
+drizzle/migrations/      # app_users / app_sessions (auth)
 ```
+
+Apply them all with the idempotent helper script:
+
+```bash
+PGHOST=127.0.0.1 PGDATABASE=talent_app PGUSER=postgres \
+  scripts/deploy/apply-migrations.sh
+```
+
+The script creates the `anon` / `authenticated` / `service_role` roles the migration files reference, applies every migration once, and tracks applied files in `public._migrations_applied` so it is safe to re-run on every deploy. It changes only the schema, never your data.
 
 Recommended database paths:
 
-1. Hosted Supabase for fastest migration: keep using Supabase as the database while moving the application runtime from Lovable/Vercel to the company VM.
-2. Self-hosted Supabase for stronger internal control: run Supabase services on company infrastructure, apply the migrations, and provide the app with the internal Supabase URL and keys.
-3. Direct Postgres is possible but not recommended as the first migration step, because the current app uses the Supabase JS client and service role patterns. Direct Postgres would require rewriting the data access layer.
-
-For a full on-prem deployment, self-hosted Supabase is the cleanest technical match because it preserves the current application architecture.
+1. **Direct PostgreSQL (recommended):** a local PostgreSQL instance on the VM, `DATABASE_URL` set, migrations applied with the script above. This is the architecture the data layer is built and tested for.
+2. Hosted Supabase (cloud mode): keep the Supabase values instead of `DATABASE_URL` while still developing in the Lovable preview.
 
 ## Recommended VM Deployment
 
@@ -153,27 +168,26 @@ For IT migration from Lovable to a company server VM, use a server deployment, n
 Recommended production shape:
 
 ```text
-Internet / Intranet
+Intranet (no public internet exposure)
         |
-     Nginx
+      Nginx
         |
- Node/TanStack Start application process
+ Node/TanStack Start application process  (DATABASE_URL set)
         |
- Supabase / Postgres
+ Local PostgreSQL on the same VM or an internal database VM
         |
- Optional AI Gateway
+ Optional AI Gateway (internal or vendor API)
 ```
 
 Deployment recommendations:
 
 - Run the web app as a Node-compatible server process or container behind Nginx.
-- Use Nginx for TLS, compression, request limits, and reverse proxying.
+- Use Nginx for TLS, compression, request limits, and reverse proxying. Bind Nginx to the internal network only; do not expose the app or PostgreSQL to the public internet.
 - Use systemd, PM2, Docker, or Podman for process supervision and automatic restarts.
 - Store environment variables in the VM secret manager, systemd environment file, Docker secrets, or CI/CD secret store.
-- Keep `SUPABASE_SERVICE_ROLE_KEY` only on the server.
+- Set `DATABASE_URL` on the app process; PostgreSQL itself only needs to be reachable from the app (same VM or internal network). Restrict database access to the app user with `pg_hba.conf`.
 - Do not deploy this app as plain static assets only; server functions and privileged database operations will fail.
-- Keep the database and application runtime as separate concerns. The app VM can connect to hosted Supabase, internal self-hosted Supabase, or a separate database VM.
-- Add Postgres/Supabase backups before production cutover.
+- Add PostgreSQL backups before production cutover.
 - Add application logs and error monitoring for SSR/server-function failures.
 
 Important runtime note:
@@ -184,11 +198,9 @@ The current `vite.config.ts` uses `@lovable.dev/vite-tanstack-config`, whose inc
 
 1. Freeze Lovable as an editor during the migration window, or clearly decide whether GitHub or Lovable is the source of truth.
 2. Pull the latest GitHub `main` branch onto the deployment/build machine.
-3. Choose the database path:
-   - Short term: hosted Supabase.
-   - Longer term/on-prem: self-hosted Supabase.
-4. Apply `supabase/migrations/` to the selected database.
-5. Configure server secrets: Supabase URL, publishable key, service role key, and AI gateway key.
+3. Install PostgreSQL on the VM (or point at an internal database VM) and create an app user/database, e.g. `talent_app`.
+4. Apply the full schema: `PGDATABASE=talent_app scripts/deploy/apply-migrations.sh`.
+5. Configure server secrets: `DATABASE_URL` (direct-PostgreSQL mode) and the AI gateway key if AI features are used.
 6. Build the app with the selected package manager.
 7. Run a smoke test:
    - login / first owner setup
@@ -205,9 +217,8 @@ The current `vite.config.ts` uses `@lovable.dev/vite-tanstack-config`, whose inc
 - `main` branch builds successfully.
 - Package manager is standardized.
 - Runtime target supports TanStack Start server functions.
-- All required environment variables are configured.
-- `SUPABASE_SERVICE_ROLE_KEY` is server-only.
-- Database migrations are applied.
+- `DATABASE_URL` is configured (or, for cloud mode, the Supabase variables).
+- Database migrations are applied (`scripts/deploy/apply-migrations.sh` reports nothing pending).
 - First owner/admin account is created through the app setup flow.
 - HR, manager, and owner permissions are smoke tested.
 - AI gateway is configured or intentionally disabled/replaced.
@@ -225,13 +236,12 @@ GitHub Pages is static hosting. This app requires server functions, SSR/server e
 
 ### The app opens but data operations fail
 
-Check that server environment variables are available to the runtime, especially:
+Check the server-side environment first:
 
-- `SUPABASE_URL`
-- `SUPABASE_PUBLISHABLE_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
+- Direct-PostgreSQL mode: `DATABASE_URL` must be set on the app process and point at a reachable PostgreSQL with the migrations applied.
+- Cloud mode: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
 
-Also confirm that migrations were applied to the target database.
+If the error mentions "missing Supabase environment variables", the process is in cloud mode without those variables — set `DATABASE_URL` to switch it to direct-PostgreSQL mode. Also confirm migrations were applied (`public._migrations_applied` should list every migration file).
 
 ### Login works in one environment but not another
 
