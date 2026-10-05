@@ -332,6 +332,7 @@ class Builder implements PromiseLike<PgResult> {
   }
 
   private serializeParam(col: string, v: unknown): string {
+    if (v === null || v === undefined) return "NULL";
     const s = serialize(this.table, col, v);
     this.mParams!.push(s.text === "$" ? s.value : JSON.stringify(v));
     return `$${this.mParams!.length}${s.text.slice(1)}`;
