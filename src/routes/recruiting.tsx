@@ -8,6 +8,9 @@ import { AppShell } from "@/components/AppShell";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/hooks/useAuth";
+import { RoleMenu } from "@/routes/index";
+import { fetchOrgNodes } from "@/lib/org-tree";
+import { toastUndoable } from "@/lib/ui-feedback";
 import { db } from "@/lib/db-client";
 import { coverageOf, fetchWorkspace } from "@/lib/talent";
 import { Button } from "@/components/ui/button";
@@ -118,6 +121,27 @@ function RecruitingBody() {
   const [editing, setEditing] = useState<Candidate | "new" | null>(null);
 
   const { data: ws } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
+  const { data: orgNodes = [] } = useQuery({ queryKey: ["orgNodes"], queryFn: fetchOrgNodes });
+  const removeRole = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await db.from("roles").update({ archived: true }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_data, id) => {
+      if (roleId === id) {
+        setEditing(null);
+        navigate({ search: {} });
+      }
+      qc.invalidateQueries({ refetchType: "all" });
+      toastUndoable(t("rec.roleRemoved"), t("ui.undo"), async () => {
+        const { error } = await db.from("roles").update({ archived: false }).eq("id", id);
+        if (error) { toast.error(error.message); return; }
+        qc.invalidateQueries({ refetchType: "all" });
+        navigate({ search: { role: id } });
+      });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
   const { data: stageItems } = useQuery({
     queryKey: ["config", "candidateStages"],
     queryFn: async () => {
@@ -193,20 +217,28 @@ function RecruitingBody() {
         </div>
         <ul className="space-y-1">
           {roleList.map(({ r, cov }) => (
-            <li key={r.id}>
-              <button
-                type="button"
+            <li key={r.id} className="group relative">
+              <Button
+                variant="ghost"
                 onClick={() => navigate({ search: { role: r.id } })}
-                className={`w-full rounded-lg px-2.5 py-2 text-left text-sm transition-colors ${r.id === roleId ? "bg-brand/12 text-foreground" : "hover:bg-surface-raised/60"}`}
+                className={`h-auto w-full flex-col items-start gap-0 rounded-lg px-2.5 py-2 ${canEdit ? "pr-10" : ""} text-left text-sm whitespace-normal transition-colors ${r.id === roleId ? "bg-brand/12 text-foreground" : "hover:bg-surface-raised/60"}`}
               >
-                <p className="truncate font-medium">{r.title}</p>
+                <p className="w-full truncate font-medium">{r.title}</p>
                 <p className="mt-0.5 flex gap-2 text-[11px] text-muted-foreground">
                   <span className={cov.gap ? "text-danger" : "text-ok"}>
                     {cov.gap ? t("rec.gap").replace("{n}", String(cov.gap)) : t("rec.full")}
                   </span>
                   {activeByRole.get(r.id) ? <span>{t("rec.active").replace("{n}", String(activeByRole.get(r.id)))}</span> : null}
                 </p>
-              </button>
+              </Button>
+              {canEdit && <RoleMenu
+                role={r}
+                orgNodes={orgNodes}
+                onArchive={() => removeRole.mutate(r.id)}
+                onSaved={() => qc.invalidateQueries({ refetchType: "all" })}
+                removalLabel={t("rec.removeRole")}
+                removalDescription={t("rec.removeRoleDesc").replace("{n}", String((candidates ?? []).filter((c) => c.role_id === r.id).length))}
+              />}
             </li>
           ))}
         </ul>
