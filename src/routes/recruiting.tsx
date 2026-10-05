@@ -598,8 +598,8 @@ function CandidateDialog({
             <Select value={f.contract_type} onValueChange={(v) => setF({ ...f, contract_type: v })} disabled={!canEdit}>
               <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="—" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value={CONTRACT_TYPE_EMPLOYEE}>{CONTRACT_TYPE_EMPLOYEE}</SelectItem>
-                <SelectItem value={CONTRACT_TYPE_LEASED}>{CONTRACT_TYPE_LEASED}</SelectItem>
+                <SelectItem value={CONTRACT_TYPE_EMPLOYEE}>{ctLabel(t, CONTRACT_TYPE_EMPLOYEE)}</SelectItem>
+                <SelectItem value={CONTRACT_TYPE_LEASED}>{ctLabel(t, CONTRACT_TYPE_LEASED)}</SelectItem>
                 {f.contract_type && ![CONTRACT_TYPE_EMPLOYEE, CONTRACT_TYPE_LEASED].includes(f.contract_type) && (
                   <SelectItem value={f.contract_type}>{f.contract_type}</SelectItem>
                 )}
