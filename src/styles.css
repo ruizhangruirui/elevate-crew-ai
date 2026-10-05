@@ -239,10 +239,10 @@
 }
 
 @utility panel {
-  background-image: var(--gradient-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-panel);
+  background-image: var(--gradient-card);
+  border: 1px solid var(--card-glass-border);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-card-glass);
 }
 
 @utility card-glass {
