@@ -147,45 +147,16 @@ function StrategyBoard() {
           className="pointer-events-none absolute -right-24 -top-24 size-64 rounded-full opacity-25 blur-3xl"
           style={{ backgroundImage: "var(--gradient-brand)" }}
         />
-        <div className="relative grid gap-8 lg:grid-cols-[1.4fr_1fr]">
-          <div>
-            <div className="flex items-center gap-2">
-              <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-                {org?.tagline ?? t("idx.orgTaglineDefault")}
-              </p>
-              {org && <EditOrgDialog org={org} onDone={invalidate} />}
-            </div>
-            <h2 className="mt-2 font-display text-4xl font-bold">
+        <div className="relative">
+          <div className="flex items-center gap-2">
+            <h2 className="font-display text-4xl font-bold">
               <span className="brand-gradient-text">{org?.name}</span>
             </h2>
-            <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
-              {org?.description}
-            </p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              {org?.tags.map((t) => (
-                <span
-                  key={t}
-                  className="rounded-full border border-brand/40 bg-brand/10 px-3 py-1 text-xs font-medium text-foreground"
-                >
-                  {t}
-                </span>
-              ))}
-            </div>
+            {org && <EditOrgDialog org={org} onDone={invalidate} />}
           </div>
-          <div className="self-start">
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-
-              <Link to="/org" className="text-brand hover:underline">
-                {t("idx.linkOrg")}
-              </Link>
-              <Link to="/capability" search={{ scope: undefined }} className="text-brand hover:underline">
-                {t("idx.linkCapability")}
-              </Link>
-              <Link to="/people" className="text-brand hover:underline">
-                {t("idx.linkPeople")}
-              </Link>
-            </div>
-          </div>
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
+            {org?.description}
+          </p>
         </div>
       </section>
 
