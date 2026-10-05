@@ -232,6 +232,140 @@ export type Database = {
           },
         ]
       }
+      candidate_events: {
+        Row: {
+          actor: string | null
+          candidate_id: string
+          created_at: string
+          happened_on: string
+          id: string
+          interviewer: string | null
+          kind: string
+          note: string | null
+          outcome: string | null
+          stage: string | null
+        }
+        Insert: {
+          actor?: string | null
+          candidate_id: string
+          created_at?: string
+          happened_on?: string
+          id?: string
+          interviewer?: string | null
+          kind?: string
+          note?: string | null
+          outcome?: string | null
+          stage?: string | null
+        }
+        Update: {
+          actor?: string | null
+          candidate_id?: string
+          created_at?: string
+          happened_on?: string
+          id?: string
+          interviewer?: string | null
+          kind?: string
+          note?: string | null
+          outcome?: string | null
+          stage?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_events_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      candidates: {
+        Row: {
+          created_at: string
+          current_company: string | null
+          current_title: string | null
+          cv_url: string | null
+          email: string | null
+          id: string
+          linkedin_url: string | null
+          location: string | null
+          name: string
+          next_step: string | null
+          next_step_on: string | null
+          notes: string | null
+          outcome: string
+          person_id: string | null
+          phone: string | null
+          rating: number | null
+          recruiter: string | null
+          role_id: string
+          source: string | null
+          stage: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_company?: string | null
+          current_title?: string | null
+          cv_url?: string | null
+          email?: string | null
+          id?: string
+          linkedin_url?: string | null
+          location?: string | null
+          name: string
+          next_step?: string | null
+          next_step_on?: string | null
+          notes?: string | null
+          outcome?: string
+          person_id?: string | null
+          phone?: string | null
+          rating?: number | null
+          recruiter?: string | null
+          role_id: string
+          source?: string | null
+          stage?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_company?: string | null
+          current_title?: string | null
+          cv_url?: string | null
+          email?: string | null
+          id?: string
+          linkedin_url?: string | null
+          location?: string | null
+          name?: string
+          next_step?: string | null
+          next_step_on?: string | null
+          notes?: string | null
+          outcome?: string
+          person_id?: string | null
+          phone?: string | null
+          rating?: number | null
+          recruiter?: string | null
+          role_id?: string
+          source?: string | null
+          stage?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidates_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidates_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       capability_snapshots: {
         Row: {
           activities_90d: number

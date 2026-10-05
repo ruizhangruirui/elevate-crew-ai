@@ -6,6 +6,7 @@ export const coreDict: Dict = {
   "nav.capability": { zh: "团队与文化发展", en: "Team & Culture" },
   "nav.org": { zh: "组织视图", en: "Org Structure" },
   "nav.people": { zh: "人员视图", en: "People" },
+  "nav.recruiting": { zh: "招聘", en: "Recruiting" },
   "nav.actions": { zh: "待办中心", en: "Action Center" },
   "nav.settings": { zh: "系统设置", en: "Settings" },
   "shell.brand": { zh: "战略岗位与人才", en: "Talent Architecture" },
