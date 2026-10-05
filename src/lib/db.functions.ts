@@ -37,6 +37,9 @@ const PERSON_TABLES = new Set([
 /** Structure tables managers may read but never change. */
 const MANAGER_READONLY = new Set(["org_nodes", "roles", "directions", "orgs", "config_items", "access_users", "capability_snapshots", "candidates", "candidate_events"]);
 
+/** Tables a recruiter may read (Strategic Roles + Recruiting pages). */
+const RECRUITER_READ = new Set(["roles", "directions", "orgs", "org_nodes", "config_items", "people", "candidates", "candidate_events"]);
+
 const specSchema = z.object({
   table: z.enum(TABLES),
   op: z.enum(["select", "insert", "update", "delete", "upsert"]),
@@ -77,6 +80,14 @@ export const dbQuery = createServerFn({ method: "POST" })
     if (spec.table === "people" && spec.op === "insert" && Array.isArray(payload) && user.role !== "owner")
       return fail("Only the Owner can bulk import people", "403");
 
+    if (spec.table === "directions" && spec.op !== "select" && user.role !== "owner")
+      return fail("Only the Owner can change strategy directions", "403");
+    if (user.role === "recruiter") {
+      if (!RECRUITER_READ.has(spec.table)) return fail("Recruiters can only access Strategic Roles and Recruiting", "403");
+      if (spec.op !== "select" && spec.table !== "candidates" && spec.table !== "candidate_events")
+        return fail("Recruiters can only maintain candidates", "403");
+    }
+
     const denied = checkSection(user, spec, payload);
     if (denied) return fail(denied, "403");
 
@@ -97,6 +108,14 @@ export const dbQuery = createServerFn({ method: "POST" })
     if (scope && spec.op === "select") {
       if (spec.table === "people") q = q.in("id", [...scope.personIds]);
       else if (PERSON_TABLES.has(spec.table)) q = q.in("person_id", [...scope.personIds]);
+      else if (spec.table === "candidates" || spec.table === "candidate_events") {
+        const roleIds = await scopedRoleIds(db, scope.nodeIds);
+        if (spec.table === "candidates") q = q.in("role_id", roleIds);
+        else {
+          const { data: cs } = roleIds.length ? await db.from("candidates").select("id").in("role_id", roleIds) : { data: [] };
+          q = q.in("candidate_id", (cs ?? []).map((c: any) => c.id));
+        }
+      }
     }
     if (spec.op !== "select" && spec.returning !== undefined && spec.returning !== null) q = q.select(spec.returning);
     for (const o of spec.order) q = q.order(o.col, o.opts);
@@ -164,4 +183,11 @@ async function checkManager(
       return "This person is outside your scope";
   }
   return null;
+}
+
+/** Roles whose team/lab lies inside the manager's scope. */
+async function scopedRoleIds(db: any, nodeIds: Set<string>): Promise<string[]> {
+  if (!nodeIds.size) return [];
+  const { data } = await db.from("roles").select("id").in("org_node_id", [...nodeIds]);
+  return (data ?? []).map((r: any) => r.id);
 }

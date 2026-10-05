@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type Node = { id: string; name: string; type: string; archived: boolean };
-type Role = "owner" | "hr" | "manager";
+type Role = "owner" | "hr" | "manager" | "recruiter";
 type U = {
   id: string;
   email: string;
@@ -84,7 +84,7 @@ export function UserAccessSection({ nodes }: { nodes: Node[] }) {
               <TableCell className="text-muted-foreground">
                 {u.role === "manager"
                   ? u.scope_node_ids.map((id) => nodeName.get(id) ?? id).join(", ") || "-"
-                  : t("access.allData")}
+                  : u.role === "recruiter" ? t("access.role.recruiter") : t("access.allData")}
               </TableCell>
               <TableCell>
                 <div className="flex flex-wrap gap-1">
@@ -119,8 +119,8 @@ export function UserAccessSection({ nodes }: { nodes: Node[] }) {
         </TableBody>
       </Table>
 
-      <div className="mt-8 grid gap-3 md:grid-cols-3">
-        {(["owner", "hr", "manager"] as const).map((r) => (
+      <div className="mt-8 grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+        {(["owner", "hr", "manager", "recruiter"] as const).map((r) => (
           <div key={r} className="rounded-lg border border-border/60 p-4">
             <p className="text-sm font-medium">{roleLabel(r)}</p>
             <p className="mt-1 text-xs text-muted-foreground">{t(`access.roleDesc.${r}`)}</p>
@@ -207,7 +207,7 @@ function UserDialog({
               <Select value={role} onValueChange={(v) => setRole(v as Role)} disabled={isSelf}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {(["owner", "hr", "manager"] as const).map((r) => (
+                  {(["owner", "hr", "manager", "recruiter"] as const).map((r) => (
                     <SelectItem key={r} value={r}>{t(`access.role.${r}`)}</SelectItem>
                   ))}
                 </SelectContent>
