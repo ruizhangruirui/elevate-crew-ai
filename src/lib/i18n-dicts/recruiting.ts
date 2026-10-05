@@ -64,4 +64,6 @@ export const recruitingDict: Dict = {
   "rec.linkedPerson": { zh: "查看人员档案", en: "Open person profile" },
   "rec.recruitingLink": { zh: "招聘候选人", en: "Candidates" },
   "rec.stageNone": { zh: "未设置", en: "Not set" },
+  "rec.allLabs": { zh: "全部 Lab", en: "All Labs" },
+  "rec.noRoles": { zh: "没有符合条件的岗位", en: "No matching roles" },
 };

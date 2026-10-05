@@ -2,7 +2,7 @@ import { getRequestHeader } from "@tanstack/react-start/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
-export type AppRole = "owner" | "hr" | "manager";
+export type AppRole = "owner" | "hr" | "manager" | "recruiter";
 export type AppUser = {
   id: string;
   email: string;

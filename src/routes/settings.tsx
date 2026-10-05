@@ -6,6 +6,9 @@ import { Plus, Pencil, Archive, Download } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { UserAccessSection } from "@/components/UserAccessSection";
 import { ImportPeopleDialog } from "@/components/ImportPeopleDialog";
+import { ArchivedBinDialog } from "@/components/ArchivedBinDialog";
+import { DirectionMenu, NewDirectionDialog } from "@/routes/index";
+import { fetchWorkspace } from "@/lib/talent";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/lib/i18n";
 import { ConfirmAction } from "@/components/ConfirmAction";
@@ -60,6 +63,7 @@ export const Route = createFileRoute("/settings")({
 
 const SECTIONS = [
   "组织管理",
+  "战略方向",
   "人员管理",
   "权限管理",
   "人才配置",
@@ -137,6 +141,7 @@ function SettingsPage() {
 
 const SECTION_LABEL_KEYS: Record<Section, string> = {
   "组织管理": "set.nav.org",
+  "战略方向": "set.nav.strategy",
   "人员管理": "set.nav.people",
   "权限管理": "set.nav.access",
   "人才配置": "set.nav.config",
@@ -151,7 +156,7 @@ function SettingsBody() {
     user?.role === "owner"
       ? true
       : user?.role === "hr"
-        ? s !== "权限管理"
+        ? s !== "权限管理" && s !== "战略方向"
         : s === "操作记录" || s === "系统设置",
   );
   const [picked, setSection] = useState<Section>("组织管理");
@@ -181,6 +186,8 @@ function SettingsBody() {
           <p className="text-sm text-muted-foreground">{t("set.loading")}</p>
         ) : section === "组织管理" ? (
           <OrgSection nodes={data.orgNodes} />
+        ) : section === "战略方向" ? (
+          <StrategySection />
         ) : section === "人员管理" ? (
           <PeopleOpsSection isOwner={user?.role === "owner"} />
         ) : section === "权限管理" ? (
@@ -707,6 +714,40 @@ function SystemSection() {
             </Button>
           </div>
         </div>
+      </div>
+    </>
+  );
+}
+
+function StrategySection() {
+  const { t } = useI18n();
+  const qc = useQueryClient();
+  const { data } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
+  const invalidate = () => qc.invalidateQueries({ refetchType: "all" });
+  if (!data) return <p className="text-sm text-muted-foreground">{t("set.loading")}</p>;
+  return (
+    <>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="font-display text-xl font-semibold">{t("set.nav.strategy")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t("set.strategy.desc")}</p>
+        </div>
+        <div className="flex items-center gap-1">
+          <ArchivedBinDialog />
+          {data.org && <NewDirectionDialog orgId={data.org.id} onDone={invalidate} />}
+        </div>
+      </div>
+      <div className="space-y-2">
+        {data.directions.map((d) => (
+          <div key={d.id} className="card-glass group relative p-4 pr-12">
+            <p className="font-medium">{d.title}</p>
+            {d.description && <p className="mt-1 text-sm text-muted-foreground">{d.description}</p>}
+            <p className="mt-1 text-xs text-muted-foreground">
+              {t("idx.roleTypesCount").replace("{count}", String(data.roles.filter((r) => r.direction_id === d.id).length))}
+            </p>
+            <DirectionMenu direction={d} roleCount={data.roles.filter((r) => r.direction_id === d.id).length} onDone={invalidate} />
+          </div>
+        ))}
       </div>
     </>
   );

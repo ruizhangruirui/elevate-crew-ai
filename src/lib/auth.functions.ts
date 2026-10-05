@@ -12,7 +12,7 @@ import {
 
 const email = z.string().trim().toLowerCase().email().max(255);
 const password = z.string().min(8, "Password must be at least 8 characters").max(128);
-const role = z.enum(["owner", "hr", "manager"]);
+const role = z.enum(["owner", "hr", "manager", "recruiter"]);
 const USER_COLS = "id,email,name,role,scope_node_ids,status,must_change_password,last_login_at,created_at";
 
 async function audit(actor: string, action: string, detail: string) {

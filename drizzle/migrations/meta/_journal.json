@@ -36,6 +36,13 @@
       "when": 1791641707202,
       "tag": "0004_candidates_contract_type",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791223349879,
+      "tag": "0005_app_users_recruiter_role",
+      "breakpoints": true
     }
   ]
 }

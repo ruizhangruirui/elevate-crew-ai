@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { LayoutGrid, Users, Settings, LogOut, Loader2, KeyRound, Network, FolderTree, ListChecks, TrendingUp, Briefcase } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAuth, useSignOut } from "@/hooks/useAuth";
@@ -32,11 +32,15 @@ export function AppShell({
   const signOut = useSignOut();
   const [pwOpen, setPwOpen] = useState(false);
 
+  const pathname = useLocation({ select: (l) => l.pathname });
+  const isRecruiter = user?.role === "recruiter";
+  const recruiterAllowed = pathname === "/" || pathname.startsWith("/recruiting");
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/auth" });
-  }, [loading, session, navigate]);
+    else if (!loading && isRecruiter && !recruiterAllowed) navigate({ to: "/recruiting", replace: true });
+  }, [loading, session, navigate, isRecruiter, recruiterAllowed]);
 
-  if (loading || !session) {
+  if (loading || !session || (isRecruiter && !recruiterAllowed)) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="size-5 animate-spin text-muted-foreground" />
@@ -78,7 +82,7 @@ export function AppShell({
         </div>
 
         <nav className="mt-4 space-y-1">
-          {nav.map(({ to, key, icon: Icon }) => (
+          {nav.filter((n) => !isRecruiter || n.to === "/" || n.to === "/recruiting").map(({ to, key, icon: Icon }) => (
             <Link
               key={to}
               to={to}

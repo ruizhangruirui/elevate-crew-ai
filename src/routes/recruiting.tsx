@@ -3,13 +3,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { ExternalLink, FileText, Linkedin, Plus, Search, Trash2, UserCheck } from "lucide-react";
+import { ChevronDown, ExternalLink, FileText, Linkedin, Plus, Search, Trash2, UserCheck } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/hooks/useAuth";
 import { RoleMenu } from "@/routes/index";
-import { fetchOrgNodes } from "@/lib/org-tree";
+import { fetchOrgNodes, subtreeIds } from "@/lib/org-tree";
 import { toastUndoable } from "@/lib/ui-feedback";
 import { db } from "@/lib/db-client";
 import { coverageOf, fetchWorkspace } from "@/lib/talent";
@@ -120,7 +120,9 @@ function safeUrl(u: string | null) {
 
 function RecruitingBody() {
   const { t } = useI18n();
-  const { canManageStructure: canEdit } = useAuth();
+  const { user } = useAuth();
+  const canEdit = user?.role === "owner" || user?.role === "hr" || user?.role === "recruiter";
+  const canEditRole = user?.role === "owner" || user?.role === "hr";
   const qc = useQueryClient();
   const navigate = useNavigate({ from: "/recruiting" });
   const { role: roleId } = Route.useSearch();
@@ -128,6 +130,8 @@ function RecruitingBody() {
   const [filter, setFilter] = useState<FilterKey>("active");
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<Candidate | "new" | null>(null);
+  const [rolesOpen, setRolesOpen] = useState(true);
+  const [lab, setLab] = useState<string>("all");
 
   const { data: ws } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
   const { data: orgNodes = [] } = useQuery({ queryKey: ["orgNodes"], queryFn: fetchOrgNodes });
@@ -178,10 +182,26 @@ function RecruitingBody() {
     return m;
   }, [candidates]);
 
-  const roleList = roles
+  const nodeById = new Map(orgNodes.map((n) => [n.id, n]));
+  const labOf = (id: string | null | undefined) => {
+    let n = id ? nodeById.get(id) : undefined;
+    while (n && n.type.toLowerCase() !== "lab" && n.parent_id) n = nodeById.get(n.parent_id);
+    return n && n.type.toLowerCase() === "lab" ? n : null;
+  };
+  // Managers only see roles inside their responsible Labs/Teams.
+  const scopeIds = user?.role === "manager" ? new Set(user.scope_node_ids.flatMap((id) => subtreeIds(orgNodes, id))) : null;
+  const scopedRoles = scopeIds
+    ? roles.filter((r) => {
+        const l = labOf(r.org_node_id);
+        return (r.org_node_id && scopeIds.has(r.org_node_id)) || (l && scopeIds.has(l.id));
+      })
+    : roles;
+  const labs = orgNodes.filter((n) => n.type.toLowerCase() === "lab" && scopedRoles.some((r) => labOf(r.org_node_id)?.id === n.id));
+  const roleList = scopedRoles
+    .filter((r) => lab === "all" || labOf(r.org_node_id)?.id === lab)
     .map((r) => ({ r, cov: coverageOf(r, people) }))
     .filter(({ r, cov }) => !openOnly || cov.gap > 0 || r.id === roleId || activeByRole.has(r.id));
-  const role = roles.find((r) => r.id === roleId) ?? null;
+  const role = scopedRoles.find((r) => r.id === roleId) ?? null;
 
   const rows = (candidates ?? [])
     .filter((c) => c.role_id === roleId)
@@ -215,22 +235,43 @@ function RecruitingBody() {
   if (!ws) return <div className="text-sm text-muted-foreground">…</div>;
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
-      <aside className="card-glass h-fit p-3">
-        <div className="mb-2 flex items-center justify-between px-1">
-          <h2 className="font-display text-sm font-semibold">{t("rec.roles")}</h2>
-          <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <input type="checkbox" checked={openOnly} onChange={(e) => setOpenOnly(e.target.checked)} />
-            {t("rec.openOnly")}
-          </label>
+    <div className="space-y-4">
+      <section className="card-glass p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+          <button type="button" onClick={() => setRolesOpen(!rolesOpen)} className="flex items-center gap-1.5">
+            <ChevronDown className={`size-4 transition-transform ${rolesOpen ? "" : "-rotate-90"}`} />
+            <h2 className="font-display text-sm font-semibold">{t("rec.roles")}</h2>
+            <span className="text-xs text-muted-foreground">({roleList.length})</span>
+            {!rolesOpen && role && <span className="ml-2 text-xs text-brand">· {role.title}</span>}
+          </button>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {labs.length > 1 && (
+              <>
+                <button type="button" onClick={() => setLab("all")} className={`rounded-full border px-2.5 py-0.5 text-[11px] ${lab === "all" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
+                  {t("rec.allLabs")}
+                </button>
+                {labs.map((l) => (
+                  <button key={l.id} type="button" onClick={() => setLab(l.id)} className={`rounded-full border px-2.5 py-0.5 text-[11px] ${lab === l.id ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
+                    {l.name}
+                  </button>
+                ))}
+              </>
+            )}
+            <label className="ml-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <input type="checkbox" checked={openOnly} onChange={(e) => setOpenOnly(e.target.checked)} />
+              {t("rec.openOnly")}
+            </label>
+          </div>
         </div>
-        <ul className="space-y-1">
+        {rolesOpen && (
+        <ul className="mt-2 grid gap-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {roleList.length === 0 && <li className="px-2 py-3 text-xs text-muted-foreground">{t("rec.noRoles")}</li>}
           {roleList.map(({ r, cov }) => (
             <li key={r.id} className="group relative">
               <Button
                 variant="ghost"
                 onClick={() => navigate({ search: { role: r.id } })}
-                className={`h-auto w-full flex-col items-start gap-0 rounded-lg px-2.5 py-2 ${canEdit ? "pr-10" : ""} text-left text-sm whitespace-normal transition-colors ${r.id === roleId ? "bg-brand/12 text-foreground" : "hover:bg-surface-raised/60"}`}
+                className={`h-auto w-full flex-col items-start gap-0 rounded-lg border border-border/50 px-2.5 py-2 ${canEditRole ? "pr-10" : ""} text-left text-sm whitespace-normal transition-colors ${r.id === roleId ? "border-brand/60 bg-brand/12 text-foreground" : "hover:bg-surface-raised/60"}`}
               >
                 <p className="w-full truncate font-medium">{r.title}</p>
                 <p className="mt-0.5 flex gap-2 text-[11px] text-muted-foreground">
@@ -238,9 +279,10 @@ function RecruitingBody() {
                     {cov.gap ? t("rec.gap").replace("{n}", String(cov.gap)) : t("rec.full")}
                   </span>
                   {activeByRole.get(r.id) ? <span>{t("rec.active").replace("{n}", String(activeByRole.get(r.id)))}</span> : null}
+                  {labOf(r.org_node_id) && <span className="truncate">· {labOf(r.org_node_id)?.name}</span>}
                 </p>
               </Button>
-              {canEdit && <RoleMenu
+              {canEditRole && <RoleMenu
                 role={r}
                 orgNodes={orgNodes}
                 onArchive={() => removeRole.mutate(r.id)}
@@ -251,7 +293,8 @@ function RecruitingBody() {
             </li>
           ))}
         </ul>
-      </aside>
+        )}
+      </section>
 
       <section className="card-glass min-w-0 overflow-hidden">
         {!role ? (
