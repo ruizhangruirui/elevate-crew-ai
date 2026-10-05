@@ -168,27 +168,26 @@ For IT migration from Lovable to a company server VM, use a server deployment, n
 Recommended production shape:
 
 ```text
-Internet / Intranet
+Intranet (no public internet exposure)
         |
-     Nginx
+      Nginx
         |
- Node/TanStack Start application process
+ Node/TanStack Start application process  (DATABASE_URL set)
         |
- Supabase / Postgres
+ Local PostgreSQL on the same VM or an internal database VM
         |
- Optional AI Gateway
+ Optional AI Gateway (internal or vendor API)
 ```
 
 Deployment recommendations:
 
 - Run the web app as a Node-compatible server process or container behind Nginx.
-- Use Nginx for TLS, compression, request limits, and reverse proxying.
+- Use Nginx for TLS, compression, request limits, and reverse proxying. Bind Nginx to the internal network only; do not expose the app or PostgreSQL to the public internet.
 - Use systemd, PM2, Docker, or Podman for process supervision and automatic restarts.
 - Store environment variables in the VM secret manager, systemd environment file, Docker secrets, or CI/CD secret store.
-- Keep `SUPABASE_SERVICE_ROLE_KEY` only on the server.
+- Set `DATABASE_URL` on the app process; PostgreSQL itself only needs to be reachable from the app (same VM or internal network). Restrict database access to the app user with `pg_hba.conf`.
 - Do not deploy this app as plain static assets only; server functions and privileged database operations will fail.
-- Keep the database and application runtime as separate concerns. The app VM can connect to hosted Supabase, internal self-hosted Supabase, or a separate database VM.
-- Add Postgres/Supabase backups before production cutover.
+- Add PostgreSQL backups before production cutover.
 - Add application logs and error monitoring for SSR/server-function failures.
 
 Important runtime note:
