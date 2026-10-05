@@ -8,10 +8,10 @@ import { useI18n } from "@/lib/i18n";
 
 const nav = [
   { to: "/", key: "nav.index", icon: LayoutGrid },
-  { to: "/capability", key: "nav.capability", icon: Network },
+  { to: "/recruiting", key: "nav.recruiting", icon: Briefcase },
   { to: "/org", key: "nav.org", icon: FolderTree },
   { to: "/people", key: "nav.people", icon: Users },
-  { to: "/recruiting", key: "nav.recruiting", icon: Briefcase },
+  { to: "/capability", key: "nav.capability", icon: Network },
   { to: "/growth", key: "nav.growth", icon: TrendingUp },
   { to: "/actions", key: "nav.actions", icon: ListChecks },
   { to: "/settings", key: "nav.settings", icon: Settings },
