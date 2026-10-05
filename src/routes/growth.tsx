@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ReviewDialog } from "@/components/ReviewDialog";
 import { StatTile } from "@/components/StatTile";
 import { useI18n } from "@/lib/i18n";
+import { useAuth } from "@/hooks/useAuth";
 import { fetchWorkspace, type Person } from "@/lib/talent";
 import {
   fetchGrowthData,
@@ -67,6 +68,8 @@ function GrowthPage() {
   const byId = useMemo(() => new Map(people.map((p) => [p.id, p])), [people]);
 
   const loading = ws.isLoading || growth.isLoading;
+  const { user } = useAuth();
+  const canAssess = user?.role === "manager" || user?.role === "owner";
   const [reviewFor, setReviewFor] = useState<string | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
   const openReview = (id: string | null) => {
@@ -80,11 +83,11 @@ function GrowthPage() {
         <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
       ) : (
         <div className="space-y-8">
-          <div className="flex justify-end">
+          {canAssess && <div className="flex justify-end">
             <Button className="gap-2" onClick={() => openReview(null)}>
               <ClipboardCheck className="size-4" /> {t("growth.review.new")}
             </Button>
-          </div>
+          </div>}
 
           <ReviewDialog
             open={reviewOpen}
@@ -227,13 +230,13 @@ function GrowthPage() {
                     className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-background/40 py-0.5 pl-0.5 pr-1"
                   >
                     <PersonChip person={p} rating={latestRating(p, records)} />
-                    <button
+                    {canAssess && <button
                       type="button"
                       onClick={() => openReview(p.id)}
                       className="rounded-full px-1.5 text-[11px] text-brand hover:underline"
                     >
                       {t("growth.review.quick")}
-                    </button>
+                    </button>}
                   </span>
                 ))}
               </div>

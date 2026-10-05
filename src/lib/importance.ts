@@ -1,4 +1,5 @@
 import type { Person, Role } from "@/lib/talent";
+import { PERIPHERAL_CONTRACTS } from "@/lib/contract";
 
 /**
  * 人员重要性：手动指定优先，未指定（auto）时按「是否担任领导职务 / 级别 / 合同类型 / 所在岗位关键度」推导。
@@ -6,7 +7,6 @@ import type { Person, Role } from "@/lib/talent";
  */
 export type Importance = "core" | "key" | "standard" | "peripheral";
 
-const PERIPHERAL_CONTRACTS = new Set(["外包", "实习生", "访问学者"]);
 
 export function deriveImportance(person: Person, roles: Role[] = []): Importance {
   if (person.is_leader) return "core";

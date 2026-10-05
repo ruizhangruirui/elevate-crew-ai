@@ -75,6 +75,9 @@ export const dbQuery = createServerFn({ method: "POST" })
     if (spec.table === "people" && spec.op === "insert" && Array.isArray(payload) && user.role !== "owner")
       return fail("Only the Owner can bulk import people", "403");
 
+    const denied = checkSection(user, spec, payload);
+    if (denied) return fail(denied, "403");
+
     const scope = user.role === "manager" ? await managerScope(user) : null;
     if (scope) {
       const denied = await checkManager(user, spec, payload, scope, db);
@@ -102,6 +105,31 @@ export const dbQuery = createServerFn({ method: "POST" })
     const { data, error, count } = await q;
     return { data: data ?? null, error: error ? { message: error.message, code: error.code } : null, count: count ?? null };
   });
+
+/** Fields on people that belong to the manager assessment section. */
+const ASSESSMENT_FIELDS = new Set(["assessed_skills", "assessed_at", "performance"]);
+
+/**
+ * Section ownership: HR profile + Career Profile are HR-edited; the manager
+ * assessment (performance records, skill assessment) is manager-edited.
+ * Owner may edit both.
+ */
+function checkSection(user: AppUser, spec: DbSpec, payload: any): string | null {
+  if (spec.op === "select" || user.role === "owner") return null;
+  const rows: any[] = payload === undefined ? [] : Array.isArray(payload) ? payload : [payload];
+  if (user.role === "hr") {
+    if (spec.table === "performance_records") return "Performance records are maintained by managers";
+    if (spec.table === "people" && spec.op === "update" && rows.some((r) => Object.keys(r).some((k) => ASSESSMENT_FIELDS.has(k))))
+      return "Skill assessment is maintained by managers";
+  }
+  if (user.role === "manager") {
+    if (spec.table === "person_milestones" || spec.table === "person_lifecycle_events")
+      return "This section is maintained by HR";
+    if (spec.table === "people" && rows.some((r) => Object.keys(r).some((k) => !ASSESSMENT_FIELDS.has(k))))
+      return "Profile information is maintained by HR";
+  }
+  return null;
+}
 
 async function checkManager(
   _user: AppUser,
