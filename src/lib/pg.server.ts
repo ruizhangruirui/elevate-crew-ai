@@ -158,13 +158,15 @@ class Builder implements PromiseLike<PgResult> {
     // Build WHERE clause.
     const params: unknown[] = [];
     const ph = (table: string, col: string, v: unknown): string => {
+      if (v === null || v === undefined) return "NULL";
       const s = serialize(table, col, v);
       return s.text === "$" ? addParam(params, s.value) : `${addParam(params, s.value)}${s.text.slice(1)}`;
     };
     const conds: string[] = [];
     for (const fl of this.filters) {
       const [col] = fl.args as [string, ...unknown[]];
-      const c = ident(col, "column");
+      // "or"/"match" carry expressions/objects rather than a plain column name.
+      const c = fl.m === "or" || fl.m === "match" ? "" : ident(col, "column");
       if (CMP_OPS[fl.m]) {
         const v = fl.args[1];
         if (v === undefined) continue;
