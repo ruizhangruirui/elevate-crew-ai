@@ -553,7 +553,7 @@ export function PersonProfile({
   return (
     <div className="space-y-5">
       {/* ---------- Basic info (HR) ---------- */}
-      <section className="rounded-xl border border-border/60 bg-card p-4">
+      <section className="card-glass p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <h3 className="font-display text-base font-semibold">{t("pp.basic.title")}</h3>
@@ -564,13 +564,6 @@ export function PersonProfile({
               <Button variant="outline" size="sm" className="gap-1.5" onClick={() => startEdit("basic")}>
                 <Pencil className="size-3.5" /> {t("pp.hr.edit")}
               </Button>
-            )}
-            {canHr && (
-              <ArchivePersonDialog personId={person.id} personName={person.name} onDone={() => navigate({ to: "/people" })}>
-                <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-danger">
-                  <LogOut className="size-3.5" /> {t("lc.archive.action")}
-                </Button>
-              </ArchivePersonDialog>
             )}
           </div>
         </div>
@@ -668,11 +661,20 @@ export function PersonProfile({
             {person.note && <p className="mt-2 text-xs text-muted-foreground">{person.note}</p>}
           </>
         )}
+        {canHr && editing !== "basic" && (
+          <div className="mt-4 flex items-center justify-end border-t border-border/40 pt-2.5">
+            <ArchivePersonDialog personId={person.id} personName={person.name} onDone={() => navigate({ to: "/people" })}>
+              <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-muted-foreground hover:text-danger">
+                <LogOut className="size-3.5" /> {t("lc.archive.action")}
+              </Button>
+            </ArchivePersonDialog>
+          </div>
+        )}
       </section>
 
       <div className="grid gap-5">
         {/* ---------- Career Profile (HR) ---------- */}
-        <div className="rounded-xl border border-border/60 bg-card px-4 pb-2 pt-3">
+        <div className="card-glass px-5 pb-2 pt-4">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-2">
             <div className="flex items-center gap-2">
               <h2 className="font-display text-lg font-semibold">{t("pp.career.title")}</h2>
@@ -953,7 +955,7 @@ export function PersonProfile({
         </div>
 
         {/* ---------- Manager assessment ---------- */}
-        <div className="rounded-xl border border-border/60 bg-card px-4 pb-2 pt-3">
+        <div className="card-glass px-5 pb-2 pt-4">
           <div className="flex flex-wrap items-center gap-2 border-b border-border/60 pb-2">
             <h2 className="font-display text-lg font-semibold">{t("pp.tab.manager")}</h2>
             <span className="text-[11px] text-muted-foreground">{t("pp.editedBy.mgr")}</span>
