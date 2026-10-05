@@ -281,6 +281,7 @@ export type Database = {
       }
       candidates: {
         Row: {
+          contract_type: string | null
           created_at: string
           current_company: string | null
           current_title: string | null
@@ -304,6 +305,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          contract_type?: string | null
           created_at?: string
           current_company?: string | null
           current_title?: string | null
@@ -327,6 +329,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          contract_type?: string | null
           created_at?: string
           current_company?: string | null
           current_title?: string | null
