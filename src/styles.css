@@ -131,6 +131,9 @@
 
   --gradient-brand: linear-gradient(135deg, oklch(0.65 0.18 215), oklch(0.55 0.20 255));
   --gradient-surface: linear-gradient(160deg, oklch(0.98 0 0), oklch(0.94 0 0));
+  --gradient-card: linear-gradient(155deg, oklch(0.97 0.025 230), oklch(1 0 0) 48%, oklch(0.96 0.02 250));
+  --card-glass-border: oklch(0.65 0.18 215 / 14%);
+  --shadow-card-glass: 0 1px 0 0 oklch(1 0 0 / 70%) inset, 0 12px 32px -20px oklch(0.65 0.18 215 / 28%);
   --glow-brand: 0 0 0 1px oklch(0.65 0.18 215 / 20%), 0 12px 40px -16px oklch(0.65 0.18 215 / 25%);
   --shadow-panel: 0 1px 0 0 oklch(1 0 0 / 60%) inset, 0 20px 50px -24px oklch(0 0 0 / 10%);
 }
@@ -193,6 +196,9 @@
 
   --gradient-brand: linear-gradient(135deg, oklch(0.75 0.15 215), oklch(0.62 0.20 255));
   --gradient-surface: linear-gradient(160deg, oklch(0.08 0 0), oklch(0.03 0 0));
+  --gradient-card: linear-gradient(155deg, oklch(0.13 0.03 235), oklch(0.07 0.01 250) 55%, oklch(0.09 0.02 250));
+  --card-glass-border: oklch(0.75 0.15 215 / 22%);
+  --shadow-card-glass: 0 1px 0 0 oklch(1 0 0 / 4%) inset, 0 16px 40px -24px oklch(0 0 0 / 60%);
   --glow-brand: 0 0 0 1px oklch(0.75 0.15 215 / 30%), 0 18px 50px -20px oklch(0.75 0.15 215 / 50%);
   --shadow-panel: 0 1px 0 0 oklch(1 0 0 / 5%) inset, 0 24px 60px -30px oklch(0 0 0 / 90%);
 }
@@ -237,6 +243,13 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-panel);
+}
+
+@utility card-glass {
+  background-image: var(--gradient-card);
+  border: 1px solid var(--card-glass-border);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-card-glass);
 }
 
 @utility brand-gradient-text {
