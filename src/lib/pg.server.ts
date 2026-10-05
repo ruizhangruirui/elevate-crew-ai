@@ -28,7 +28,10 @@ function getPool() {
   if (!pool) {
     const url = process.env["DATABASE_URL"];
     if (!url) throw new Error("DATABASE_URL is not set");
-    pool = new Pool({ connectionString: url, max: 5 });
+    // Internal deployments usually run plain local PostgreSQL; SSL only when
+    // the connection string explicitly asks for it (sslmode=require or higher).
+    const wantsSsl = /sslmode=(require|verify-ca|verify-full)/.test(url);
+    pool = new Pool({ connectionString: url, max: 5, ssl: wantsSsl ? { rejectUnauthorized: false } : false });
   }
   return pool;
 }
