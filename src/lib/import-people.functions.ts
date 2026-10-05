@@ -25,15 +25,19 @@ export const importPeople = createServerFn({ method: "POST" })
       db.from("orgs").select("id").limit(1),
       db.from("org_nodes").select("id,name,type,parent_id").eq("archived", false),
       db.from("roles").select("id,title").eq("archived", false),
-      db.from("people").select("staff_id").eq("archived", false).not("staff_id", "is", null),
+      db.from("people").select("staff_id").eq("archived", false),
     ]);
-    if (orgs.error || nodes.error || roles.error || existing.error) throw new Error("Unable to validate import data");
+    const loadError = orgs.error || nodes.error || roles.error || existing.error;
+    if (loadError) {
+      console.error("importPeople: failed to load reference data", loadError);
+      throw new Error(`Unable to load organization data: ${loadError.message}`);
+    }
     const orgId = orgs.data?.[0]?.id;
     if (!orgId) throw new Error("Organization not initialized");
     const labs = (nodes.data ?? []).filter((n) => n.type === "Lab");
     const teams = (nodes.data ?? []).filter((n) => n.type === "Team");
     const roleMap = new Map((roles.data ?? []).map((r) => [r.title, r.id]));
-    const taken = new Set((existing.data ?? []).map((p) => p.staff_id as string));
+    const taken = new Set((existing.data ?? []).map((p) => p.staff_id as string | null).filter(Boolean) as string[]);
     const seen = new Set<string>();
 
     const payload = data.rows.map((row) => {
