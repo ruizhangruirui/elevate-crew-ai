@@ -304,7 +304,7 @@ class Builder implements PromiseLike<PgResult> {
         // that plain `ON CONFLICT (cols)` cannot match. Fall back to a manual,
         // NULL-safe upsert using IS NOT DISTINCT FROM.
         if (this.op !== "upsert" || !conflictCols.length || (e as { code?: string })?.code !== "42P10") throw e;
-        return this.manualUpsert(db);
+        return this.manualUpsert(db, rows, cols);
       }
     }
 
