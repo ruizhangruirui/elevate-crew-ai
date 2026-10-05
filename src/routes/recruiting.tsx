@@ -122,6 +122,7 @@ function RecruitingBody() {
   const { t } = useI18n();
   const { user } = useAuth();
   const canEdit = user?.role === "owner" || user?.role === "hr" || user?.role === "recruiter";
+  const canEditRole = user?.role === "owner" || user?.role === "hr";
   const qc = useQueryClient();
   const navigate = useNavigate({ from: "/recruiting" });
   const { role: roleId } = Route.useSearch();
@@ -270,7 +271,7 @@ function RecruitingBody() {
               <Button
                 variant="ghost"
                 onClick={() => navigate({ search: { role: r.id } })}
-                className={`h-auto w-full flex-col items-start gap-0 rounded-lg border border-border/50 px-2.5 py-2 ${canEdit ? "pr-10" : ""} text-left text-sm whitespace-normal transition-colors ${r.id === roleId ? "border-brand/60 bg-brand/12 text-foreground" : "hover:bg-surface-raised/60"}`}
+                className={`h-auto w-full flex-col items-start gap-0 rounded-lg border border-border/50 px-2.5 py-2 ${canEditRole ? "pr-10" : ""} text-left text-sm whitespace-normal transition-colors ${r.id === roleId ? "border-brand/60 bg-brand/12 text-foreground" : "hover:bg-surface-raised/60"}`}
               >
                 <p className="w-full truncate font-medium">{r.title}</p>
                 <p className="mt-0.5 flex gap-2 text-[11px] text-muted-foreground">
@@ -281,7 +282,7 @@ function RecruitingBody() {
                   {labOf(r.org_node_id) && <span className="truncate">· {labOf(r.org_node_id)?.name}</span>}
                 </p>
               </Button>
-              {canEdit && <RoleMenu
+              {canEditRole && <RoleMenu
                 role={r}
                 orgNodes={orgNodes}
                 onArchive={() => removeRole.mutate(r.id)}
