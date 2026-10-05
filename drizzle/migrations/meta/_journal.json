@@ -15,6 +15,13 @@
       "when": 1790691552303,
       "tag": "0001_app_users_and_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791203345114,
+      "tag": "0002_people_staff_id_hire_date",
+      "breakpoints": true
     }
   ]
 }

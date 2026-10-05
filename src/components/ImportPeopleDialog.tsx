@@ -7,6 +7,7 @@ import { db as supabase } from "@/lib/db-client";
 import { useI18n } from "@/lib/i18n";
 import { fetchWorkspace } from "@/lib/talent";
 import { importPeople } from "@/lib/import-people.functions";
+import { CONTRACTS, type ContractType } from "@/lib/contract";
 import { useAuth } from "@/hooks/useAuth";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { Button } from "@/components/ui/button";
@@ -20,32 +21,33 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-const CONTRACTS = ["正式员工", "外包", "实习生", "外部顾问", "访问学者"];
-
-const HEADERS = [
-  "name",
-  "level",
-  "status",
-  "contract_type",
-  "team",
-  "role",
-  "tags",
-  "note",
-] as const;
+const HEADERS = ["staff_id", "name", "lab", "team", "contract_type", "hire_date", "level", "role"] as const;
 
 type Row = {
+  staff_id: string;
   name: string;
-  level: number | null;
-  status: string;
-  contract_type: string | null;
+  lab: string;
   team: string;
+  contract_type: ContractType;
+  hire_date: string | null;
+  level: number | null;
   role: string;
-  tags: string[];
-  note: string | null;
   error?: string;
 };
 
-type OrgNode = { id: string; name: string };
+type OrgNode = { id: string; name: string; type: string; parent_id: string | null };
+
+function toIsoDate(v: unknown): string | null | "invalid" {
+  if (v === "" || v == null) return null;
+  if (v instanceof Date && !Number.isNaN(v.getTime())) {
+    const d = new Date(v.getTime() - v.getTimezoneOffset() * 60000);
+    return d.toISOString().slice(0, 10);
+  }
+  const s = String(v).trim().replace(/[./]/g, "-");
+  const m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (!m) return "invalid";
+  return `${m[1]}-${m[2]!.padStart(2, "0")}-${m[3]!.padStart(2, "0")}`;
+}
 
 export function ImportPeopleDialog({ children }: { children?: React.ReactNode }) {
   const { t } = useI18n();
@@ -63,24 +65,29 @@ export function ImportPeopleDialog({ children }: { children?: React.ReactNode })
     queryFn: async () => {
       const { data, error } = await supabase
         .from("org_nodes")
-        .select("id,name")
+        .select("id,name,type,parent_id")
         .eq("archived", false);
       if (error) throw error;
       return (data ?? []) as OrgNode[];
     },
   });
 
+  const labs = (nodes ?? []).filter((n) => n.type === "Lab");
+  const teams = (nodes ?? []).filter((n) => n.type === "Team");
+
   const downloadTemplate = () => {
+    const firstLab = labs[0];
+    const firstTeam = teams.find((tm) => tm.parent_id === firstLab?.id);
     const sample = [
       {
+        staff_id: "S0001",
         name: "Jane Doe",
+        lab: firstLab?.name ?? "Lab A",
+        team: firstTeam?.name ?? "",
+        contract_type: "Employee",
+        hire_date: "2024-03-01",
         level: 15,
-        status: "onboard",
-        contract_type: "正式员工",
-        team: nodes?.[0]?.name ?? "Team A",
         role: ws?.roles?.[0]?.title ?? "",
-        tags: "Best Paper; Tech Lead",
-        note: "",
       },
     ];
     const sheet = XLSX.utils.json_to_sheet(sample, { header: HEADERS as unknown as string[] });
@@ -88,16 +95,16 @@ export function ImportPeopleDialog({ children }: { children?: React.ReactNode })
 
     const ref = XLSX.utils.aoa_to_sheet([
       ["field", "required", "accepted values"],
-      ["name", "yes", "free text"],
+      ["staff_id", "yes", "unique staff ID"],
+      ["name", "yes", "full name"],
+      ["lab", "yes", labs.map((n) => n.name).join(" | ")],
+      ["team", "no", teams.map((tm) => `${tm.name} (${labs.find((l) => l.id === tm.parent_id)?.name ?? "-"})`).join(" | ")],
+      ["contract_type", "yes", CONTRACTS.join(" | ")],
+      ["hire_date", "no", "YYYY-MM-DD"],
       ["level", "no", "number, e.g. 13-18"],
-      ["status", "no", "onboard | candidate (default onboard)"],
-      ["contract_type", "no", CONTRACTS.join(" | ")],
-      ["team", "no", (nodes ?? []).map((n) => n.name).join(" | ") || "team name in Settings"],
-      ["role", "no", (ws?.roles ?? []).map((r) => r.title).join(" | ") || "target role title"],
-      ["tags", "no", "separated by ; or ,"],
-      ["note", "no", "free text"],
+      ["role", "no", (ws?.roles ?? []).map((r) => r.title).join(" | ")],
     ]);
-    ref["!cols"] = [{ wch: 16 }, { wch: 10 }, { wch: 70 }];
+    ref["!cols"] = [{ wch: 16 }, { wch: 10 }, { wch: 90 }];
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, sheet, "People");
@@ -108,48 +115,50 @@ export function ImportPeopleDialog({ children }: { children?: React.ReactNode })
   const parseFile = async (file: File) => {
     try {
       const buf = await file.arrayBuffer();
-      const wb = XLSX.read(buf);
+      const wb = XLSX.read(buf, { cellDates: true });
       const first = wb.SheetNames[0];
       if (!first) throw new Error("empty");
-      const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[first]!, {
-        defval: "",
-      });
+      const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[first]!, { defval: "" });
+      const seen = new Set<string>();
       const parsed: Row[] = raw
         .map((r) => {
           const pick = (k: string) => String(r[k] ?? "").trim();
+          const staff_id = pick("staff_id");
           const name = pick("name");
-          const statusRaw = pick("status").toLowerCase();
-          const status = statusRaw === "candidate" ? "candidate" : "onboard";
+          const labName = pick("lab");
+          const teamName = pick("team");
+          const contract = pick("contract_type");
+          const date = toIsoDate(r["hire_date"]);
           const levelRaw = pick("level");
           const level = levelRaw ? Number(levelRaw) : null;
-          const contract = pick("contract_type");
-          const tags = pick("tags")
-            .split(/[;,，、]/)
-            .map((s) => s.trim())
-            .filter(Boolean);
-          const teamName = pick("team");
           const roleTitle = pick("role");
+          const lab = labs.find((l) => l.name === labName);
           let error: string | undefined;
-          if (!name) error = t("imp.err.name");
-          else if (level !== null && Number.isNaN(level)) error = t("imp.err.level");
-          else if (contract && !CONTRACTS.includes(contract)) error = t("imp.err.contract");
-          else if (teamName && !(nodes ?? []).some((n) => n.name === teamName))
+          if (!staff_id) error = t("imp.err.staffId");
+          else if (seen.has(staff_id)) error = t("imp.err.staffDup");
+          else if (!name) error = t("imp.err.name");
+          else if (!lab) error = t("imp.err.lab");
+          else if (teamName && !teams.some((tm) => tm.name === teamName && tm.parent_id === lab.id))
             error = t("imp.err.team");
+          else if (!(CONTRACTS as readonly string[]).includes(contract)) error = t("imp.err.contract");
+          else if (date === "invalid") error = t("imp.err.date");
+          else if (level !== null && Number.isNaN(level)) error = t("imp.err.level");
           else if (roleTitle && !(ws?.roles ?? []).some((x) => x.title === roleTitle))
             error = t("imp.err.role");
+          if (staff_id) seen.add(staff_id);
           return {
+            staff_id,
             name,
-            level: level !== null && !Number.isNaN(level) ? level : null,
-            status,
-            contract_type: contract || null,
+            lab: labName,
             team: teamName,
+            contract_type: contract as ContractType,
+            hire_date: date === "invalid" ? null : date,
+            level: level !== null && !Number.isNaN(level) ? level : null,
             role: roleTitle,
-            tags,
-            note: pick("note") || null,
             ...(error ? { error } : {}),
           } as Row;
         })
-        .filter((r) => r.name || r.error);
+        .filter((r) => r.name || r.staff_id || r.error);
       setRows(parsed);
       setFileName(file.name);
       if (!parsed.length) toast.error(t("imp.err.empty"));
@@ -249,10 +258,11 @@ export function ImportPeopleDialog({ children }: { children?: React.ReactNode })
                 <table className="w-full text-xs">
                   <thead className="sticky top-0 bg-muted/60 text-muted-foreground">
                     <tr>
+                      <th className="px-2 py-1.5 text-left">{t("pp.f.staffId")}</th>
                       <th className="px-2 py-1.5 text-left">{t("ppl.field.name")}</th>
-                      <th className="px-2 py-1.5 text-left">{t("ppl.field.level")}</th>
-                      <th className="px-2 py-1.5 text-left">{t("ppl.field.status")}</th>
+                      <th className="px-2 py-1.5 text-left">{t("pp.f.lab")}</th>
                       <th className="px-2 py-1.5 text-left">{t("imp.col.team")}</th>
+                      <th className="px-2 py-1.5 text-left">{t("ppl.field.level")}</th>
                       <th className="px-2 py-1.5 text-left">{t("imp.col.role")}</th>
                       <th className="px-2 py-1.5 text-left">{t("imp.col.result")}</th>
                     </tr>
@@ -260,10 +270,11 @@ export function ImportPeopleDialog({ children }: { children?: React.ReactNode })
                   <tbody>
                     {rows.map((r, i) => (
                       <tr key={i} className="border-t border-border/40">
+                        <td className="px-2 py-1.5">{r.staff_id || "—"}</td>
                         <td className="px-2 py-1.5">{r.name || "—"}</td>
-                        <td className="px-2 py-1.5">{r.level ?? "—"}</td>
-                        <td className="px-2 py-1.5">{r.status}</td>
+                        <td className="px-2 py-1.5">{r.lab || "—"}</td>
                         <td className="px-2 py-1.5">{r.team || "—"}</td>
+                        <td className="px-2 py-1.5">{r.level ?? "—"}</td>
                         <td className="px-2 py-1.5">{r.role || "—"}</td>
                         <td className="px-2 py-1.5">
                           {r.error ? (

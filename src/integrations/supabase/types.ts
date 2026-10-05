@@ -529,6 +529,7 @@ export type Database = {
           attrition_risk: string
           contract_type: string | null
           created_at: string
+          hire_date: string | null
           id: string
           importance: string
           is_leader: boolean
@@ -541,6 +542,7 @@ export type Database = {
           prior_experience: string[]
           readiness: string
           role_id: string | null
+          staff_id: string | null
           status: string
           tags: string[]
           tenure_months: number | null
@@ -555,6 +557,7 @@ export type Database = {
           attrition_risk?: string
           contract_type?: string | null
           created_at?: string
+          hire_date?: string | null
           id?: string
           importance?: string
           is_leader?: boolean
@@ -567,6 +570,7 @@ export type Database = {
           prior_experience?: string[]
           readiness?: string
           role_id?: string | null
+          staff_id?: string | null
           status?: string
           tags?: string[]
           tenure_months?: number | null
@@ -581,6 +585,7 @@ export type Database = {
           attrition_risk?: string
           contract_type?: string | null
           created_at?: string
+          hire_date?: string | null
           id?: string
           importance?: string
           is_leader?: boolean
@@ -593,6 +598,7 @@ export type Database = {
           prior_experience?: string[]
           readiness?: string
           role_id?: string | null
+          staff_id?: string | null
           status?: string
           tags?: string[]
           tenure_months?: number | null

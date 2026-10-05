@@ -65,7 +65,7 @@ export const peopleDict: Dict = {
   "imp.err.name": { zh: "缺少姓名", en: "Missing name" },
   "imp.err.level": { zh: "职级必须是数字", en: "Level must be a number" },
   "imp.err.contract": { zh: "合同类型不在可选值中", en: "Unknown contract type" },
-  "imp.err.team": { zh: "找不到该团队", en: "Team not found" },
+  "imp.err.team": { zh: "该团队不在所填 Lab 下", en: "Team not found under this Lab" },
   "imp.err.role": { zh: "找不到该岗位", en: "Role not found" },
   "imp.err.empty": { zh: "表格中没有数据", en: "No rows found in the sheet" },
   "imp.err.parse": { zh: "无法解析该文件", en: "Could not parse this file" },
@@ -73,4 +73,9 @@ export const peopleDict: Dict = {
   "imp.ownerOnly": { zh: "仅 Owner 可批量导入", en: "Only the Owner can bulk import" },
   "imp.confirmTitle": { zh: "确认批量导入人员？", en: "Confirm bulk import?" },
   "imp.confirmDesc": { zh: "即将新增 {n} 人，并写入入职记录。请确认预览结果无误；提交后无法批量撤销。", en: "This will add {n} people and record their arrivals. Check the preview carefully; the import cannot be undone in bulk." },
+
+  "imp.err.staffId": { zh: "缺少 Staff ID", en: "Missing Staff ID" },
+  "imp.err.staffDup": { zh: "Staff ID 在表格中重复", en: "Duplicate Staff ID in file" },
+  "imp.err.lab": { zh: "找不到该 Lab", en: "Lab not found" },
+  "imp.err.date": { zh: "入职日期格式应为 YYYY-MM-DD", en: "Hire date must be YYYY-MM-DD" },
 };
