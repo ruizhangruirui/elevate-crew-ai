@@ -432,6 +432,7 @@ function CandidateDialog({
     next_step: candidate?.next_step ?? "",
     next_step_on: candidate?.next_step_on ?? "",
     notes: candidate?.notes ?? "",
+    contract_type: candidate?.contract_type ?? "",
   });
   const [ev, setEv] = useState({ note: "", interviewer: "", happened_on: new Date().toISOString().slice(0, 10) });
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setF({ ...f, [k]: e.target.value });
@@ -471,6 +472,7 @@ function CandidateDialog({
       next_step: n(f.next_step),
       next_step_on: n(f.next_step_on),
       notes: n(f.notes),
+      contract_type: n(f.contract_type),
     };
   };
 
@@ -583,6 +585,19 @@ function CandidateDialog({
           {field("current_title", t("rec.f.jobTitle"))}
           {field("location", t("rec.f.location"))}
           {field("source", t("rec.c.source"))}
+          <div className="space-y-1">
+            <Label className="text-xs">{t("rec.c.contract")}</Label>
+            <Select value={f.contract_type} onValueChange={(v) => setF({ ...f, contract_type: v })} disabled={!canEdit}>
+              <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={CONTRACT_TYPE_EMPLOYEE}>{CONTRACT_TYPE_EMPLOYEE}</SelectItem>
+                <SelectItem value={CONTRACT_TYPE_LEASED}>{CONTRACT_TYPE_LEASED}</SelectItem>
+                {f.contract_type && ![CONTRACT_TYPE_EMPLOYEE, CONTRACT_TYPE_LEASED].includes(f.contract_type) && (
+                  <SelectItem value={f.contract_type}>{f.contract_type}</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
           {field("recruiter", t("rec.c.recruiter"))}
           {field("rating", t("rec.f.rating"), "number")}
           <div className="space-y-1">
