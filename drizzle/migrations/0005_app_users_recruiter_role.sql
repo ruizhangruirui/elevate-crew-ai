@@ -1,0 +1,2 @@
+ALTER TABLE public.app_users DROP CONSTRAINT IF EXISTS app_users_role_chk;
+ALTER TABLE public.app_users ADD CONSTRAINT app_users_role_chk CHECK (role = ANY (ARRAY['owner'::text, 'hr'::text, 'manager'::text, 'recruiter'::text]));
