@@ -22,7 +22,7 @@ PGUSER="${PGUSER:-postgres}"
 export PGHOST PGPORT PGDATABASE PGUSER
 if [ -n "${PGPASSWORD:-}" ]; then export PGPASSWORD; fi
 
-PSQL="psql -v ON_ERROR_STOP=1 -X -q"
+PSQL="psql -v ON_ERROR_STOP=1 -X -q sslmode=${PGSSLMODE:-disable}"
 
 echo "==> Target: ${PGUSER}@${PGHOST}:${PGPORT}/${PGDATABASE}"
 $PSQL -c "SELECT version();" >/dev/null
