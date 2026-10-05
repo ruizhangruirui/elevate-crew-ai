@@ -21,7 +21,8 @@ PGHOST="${PGHOST:-127.0.0.1}"
 PGPORT="${PGPORT:-5432}"
 PGDATABASE="${PGDATABASE:-talent_app}"
 PGUSER="${PGUSER:-postgres}"
-export PGHOST PGPORT PGDATABASE PGUSER
+if [ -z "${PGSSLMODE:-}" ]; then export PGSSLMODE=disable; fi
+export PGHOST PGPORT PGDATABASE PGUSER PGSSLMODE
 if [ -n "${PGPASSWORD:-}" ]; then export PGPASSWORD; fi
 
 PSQL="psql -v ON_ERROR_STOP=1 -X -q"
