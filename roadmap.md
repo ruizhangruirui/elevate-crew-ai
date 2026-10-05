@@ -5,4 +5,6 @@
 - [x] Remove explanatory copy from everyday people/settings screens and tighten person profile layout.
 - [x] Move bulk import into Settings → People and enforce Owner-only submission.
 - [x] Move person archive action from list rows into the person profile.
-- [ ] Verify the signed-in import and archive flows (blocked: no app-owned test account is available in this preview).
+- [ ] Verify the signed-in import and archive flows (blocked: no app-owned test account is available in this preview).- [x] Recruiting: roles panel on top, collapsible, Lab filter; managers see only roles/candidates in their scope.
+- [x] Add Recruiter user role (Strategic Roles + Recruiting only, edits candidates only).
+- [x] Move add/edit/archive directions and the Archived bin into Settings (Owner-only, server-enforced).
