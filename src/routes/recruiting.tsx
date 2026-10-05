@@ -297,7 +297,7 @@ function RecruitingBody() {
                     <th className="px-3 py-2">{t("rec.c.name")}</th>
                     <th className="px-3 py-2">{t("rec.c.current")}</th>
                     <th className="px-3 py-2">{t("rec.c.source")}</th>
-                    <th className="px-3 py-2">{t("rec.c.contract")}</th>
+                    <th className="px-3 py-2 whitespace-nowrap">{t("rec.c.contract")}</th>
                     <th className="px-3 py-2">{t("rec.c.stage")}</th>
                     <th className="px-3 py-2">{t("rec.c.outcome")}</th>
                     <th className="px-3 py-2">{t("rec.c.next")}</th>
