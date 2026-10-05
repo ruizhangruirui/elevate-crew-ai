@@ -263,6 +263,7 @@ class Builder implements PromiseLike<PgResult> {
         return `$${writeParams.length}`;
       };
       const phW = (col: string, v: unknown): string => {
+        if (v === null || v === undefined) return "NULL";
         const s = serialize(this.table, col, v);
         return s.text === "$" ? addW(s.value) : `${addW(s.value)}${s.text.slice(1)}`;
       };
