@@ -25,7 +25,7 @@ import {
 import { buildCapabilities, normalizeKey, carrierRiskTier } from "@/lib/capability";
 import { fetchOrgNodes } from "@/lib/org-tree";
 import { useI18n } from "@/lib/i18n";
-import { fetchLifecycleEvents, recordJoin } from "@/lib/lifecycle";
+import { recordJoin } from "@/lib/lifecycle";
 import { ArchivePersonDialog } from "@/components/ArchivePersonDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { contractLabel, CONTRACTS, labTeamOf, tenureLabel, tenureMonths } from "@/lib/contract";
@@ -670,7 +670,7 @@ export function PersonProfile({
         )}
       </section>
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid gap-5">
         {/* ---------- Career Profile (HR) ---------- */}
         <div className="rounded-xl border border-border/60 bg-card px-4 pb-2 pt-3">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-2">
@@ -1276,47 +1276,8 @@ export function PersonProfile({
             )}
           </Module>
 
-          <LifecycleModule personId={person.id} />
       </div>
     </div>
   );
 }
 
-function LifecycleModule({ personId }: { personId: string }) {
-  const { t } = useI18n();
-  const { data: events } = useQuery({ queryKey: ["lifecycle"], queryFn: fetchLifecycleEvents });
-  const mine = (events ?? []).filter((e) => e.person_id === personId);
-
-  return (
-    <Module
-      title={t("lc.person.title")}
-      collapsible
-      defaultOpen={false}
-      badge={String(mine.length)}
-    >
-      {mine.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t("lc.person.empty")}</p>
-      ) : (
-        <ul className="space-y-2.5">
-          {mine.map((e) => (
-            <li key={e.id} className="flex items-start gap-2.5">
-              <span
-                className={`mt-0.5 rounded px-1.5 py-0.5 text-[10px] font-medium ${
-                  e.event_type === "exit" ? "bg-danger/12 text-danger" : "bg-ok/12 text-ok"
-                }`}
-              >
-                {e.event_type === "exit" ? t("lc.flow.eventExit") : t("lc.flow.eventJoin")}
-              </span>
-              <div className="min-w-0">
-                <p className="text-sm">
-                  {e.effective_on} · {t(`lc.reason.${e.reason ?? "other"}`)}
-                </p>
-                {e.detail && <p className="text-xs text-muted-foreground">{e.detail}</p>}
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Module>
-  );
-}
