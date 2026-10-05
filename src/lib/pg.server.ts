@@ -297,11 +297,15 @@ class Builder implements PromiseLike<PgResult> {
           sql += ` ON CONFLICT DO NOTHING`;
         }
       }
-      const res = await db.query(sql + returning, writeParams);
-      let data: any = res.rows;
-      if (this.singleMode === "single" && data.length) data = data[0];
-      else if (this.singleMode === "maybe") data = data[0] ?? null;
-      return { data, error: null, count: null };
+      try {
+        return await this.finishWrite(db, sql, writeParams);
+      } catch (e) {
+        // Cloud uses expression unique indexes (e.g. COALESCE over a nullable key)
+        // that plain `ON CONFLICT (cols)` cannot match. Fall back to a manual,
+        // NULL-safe upsert using IS NOT DISTINCT FROM.
+        if (this.op !== "upsert" || !conflictCols.length || (e as { code?: string })?.code !== "42P10") throw e;
+        return this.manualUpsert(db);
+      }
     }
 
     if (this.op === "update") {
