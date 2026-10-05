@@ -217,9 +217,8 @@ The current `vite.config.ts` uses `@lovable.dev/vite-tanstack-config`, whose inc
 - `main` branch builds successfully.
 - Package manager is standardized.
 - Runtime target supports TanStack Start server functions.
-- All required environment variables are configured.
-- `SUPABASE_SERVICE_ROLE_KEY` is server-only.
-- Database migrations are applied.
+- `DATABASE_URL` is configured (or, for cloud mode, the Supabase variables).
+- Database migrations are applied (`scripts/deploy/apply-migrations.sh` reports nothing pending).
 - First owner/admin account is created through the app setup flow.
 - HR, manager, and owner permissions are smoke tested.
 - AI gateway is configured or intentionally disabled/replaced.
