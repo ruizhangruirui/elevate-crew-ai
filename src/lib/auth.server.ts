@@ -15,10 +15,13 @@ export const SESSION_HEADER = "x-app-session";
 const ITER = 100_000;
 const SESSION_DAYS = 14;
 
-export async function admin() {
+/** Loose client shape shared by the cloud client and the direct-PostgreSQL client. */
+export type DbAdminClient = { from: (table: string) => any };
+
+export async function admin(): Promise<DbAdminClient> {
   // On-prem deployment: connect directly to the local PostgreSQL when
   // DATABASE_URL is set; otherwise use the managed cloud database.
-  if (process.env.DATABASE_URL) {
+  if (process.env["DATABASE_URL"]) {
     const { pgAdmin } = await import("./pg.server");
     return pgAdmin();
   }
