@@ -122,13 +122,16 @@ export function ImportPeopleDialog({ children }: { children?: React.ReactNode })
       const seen = new Set<string>();
       const parsed: Row[] = raw
         .map((r) => {
-          const pick = (k: string) => String(r[k] ?? "").trim();
+          const pick = (k: string) => {
+            const key = Object.keys(r).find((x) => x.trim().toLowerCase().replace(/\s+/g, "_") === k);
+            return String(key ? (r[key] ?? "") : "").trim();
+          };
           const staff_id = pick("staff_id");
           const name = pick("name");
           const labName = pick("lab");
           const teamName = pick("team");
           const contract = pick("contract_type");
-          const date = toIsoDate(r["hire_date"]);
+          const date = toIsoDate(r[Object.keys(r).find((x) => x.trim().toLowerCase().replace(/\\s+/g, "_") === "hire_date") ?? "hire_date"]);
           const levelRaw = pick("level");
           const level = levelRaw ? Number(levelRaw) : null;
           const roleTitle = pick("role");

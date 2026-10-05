@@ -36,7 +36,8 @@ export const importPeople = createServerFn({ method: "POST" })
     if (!orgId) throw new Error("Organization not initialized");
     const labs = (nodes.data ?? []).filter((n) => n.type === "Lab");
     const teams = (nodes.data ?? []).filter((n) => n.type === "Team");
-    const roleMap = new Map((roles.data ?? []).map((r) => [r.title, r.id]));
+    const norm = (s: string) => s.trim().replace(/\s+/g, " ").toLowerCase();
+    const roleMap = new Map((roles.data ?? []).map((r) => [norm(r.title as string), r.id]));
     const taken = new Set((existing.data ?? []).map((p) => p.staff_id as string | null).filter(Boolean) as string[]);
     const seen = new Set<string>();
 
