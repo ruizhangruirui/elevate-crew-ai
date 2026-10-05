@@ -48,8 +48,8 @@ export const peopleDict: Dict = {
   "imp.trigger": { zh: "批量导入", en: "Bulk Import" },
   "imp.title": { zh: "批量导入人员", en: "Bulk Import People" },
   "imp.desc": {
-    zh: "下载 Excel 模板，填写后上传。系统会校验团队、岗位与合同类型后再导入。",
-    en: "Download the Excel template, fill it in and upload. Team, role and contract values are validated before import.",
+    zh: "下载 Excel 模板，填写后上传。Lab / 团队 / 岗位能匹配上会自动关联，匹配不上则留空，不阻断导入。",
+    en: "Download the Excel template, fill it in and upload. Lab / team / role are linked when matched, otherwise left blank — import is never blocked.",
   },
   "imp.step1": { zh: "第一步：下载模板", en: "Step 1: download the template" },
   "imp.template": { zh: "下载模板", en: "Download Template" },

@@ -132,19 +132,13 @@ export function ImportPeopleDialog({ children }: { children?: React.ReactNode })
           const levelRaw = pick("level");
           const level = levelRaw ? Number(levelRaw) : null;
           const roleTitle = pick("role");
-          const lab = labs.find((l) => l.name === labName);
           let error: string | undefined;
           if (!staff_id) error = t("imp.err.staffId");
           else if (seen.has(staff_id)) error = t("imp.err.staffDup");
           else if (!name) error = t("imp.err.name");
-          else if (!lab) error = t("imp.err.lab");
-          else if (teamName && !teams.some((tm) => tm.name === teamName && tm.parent_id === lab.id))
-            error = t("imp.err.team");
           else if (!(CONTRACTS as readonly string[]).includes(contract)) error = t("imp.err.contract");
           else if (date === "invalid") error = t("imp.err.date");
           else if (level !== null && Number.isNaN(level)) error = t("imp.err.level");
-          else if (roleTitle && !(ws?.roles ?? []).some((x) => x.title === roleTitle))
-            error = t("imp.err.role");
           if (staff_id) seen.add(staff_id);
           return {
             staff_id,
