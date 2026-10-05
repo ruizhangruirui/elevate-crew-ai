@@ -29,6 +29,8 @@ export const sheetsDict: Dict = {
   "sheet.role.confirmRemoveLabel": { zh: "确认移除", en: "Confirm Removal" },
   "sheet.role.removeOwner": { zh: "移除 Owner", en: "Remove Owner" },
   "sheet.role.selectPerson": { zh: "选择人员", en: "Select person" },
+  "sheet.role.assignOwner": { zh: "内部委任", en: "Assign Owner" },
+  "sheet.role.sourcing": { zh: "招聘寻源", en: "Sourcing" },
   "sheet.role.vacantHint": { zh: "当前 Vacant，需要内部 backup 或外部 KPA。", en: "Currently vacant, needs an internal backup or external KPA." },
   "sheet.role.gapRiskKpaAction": { zh: "Gap / Risk / KPA / Action", en: "Gap / Risk / KPA / Action" },
   "sheet.role.gapCount": { zh: "缺口 {n} 个 Seat", en: "{n} seat gap" },

@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { UserPlus, UserMinus, Pencil, Sparkles, Loader2 } from "lucide-react";
+import { UserPlus, UserMinus, Pencil, Sparkles, Loader2, Search } from "lucide-react";
 import { db as supabase } from "@/lib/db-client";
 import { coverageOf, criticalityLabel, type Person, type Role, type Skill } from "@/lib/talent";
 import { analyzeRoleFit, generateRoleProfile, type FitResult } from "@/lib/ai.functions";
@@ -135,7 +135,7 @@ export function RoleDetailSheet({
   });
 
   const owners = role ? people.filter((p) => p.role_id === role.id && p.status === "onboard") : [];
-  const unassigned = role ? people.filter((p) => p.role_id !== role.id) : [];
+  const unassigned = role ? people.filter((p) => p.role_id !== role.id && p.status === "onboard" && !p.archived) : [];
   const cov = role ? coverageOf(role, people) : null;
 
   const assign = useMutation({
@@ -331,10 +331,21 @@ export function RoleDetailSheet({
                         </Button>
                       </ConfirmAction>
                     </div>
-                  ) : assignSeat === i ? (
-                    <div className="mt-3 flex gap-2">
+                  ) : (
+                    <div className="mt-3 space-y-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button variant="outline" size="sm" className="h-9 min-w-0 gap-1.5 px-2 whitespace-normal" onClick={() => setAssignSeat(assignSeat === i ? null : i)} aria-expanded={assignSeat === i}>
+                          <UserPlus className="size-3.5" /> {t("sheet.role.assignOwner")}
+                        </Button>
+                        <Button asChild variant="outline" size="sm" className="h-9 min-w-0 gap-1.5 px-2 whitespace-normal">
+                          <Link to="/recruiting" search={{ role: role.id }}>
+                            <Search className="size-3.5" /> {t("sheet.role.sourcing")}
+                          </Link>
+                        </Button>
+                      </div>
+                      {assignSeat === i && <div className="flex gap-2">
                       <Select onValueChange={(v) => assign.mutate(v)}>
-                        <SelectTrigger className="flex-1">
+                        <SelectTrigger className="min-w-0 flex-1" disabled={assign.isPending}>
                           <SelectValue placeholder={t("sheet.role.selectPerson")} />
                         </SelectTrigger>
                         <SelectContent>
@@ -348,15 +359,7 @@ export function RoleDetailSheet({
                       <Button variant="ghost" size="sm" onClick={() => setAssignSeat(null)}>
                         {t("sheet.cancel")}
                       </Button>
-                    </div>
-                  ) : (
-                    <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-sm text-muted-foreground">
-                        {t("sheet.role.vacantHint")}
-                      </p>
-                      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setAssignSeat(i)}>
-                        <UserPlus className="size-3.5" /> Assign Owner
-                      </Button>
+                      </div>}
                     </div>
                   )}
                 </div>
@@ -364,12 +367,12 @@ export function RoleDetailSheet({
             </div>
           </Module>
 
-          <div className="flex justify-end">
+          {cov.state === "full" && <div className="flex justify-end">
             <Link to="/recruiting" search={{ role: role.id }} className="inline-flex items-center gap-1.5 rounded-md border border-brand/40 bg-brand/5 px-3 py-1.5 text-xs font-medium text-brand hover:bg-brand/10">
               {t("rec.recruitingLink")} →
             </Link>
-          </div>
-          <Module title={t("sheet.role.gapRiskKpaAction")}>
+          </div>}
+          {cov.state !== "empty" && <Module title={t("sheet.role.gapRiskKpaAction")}>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               <Fact
                 label="Gap"
@@ -382,7 +385,7 @@ export function RoleDetailSheet({
                 value={role.recommended_action.length ? role.recommended_action.join(" / ") : t("sheet.pendingFill")}
               />
             </div>
-          </Module>
+          </Module>}
 
           <Module title={t("sheet.role.aiAssist")}>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-brand/30 bg-brand/5 p-4">
@@ -441,7 +444,7 @@ export function RoleDetailSheet({
               </div>
             )}
 
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className={`grid gap-3 ${cov.state === "empty" ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
               {[
                 {
                   title: t("sheet.role.currentJudgment"),
@@ -465,7 +468,7 @@ export function RoleDetailSheet({
                   s: role.recommended_action[0] ?? (cov.gap ? t("sheet.role.startKpa") : t("sheet.role.keepQuarterlyReview")),
                   d: cov.gap ? t("sheet.role.gapActionDesc") : t("sheet.role.noGapActionDesc"),
                 },
-              ].map((c) => (
+              ].filter((_, index) => cov.state !== "empty" || index !== 2).map((c) => (
                 <article key={c.title} className="rounded-xl border border-border/60 bg-surface-raised/40 p-4">
                   <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{c.title}</p>
                   <p className="mt-1 font-display text-sm font-semibold">{c.s}</p>
