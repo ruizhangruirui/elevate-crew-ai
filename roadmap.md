@@ -1,3 +1,4 @@
+- [ ] Add Recruiting role editing and confirmed, reversible removal using the shared strategic role controls.
 - [x] Present internal assignment and sourcing equally for vacant seats; hide Gap/Risk/KPA/Action for uncovered roles.
 - [ ] Verify signed-in vacant-role assignment and sourcing presentation (blocked: no app-owned test session is available).
 - [x] Remove explanatory copy from everyday people/settings screens and tighten person profile layout.

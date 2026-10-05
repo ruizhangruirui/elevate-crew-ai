@@ -3,6 +3,9 @@ import type { Dict } from "../i18n-types";
 export const recruitingDict: Dict = {
   "rec.title": { zh: "招聘", en: "Recruiting" },
   "rec.roles": { zh: "岗位", en: "Roles" },
+  "rec.removeRole": { zh: "删除岗位（归档）", en: "Remove role (archive)" },
+  "rec.roleRemoved": { zh: "岗位已归档，可撤销或在战略岗位的归档区恢复", en: "Role archived; undo or restore it from Strategic Roles archives" },
+  "rec.removeRoleDesc": { zh: "将从招聘、战略岗位和组织视图中移除此岗位，并停止计入当前岗位统计。这是归档而非永久删除：该岗位的 {n} 位候选人及面试记录、已关联人员都会保留。可通过撤销或战略岗位的归档区恢复。", en: "This role will be removed from Recruiting, Strategic Roles and Organization views and current role statistics. This archives rather than permanently deletes it: its {n} candidates, interview history and linked people will be retained. Undo or restore it from Strategic Roles archives." },
   "rec.openOnly": { zh: "仅显示空缺岗位", en: "Open roles only" },
   "rec.gap": { zh: "缺 {n}", en: "{n} open" },
   "rec.full": { zh: "已满编", en: "Filled" },

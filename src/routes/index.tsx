@@ -487,16 +487,20 @@ function RoleCard({
 }
 
 
-function RoleMenu({
+export function RoleMenu({
   role,
   orgNodes,
   onArchive,
   onSaved,
+  removalLabel,
+  removalDescription,
 }: {
   role: Role;
   orgNodes: OrgNode[];
   onArchive: () => void;
   onSaved: () => void;
+  removalLabel?: string;
+  removalDescription?: string;
 }) {
   const { t } = useI18n();
   const [editing, setEditing] = useState(false);
@@ -569,15 +573,17 @@ function RoleMenu({
             title={t("idx.confirmArchiveRoleTitle").replace("{title}", role.title)}
             description={
               <>
-                <p>{t("idx.archiveRoleDesc1")}</p>
-                <p>{t("idx.archiveRoleDesc2")}</p>
+                {removalDescription ? <p>{removalDescription}</p> : <>
+                  <p>{t("idx.archiveRoleDesc1")}</p>
+                  <p>{t("idx.archiveRoleDesc2")}</p>
+                </>}
               </>
             }
             confirmLabel={t("idx.confirmArchive")}
             onConfirm={onArchive}
           >
             <DropdownMenuItem className="text-danger" onSelect={(e) => e.preventDefault()}>
-              <Archive className="size-3.5" /> {t("idx.archiveRole")}
+              <Archive className="size-3.5" /> {removalLabel ?? t("idx.archiveRole")}
             </DropdownMenuItem>
           </ConfirmAction>
         </DropdownMenuContent>
