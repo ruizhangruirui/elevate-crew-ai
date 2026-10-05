@@ -25,7 +25,7 @@ import {
 import { buildCapabilities, normalizeKey, carrierRiskTier } from "@/lib/capability";
 import { fetchOrgNodes } from "@/lib/org-tree";
 import { useI18n } from "@/lib/i18n";
-import { fetchLifecycleEvents, recordJoin } from "@/lib/lifecycle";
+import { recordJoin } from "@/lib/lifecycle";
 import { ArchivePersonDialog } from "@/components/ArchivePersonDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { contractLabel, CONTRACTS, labTeamOf, tenureLabel, tenureMonths } from "@/lib/contract";
@@ -670,7 +670,7 @@ export function PersonProfile({
         )}
       </section>
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid gap-5">
         {/* ---------- Career Profile (HR) ---------- */}
         <div className="rounded-xl border border-border/60 bg-card px-4 pb-2 pt-3">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-2">
