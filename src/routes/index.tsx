@@ -277,9 +277,7 @@ function EditOrgDialog({ org, onDone }: { org: Org; onDone: () => void }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(org.name);
-  const [tagline, setTagline] = useState(org.tagline ?? "");
   const [description, setDescription] = useState(org.description ?? "");
-  const [tags, setTags] = useState((org.tags ?? []).join("、"));
 
   const save = useMutation({
     mutationFn: async () => {
@@ -287,12 +285,7 @@ function EditOrgDialog({ org, onDone }: { org: Org; onDone: () => void }) {
         .from("orgs")
         .update({
           name: name.trim(),
-          tagline: tagline.trim() || null,
           description: description.trim() || null,
-          tags: tags
-            .split(/[、,，\n]/)
-            .map((t) => t.trim())
-            .filter(Boolean),
         })
         .eq("id", org.id);
       if (error) throw error;
@@ -312,9 +305,7 @@ function EditOrgDialog({ org, onDone }: { org: Org; onDone: () => void }) {
         setOpen(v);
         if (v) {
           setName(org.name);
-          setTagline(org.tagline ?? "");
           setDescription(org.description ?? "");
-          setTags((org.tags ?? []).join("、"));
         }
       }}
     >
@@ -337,24 +328,12 @@ function EditOrgDialog({ org, onDone }: { org: Org; onDone: () => void }) {
             <Input value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label>{t("idx.tagline")}</Label>
-            <Input
-              value={tagline}
-              onChange={(e) => setTagline(e.target.value)}
-              placeholder={t("idx.taglinePlaceholder")}
-            />
-          </div>
-          <div className="space-y-2">
             <Label>{t("idx.orgMission")}</Label>
             <Textarea
               rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
-          </div>
-          <div className="space-y-2">
-            <Label>{t("idx.tagsLabel")}</Label>
-            <Input value={tags} onChange={(e) => setTags(e.target.value)} />
           </div>
         </div>
         <FormActions
