@@ -188,7 +188,11 @@ class Builder implements PromiseLike<PgResult> {
         else conds.push(`array_to_json(${c})::jsonb @> ${addParam(params, jsonParam)}::jsonb`);
       } else if (fl.m === "not") {
         const op = fl.args[1] as string;
-        conds.push(`NOT (${c} ${CMP_OPS[op] ?? "="} ${ph(this.table, c, fl.args[2])})`);
+        const v = fl.args[2];
+        if (op === "is") {
+          const lit = v === null || v === "null" ? "NULL" : v === true || v === "true" ? "TRUE" : "FALSE";
+          conds.push(`${c} IS NOT ${lit}`);
+        } else conds.push(`NOT (${c} ${CMP_OPS[op] ?? "="} ${ph(this.table, c, v)})`);
       } else if (fl.m === "match") {
         const obj = fl.args[0] as Record<string, unknown>;
         for (const [k, v] of Object.entries(obj)) {
