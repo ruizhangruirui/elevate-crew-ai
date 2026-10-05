@@ -87,3 +87,22 @@ export const importPeople = createServerFn({ method: "POST" })
     if (auditError) throw new Error(`People imported, but audit record failed: ${auditError.message}`);
     return payload.length;
   });
+
+export const bulkDeletePeople = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({ ids: z.array(z.string().uuid()).min(1).max(1000) }).parse(input))
+  .handler(async ({ data }) => {
+    const user = await requireUser(["owner"]);
+    const db = await admin();
+    for (const t of ["performance_records", "person_milestones", "person_lifecycle_events", "person_role_fit", "org_activity_participants"] as const) {
+      const { error } = await db.from(t).delete().in("person_id", data.ids);
+      if (error) throw new Error(error.message);
+    }
+    for (const t of ["actions", "audit_log"] as const) {
+      const { error } = await db.from(t).update({ person_id: null }).in("person_id", data.ids);
+      if (error) throw new Error(error.message);
+    }
+    const { error } = await db.from("people").delete().in("id", data.ids);
+    if (error) throw new Error(error.message);
+    await db.from("audit_log").insert({ actor: user.name, action: "bulk_delete_people", entity: "people", detail: `${data.ids.length} people deleted` });
+    return data.ids.length;
+  });
