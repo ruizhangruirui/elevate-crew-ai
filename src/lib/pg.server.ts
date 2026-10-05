@@ -323,6 +323,68 @@ class Builder implements PromiseLike<PgResult> {
     const res = await db.query(`DELETE FROM ${t}${where}${returning}`, params);
     return { data: res.rows, error: null, count: null };
   }
+
+  private applySingle(data: any[]): any {
+    if (this.singleMode === "single") return data.length ? data[0] : { error: { message: "JSON object requested, multiple (or no) rows returned", code: "PGRST116" }, data: null, count: null };
+    if (this.singleMode === "maybe") return data[0] ?? null;
+    return data;
+  }
+
+  private serializeParam(col: string, v: unknown): string {
+    const s = serialize(this.table, col, v);
+    this.mParams!.push(s.text === "$" ? s.value : JSON.stringify(v));
+    return `$${this.mParams!.length}${s.text.slice(1)}`;
+  }
+
+  private mParams: unknown[] | null = null;
+
+  private ndfWhere(row: Record<string, unknown>, cols: string[]): string {
+    return cols
+      .map((c) => {
+        ident(c, "column");
+        const v = row[c];
+        return v === null || v === undefined ? `${c} IS NULL` : `${c} IS NOT DISTINCT FROM ${this.serializeParam(c, v)}`;
+      })
+      .join(" AND ");
+  }
+
+  /** Fallback upsert: NULL-safe match via IS NOT DISTINCT FROM, then UPDATE or INSERT. */
+  private async manualUpsert(db: any, rows: Record<string, unknown>[], _cols: string[]): Promise<PgResult> {
+    const conflictCols = (this.upsertOpts?.onConflict ?? "").split(",").map((c) => c.trim()).filter(Boolean);
+    const t = ident(this.table, "table");
+    const data: any[] = [];
+    for (const row of rows) {
+      this.mParams = [];
+      const ndf = this.ndfWhere(row, conflictCols);
+      const params = this.mParams;
+      const ex = await db.query(`SELECT EXISTS(SELECT 1 FROM ${t} WHERE ${ndf}) AS found`, params);
+      if (ex.rows[0]?.found) {
+        if (this.upsertOpts?.ignoreDuplicates) continue;
+        const updCols = Object.keys(row).filter((k) => row[k] !== undefined && !conflictCols.includes(k));
+        if (!updCols.length) continue;
+        this.mParams = [];
+        const ndf2 = this.ndfWhere(row, conflictCols);
+        const sets = updCols.map((k) => `${ident(k, "column")} = ${this.serializeParam(k, row[k])}`).join(", ");
+        const res = await db.query(`UPDATE ${t} SET ${sets} WHERE ${ndf2}${returningOf(this)}`, params!);
+        data.push(...res.rows);
+      } else {
+        this.mParams = [];
+        const keys = Object.keys(row).filter((k) => row[k] !== undefined);
+        const values = keys.map((k) => {
+          ident(k, "column");
+          return this.serializeParam(k, row[k]);
+        });
+        const res = await db.query(`INSERT INTO ${t} (${keys.join(", ")}) VALUES (${values.join(", ")})${returningOf(this)}`, this.mParams);
+        data.push(...res.rows);
+      }
+    }
+    return { data: this.applySingle(data), error: null, count: null };
+  }
+}
+
+function returningOf(b: Builder): string {
+  const cols = (b as unknown as { columns: string }).columns;
+  return ` RETURNING ${cols === "*" ? "*" : selectList(cols)}`;
 }
 
 /** Query-builder client with the same call surface the app's server code already uses. */
