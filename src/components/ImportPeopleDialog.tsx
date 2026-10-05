@@ -131,7 +131,7 @@ export function ImportPeopleDialog({ children }: { children?: React.ReactNode })
           const labName = pick("lab");
           const teamName = pick("team");
           const contract = pick("contract_type");
-          const date = toIsoDate(r[Object.keys(r).find((x) => x.trim().toLowerCase().replace(/\\s+/g, "_") === "hire_date") ?? "hire_date"]);
+          const date = toIsoDate(r[Object.keys(r).find((x) => x.trim().toLowerCase().replace(/\s+/g, "_") === "hire_date") ?? "hire_date"]);
           const levelRaw = pick("level");
           const level = levelRaw ? Number(levelRaw) : null;
           const roleTitle = pick("role");
