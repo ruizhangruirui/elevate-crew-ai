@@ -154,7 +154,7 @@ PGHOST=127.0.0.1 PGDATABASE=talent_app PGUSER=postgres \
   scripts/deploy/apply-migrations.sh
 ```
 
-The script creates the `anon` / `authenticated` / `service_role` roles the migration files reference, applies every migration once, and tracks applied files in `public._migrations_applied` so it is safe to re-run on every deploy. Add `-?` none; it changes only the schema, never your data.
+The script creates the `anon` / `authenticated` / `service_role` roles the migration files reference, applies every migration once, and tracks applied files in `public._migrations_applied` so it is safe to re-run on every deploy. It changes only the schema, never your data.
 
 Recommended database paths:
 
