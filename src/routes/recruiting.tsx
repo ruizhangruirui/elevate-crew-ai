@@ -82,6 +82,7 @@ export type Candidate = {
   next_step: string | null;
   next_step_on: string | null;
   notes: string | null;
+  contract_type: string | null;
   person_id: string | null;
   updated_at: string;
 };
@@ -288,6 +289,7 @@ function RecruitingBody() {
                     <th className="px-3 py-2">{t("rec.c.name")}</th>
                     <th className="px-3 py-2">{t("rec.c.current")}</th>
                     <th className="px-3 py-2">{t("rec.c.source")}</th>
+                    <th className="px-3 py-2">{t("rec.c.contract")}</th>
                     <th className="px-3 py-2">{t("rec.c.stage")}</th>
                     <th className="px-3 py-2">{t("rec.c.outcome")}</th>
                     <th className="px-3 py-2">{t("rec.c.next")}</th>
@@ -317,6 +319,7 @@ function RecruitingBody() {
                           {[c.current_company, c.current_title].filter(Boolean).join(" · ") || "—"}
                         </td>
                         <td className="px-3 py-1.5 text-xs">{c.source || "—"}</td>
+                        <td className="px-3 py-1.5 text-xs">{ctLabel(t, c.contract_type)}</td>
                         <td className="px-3 py-1.5">
                           <Select
                             value={c.stage ?? ""}
