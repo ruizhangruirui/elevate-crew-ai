@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -363,6 +364,11 @@ export function RoleDetailSheet({
             </div>
           </Module>
 
+          <div className="flex justify-end">
+            <Link to="/recruiting" search={{ role: role.id }} className="inline-flex items-center gap-1.5 rounded-md border border-brand/40 bg-brand/5 px-3 py-1.5 text-xs font-medium text-brand hover:bg-brand/10">
+              {t("rec.recruitingLink")} →
+            </Link>
+          </div>
           <Module title={t("sheet.role.gapRiskKpaAction")}>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               <Fact
