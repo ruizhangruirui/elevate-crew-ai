@@ -167,7 +167,8 @@ class Builder implements PromiseLike<PgResult> {
         conds.push(`${c}::jsonb @> ${ph}`);
       } else if (fl.m === "not") {
         const op = fl.args[1] as string;
-        const inner = cmpOp(op) ?? "=", const s = serialize(this.table, c, fl.args[2]);
+        const inner = cmpOp(op) ?? "=";
+        const s = serialize(this.table, c, fl.args[2]);
         const ph = s.text === "$" ? addParam(s.value) : `${addParam(s.value)}${s.text.slice(1)}`;
         conds.push(`NOT (${c} ${inner} ${ph})`);
       } else if (fl.m === "match") {

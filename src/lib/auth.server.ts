@@ -16,6 +16,12 @@ const ITER = 100_000;
 const SESSION_DAYS = 14;
 
 export async function admin() {
+  // On-prem deployment: connect directly to the local PostgreSQL when
+  // DATABASE_URL is set; otherwise use the managed cloud database.
+  if (process.env.DATABASE_URL) {
+    const { pgAdmin } = await import("./pg.server");
+    return pgAdmin();
+  }
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   return supabaseAdmin;
 }
