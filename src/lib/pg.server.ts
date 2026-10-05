@@ -185,7 +185,7 @@ class Builder implements PromiseLike<PgResult> {
         // text[] columns become JSON via array_to_json; jsonb columns compare directly.
         const jsonParam = JSON.stringify(fl.args[1] ?? null);
         if (JSONB_COLS.has(`${this.table}.${col}`)) conds.push(`${c} @> ${addParam(params, jsonParam)}::jsonb`);
-        else conds.push(`array_to_json(${c}) @> ${addParam(params, jsonParam)}::jsonb`);
+        else conds.push(`array_to_json(${c})::jsonb @> ${addParam(params, jsonParam)}::jsonb`);
       } else if (fl.m === "not") {
         const op = fl.args[1] as string;
         conds.push(`NOT (${c} ${CMP_OPS[op] ?? "="} ${ph(this.table, c, fl.args[2])})`);
