@@ -1,4 +1,6 @@
 import { getRequestHeader } from "@tanstack/react-start/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
 export type AppRole = "owner" | "hr" | "manager";
 export type AppUser = {
@@ -15,15 +17,16 @@ export const SESSION_HEADER = "x-app-session";
 const ITER = 100_000;
 const SESSION_DAYS = 14;
 
-/** Loose client shape shared by the cloud client and the direct-PostgreSQL client. */
-export type DbAdminClient = { from: (table: string) => any };
-
-export async function admin(): Promise<DbAdminClient> {
-  // On-prem deployment: connect directly to the local PostgreSQL when
-  // DATABASE_URL is set; otherwise use the managed cloud database.
+/**
+ * Privileged database client. On-prem deployment: when DATABASE_URL is set,
+ * connects directly to the local PostgreSQL via the pg adapter (same query
+ * subset); otherwise uses the managed cloud database client.
+ * Both satisfy the same call surface the app already uses.
+ */
+export async function admin(): Promise<SupabaseClient<Database>> {
   if (process.env["DATABASE_URL"]) {
     const { pgAdmin } = await import("./pg.server");
-    return pgAdmin();
+    return pgAdmin() as unknown as SupabaseClient<Database>;
   }
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   return supabaseAdmin;
