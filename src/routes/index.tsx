@@ -25,7 +25,6 @@ import {
 } from "@/lib/talent";
 import { db as supabase } from "@/lib/db-client";
 import { fetchOrgNodes, type OrgNode } from "@/lib/org-tree";
-import { ArchivedBinDialog } from "@/components/ArchivedBinDialog";
 import { FormActions } from "@/components/FormActions";
 import { toastError, toastSaved, toastUndoable } from "@/lib/ui-feedback";
 import { Button } from "@/components/ui/button";
@@ -166,10 +165,6 @@ function StrategyBoard() {
           <div>
             <h2 className="font-display text-xl font-semibold">{t("idx.directionsHeading")}</h2>
           </div>
-          <div className="flex items-center gap-1">
-            <ArchivedBinDialog />
-            {org && <NewDirectionDialog orgId={org.id} onDone={invalidate} />}
-          </div>
         </div>
 
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -204,7 +199,6 @@ function StrategyBoard() {
                     {d.description}
                   </p>
                 </button>
-                <DirectionMenu direction={d} roleCount={s.count} onDone={invalidate} />
               </div>
             );
           })}
@@ -654,7 +648,7 @@ function Cell({
   );
 }
 
-function DirectionMenu({
+export function DirectionMenu({
   direction,
   roleCount,
   onDone,
@@ -797,7 +791,7 @@ function DirectionMenu({
   );
 }
 
-function NewDirectionDialog({ orgId, onDone }: { orgId: string; onDone: () => void }) {
+export function NewDirectionDialog({ orgId, onDone }: { orgId: string; onDone: () => void }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
