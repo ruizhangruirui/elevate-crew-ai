@@ -298,7 +298,8 @@ class Builder implements PromiseLike<PgResult> {
         }
       }
       try {
-        return await this.finishWrite(db, sql, writeParams);
+        const res = await db.query(sql + returning, writeParams);
+        return { data: this.applySingle(res.rows), error: null, count: null };
       } catch (e) {
         // Cloud uses expression unique indexes (e.g. COALESCE over a nullable key)
         // that plain `ON CONFLICT (cols)` cannot match. Fall back to a manual,
