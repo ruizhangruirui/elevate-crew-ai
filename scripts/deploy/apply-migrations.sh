@@ -10,6 +10,8 @@
 #   PGDATABASE (default talent_app)
 #   PGUSER     (default postgres)
 #   PGPASSWORD (optional; omit for peer/ident auth over a local socket)
+#   PGSSLMODE  (optional; default "disable" for local connections — set to
+#               "require" or higher when connecting over the network)
 #
 # The script is idempotent: each migration file is applied once and tracked in
 # public._migrations_applied, so it is safe to re-run on every deployment.
