@@ -236,13 +236,12 @@ GitHub Pages is static hosting. This app requires server functions, SSR/server e
 
 ### The app opens but data operations fail
 
-Check that server environment variables are available to the runtime, especially:
+Check the server-side environment first:
 
-- `SUPABASE_URL`
-- `SUPABASE_PUBLISHABLE_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
+- Direct-PostgreSQL mode: `DATABASE_URL` must be set on the app process and point at a reachable PostgreSQL with the migrations applied.
+- Cloud mode: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
 
-Also confirm that migrations were applied to the target database.
+If the error mentions "missing Supabase environment variables", the process is in cloud mode without those variables — set `DATABASE_URL` to switch it to direct-PostgreSQL mode. Also confirm migrations were applied (`public._migrations_applied` should list every migration file).
 
 ### Login works in one environment but not another
 
