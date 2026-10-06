@@ -76,6 +76,5 @@ export const recruitingDict: Dict = {
   "rec.roleTeam": { zh: "所属 Lab / Team", en: "Lab / Team" },
   "rec.roleCount": { zh: "招聘人数", en: "Headcount" },
   "rec.roleAdded": { zh: "已添加招聘岗位", en: "Hiring role added" },
-  "rec.businessNeed": { zh: "业务需求", en: "Business need" },
   "rec.needDirection": { zh: "请先在 Settings 中创建至少一个方向", en: "Create at least one direction in Settings first" },
 };
