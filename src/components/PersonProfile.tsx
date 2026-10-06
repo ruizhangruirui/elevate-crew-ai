@@ -615,7 +615,10 @@ export function PersonProfile({
               </div>
               <div className="space-y-1.5">
                 <Label>{t("pp.f.role")}</Label>
-                {sel(form.role_id, (v) => setForm({ ...form, role_id: v, appointed_role_title: "" }), [
+                {sel(form.role_id === "none" && form.appointed_role_title ? "imported" : form.role_id, (v) => {
+                  if (v === "imported") return;
+                  setForm({ ...form, role_id: v, appointed_role_title: "" });
+                }, [
                   ["none", t("sheet.person.notAssigned")],
                   ...(form.role_id === "none" && form.appointed_role_title ? [["imported", form.appointed_role_title] as [string, string]] : []),
                   ...roles.map((r) => [r.id, r.title] as [string, string]),
