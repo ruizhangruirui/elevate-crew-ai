@@ -381,8 +381,10 @@ function PeopleBody() {
               )}
             </div>
           ))}
-          {data.people.length === 0 && (
-            <p className="px-6 py-10 text-center text-sm text-muted-foreground">{t("ppl.empty")}</p>
+          {filtered.length === 0 && (
+            <p className="px-6 py-10 text-center text-sm text-muted-foreground">
+              {data.people.length ? t("ppl.filter.empty") : t("ppl.empty")}
+            </p>
           )}
         </div>
       </div>
