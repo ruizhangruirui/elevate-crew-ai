@@ -3,7 +3,7 @@ import type { Dict } from "../i18n-types";
 export const coreDict: Dict = {
   // ---- nav / shell ----
   "nav.index": { zh: "战略岗位视图", en: "Strategic Roles" },
-  "nav.capability": { zh: "团队与文化发展", en: "Team & Culture" },
+  "nav.capability": { zh: "成长与发展", en: "Growth & Development" },
   "nav.org": { zh: "组织视图", en: "Org Structure" },
   "nav.people": { zh: "人员视图", en: "People" },
   "nav.recruiting": { zh: "招聘", en: "Recruiting" },

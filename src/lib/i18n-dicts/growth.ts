@@ -1,8 +1,8 @@
 import type { Dict } from "../i18n-types";
 
 export const growthDict: Dict = {
-  "nav.growth": { zh: "绩效与成长", en: "Performance & Growth" },
-  "growth.title": { zh: "绩效与成长", en: "Performance & Growth" },
+  "nav.growth": { zh: "团队与绩效", en: "Team & Performance" },
+  "growth.title": { zh: "团队与绩效", en: "Team & Performance" },
   "growth.subtitle": {
     zh: "全员绩效评估进度、晋升与奖项成长轨迹，点击任何人可进入个人页面继续维护。",
     en: "Review progress and promotion / award growth across the org. Click anyone to open their profile.",
@@ -60,4 +60,7 @@ export const growthDict: Dict = {
   "growth.review.pickPerson": { zh: "请选择成员", en: "Select a member" },
   "growth.review.new": { zh: "发起评估", en: "New review" },
   "growth.review.quick": { zh: "评估", en: "Review" },
+  "growth.tab.performance": { zh: "绩效", en: "Performance" },
+  "growth.tab.team": { zh: "团队与文化", en: "Team & Culture" },
+  "growth.tab.flow": { zh: "入离职", en: "Joins & Exits" },
 };

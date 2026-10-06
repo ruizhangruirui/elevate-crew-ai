@@ -21,6 +21,8 @@ const TABLES = [
   "access_users",
   "candidates",
   "candidate_events",
+  "team_achievements",
+  "team_achievement_contributors",
 ] as const;
 
 const FILTERS = ["eq", "neq", "gt", "gte", "lt", "lte", "in", "is", "like", "ilike", "contains", "not", "or", "match", "filter"] as const;
@@ -71,8 +73,12 @@ export const dbQuery = createServerFn({ method: "POST" })
     const db = await admin();
 
     // Stamp the real actor on audit entries.
-    const stamp = (row: any) =>
-      (spec.table === "audit_log" || spec.table === "candidate_events") && row && typeof row === "object" ? { ...row, actor: user.name } : row;
+    const stamp = (row: any) => {
+      if (!row || typeof row !== "object") return row;
+      if (spec.table === "audit_log" || spec.table === "candidate_events") return { ...row, actor: user.name };
+      if (spec.table === "team_achievements") return { ...row, created_by: row.created_by ?? user.name };
+      return row;
+    };
     let payload = spec.payload;
     if (payload !== undefined) payload = Array.isArray(payload) ? payload.map(stamp) : stamp(payload);
 
@@ -116,6 +122,13 @@ export const dbQuery = createServerFn({ method: "POST" })
           ? await db.from("org_activity_participants").select("activity_id").in("person_id", [...scope.personIds])
           : { data: [] };
         q = q.in("id", [...new Set((ps ?? []).map((p: any) => p.activity_id))]);
+      }
+      else if (spec.table === "team_achievements") q = q.in("org_node_id", [...scope.nodeIds]);
+      else if (spec.table === "team_achievement_contributors") {
+        const { data: achievements } = scope.nodeIds.size
+          ? await db.from("team_achievements").select("id").in("org_node_id", [...scope.nodeIds])
+          : { data: [] };
+        q = q.in("achievement_id", (achievements ?? []).map((row: any) => row.id));
       }
       else if (PERSON_TABLES.has(spec.table)) q = q.in("person_id", [...scope.personIds]);
       else if (spec.table === "candidates" || spec.table === "candidate_events") {
@@ -179,6 +192,14 @@ async function checkManager(
       return "Managers cannot archive or restore people";
     if (rows.some((r) => r.org_node_id && !scope.nodeIds.has(r.org_node_id)))
       return "Cannot move a person outside your scope";
+  }
+  if (spec.table === "team_achievements") {
+    if (rows.some((row) => !row.org_node_id || !scope.nodeIds.has(row.org_node_id)))
+      return "Team achievements must belong to a team inside your scope";
+  }
+  if (spec.table === "team_achievement_contributors" && spec.op === "insert") {
+    if (rows.some((row) => row.person_id && !scope.personIds.has(row.person_id)))
+      return "An achievement contributor is outside your scope";
   }
   if (PERSON_TABLES.has(spec.table) && spec.op !== "update" && spec.op !== "delete") {
     if (rows.some((r) => r.person_id && !scope.personIds.has(r.person_id)))

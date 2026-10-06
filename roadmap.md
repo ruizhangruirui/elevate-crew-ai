@@ -5,6 +5,8 @@
 - [ ] Verify signed-in Recruiting role edit and archive flows (blocked: no app-owned test session is available).
 - [x] Present internal assignment and sourcing equally for vacant seats; hide Gap/Risk/KPA/Action for uncovered roles.
 - [ ] Verify signed-in vacant-role assignment and sourcing presentation (blocked: no app-owned test session is available).
+- [x] Rename the modules to Growth & Development and Team & Performance; move Team/Culture and Joins/Exits into Team & Performance.
+- [x] Add configurable team achievement records and retain a neutral Capability view without gap language.
 - [x] Remove explanatory copy from everyday people/settings screens and tighten person profile layout.
 - [x] Move bulk import into Settings → People and enforce Owner-only submission.
 - [x] Move person archive action from list rows into the person profile.
