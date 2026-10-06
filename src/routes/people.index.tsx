@@ -2,20 +2,17 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Plus, RotateCcw, Search, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/lib/i18n";
-import { contractLabel } from "@/lib/contract";
+import { CONTRACTS, contractLabel, labTeamOf } from "@/lib/contract";
 import { badgeImportance, IMPORTANCE_TONE } from "@/lib/importance";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { fetchArchivedPeople, fetchLifecycleEvents, recordJoin, restorePerson } from "@/lib/lifecycle";
-import { completeness } from "@/lib/org-tree";
+import { completeness, fetchOrgNodes } from "@/lib/org-tree";
 import { StatTile } from "@/components/StatTile";
 import { fetchWorkspace, type Person } from "@/lib/talent";
 import { db as supabase } from "@/lib/db-client";
-import { bulkDeletePeople } from "@/lib/import-people.functions";
-import { useAuth } from "@/hooks/useAuth";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -68,26 +65,12 @@ function PeopleBody() {
   const { data: archived } = useQuery({ queryKey: ["archived-people"], queryFn: fetchArchivedPeople });
   const { data: lifecycle } = useQuery({ queryKey: ["lifecycle"], queryFn: fetchLifecycleEvents });
   const [showArchived, setShowArchived] = useState(false);
-  const { isOwner } = useAuth();
-  const [selecting, setSelecting] = useState(false);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const toggle = (id: string) =>
-    setSelected((s) => {
-      const n = new Set(s);
-      if (n.has(id)) n.delete(id);
-      else n.add(id);
-      return n;
-    });
-  const bulkDelete = useMutation({
-    mutationFn: () => bulkDeletePeople({ data: { ids: [...selected] } }),
-    onSuccess: (n) => {
-      toast.success(t("ppl.bulk.done").replace("{n}", String(n)));
-      setSelected(new Set());
-      setSelecting(false);
-      qc.invalidateQueries({ refetchType: "all" });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
+  const { data: orgNodes } = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
+  const [query, setQuery] = useState("");
+  const [labFilter, setLabFilter] = useState("all");
+  const [teamFilter, setTeamFilter] = useState("all");
+  const [contractFilter, setContractFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const openPerson = (id: string) =>
@@ -143,7 +126,22 @@ function PeopleBody() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  if (!data) return <div className="text-sm text-muted-foreground">{t("ppl.loading")}</div>;
+  const labs = (orgNodes ?? []).filter((n) => n.type === "Lab");
+  const teamsOfLab = (orgNodes ?? []).filter(
+    (n) => n.type === "Team" && (labFilter === "all" || n.parent_id === labFilter),
+  );
+  const q = query.trim().toLowerCase();
+  const filtered = data.people.filter((p) => {
+    if (q && !`${p.name} ${p.staff_id ?? ""}`.toLowerCase().includes(q)) return false;
+    if (contractFilter !== "all" && p.contract_type !== contractFilter) return false;
+    if (statusFilter !== "all" && p.status !== statusFilter) return false;
+    if (labFilter !== "all" || teamFilter !== "all") {
+      const { lab, team } = labTeamOf(orgNodes ?? [], p.org_node_id);
+      if (labFilter !== "all" && lab?.id !== labFilter) return false;
+      if (teamFilter !== "all" && team?.id !== teamFilter) return false;
+    }
+    return true;
+  });
 
   const roleName = (id: string | null) =>
     data.roles.find((r) => r.id === id)?.title ?? t("ppl.role.noRole");
