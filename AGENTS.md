@@ -19,3 +19,5 @@
 - Person data has section ownership enforced in `dbQuery` (`checkSection`): basic info + Career Profile are HR-edited, manager assessment (performance records, skill assessment) is manager-edited, Owner may edit both — because UI-only gating can be bypassed.
 - Recruiter role is enforced in `dbQuery` (read allowlist, writes only candidates/candidate_events) and AppShell redirects; managers' candidate reads are filtered to roles in their org scope — UI hiding alone is bypassable.
 - Team achievements use dedicated achievement and contributor tables with server-enforced manager scope; achievement types remain configurable in Settings.
+
+- Bulk role imports use a dedicated owner-only server function (upsert by direction + title) for the same reason as people imports.
