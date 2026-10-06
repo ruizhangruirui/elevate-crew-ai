@@ -444,6 +444,7 @@ function PeopleOpsSection({ isOwner }: { isOwner: boolean }) {
       <SectionHeader title={t("set.people.title")} desc={t("set.people.desc")} />
       <div className="flex flex-wrap gap-2">
         {isOwner && <ImportPeopleDialog />}
+        {isOwner && <ImportRolesDialog />}
         <Button variant="secondary" size="sm" asChild>
           <a href="/people">{t("set.people.goToPeople")}</a>
         </Button>
