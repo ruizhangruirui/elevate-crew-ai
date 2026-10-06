@@ -71,6 +71,13 @@
       "when": 1791278765674,
       "tag": "0009_role_employment_location",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791290084063,
+      "tag": "0010_sync_cloud_schema",
+      "breakpoints": true
     }
   ]
 }
