@@ -6,6 +6,7 @@ import { Plus, Pencil, Archive, Download } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { UserAccessSection } from "@/components/UserAccessSection";
 import { ImportPeopleDialog } from "@/components/ImportPeopleDialog";
+import { ImportRolesDialog } from "@/components/ImportRolesDialog";
 import { ArchivedBinDialog } from "@/components/ArchivedBinDialog";
 import { DirectionMenu, NewDirectionDialog } from "@/routes/index";
 import { fetchWorkspace } from "@/lib/talent";
