@@ -253,7 +253,7 @@ function GrowthPage() {
             )}
           </section>
           </TabsContent>
-          <TabsContent value="team"><BuildingPanel data={ws.data!} building={building.data ?? null} /></TabsContent>
+          {ws.data && <TabsContent value="team"><BuildingPanel data={ws.data} building={building.data ?? null} /></TabsContent>}
           <TabsContent value="flow"><HeadcountFlow /></TabsContent>
         </Tabs>
       )}

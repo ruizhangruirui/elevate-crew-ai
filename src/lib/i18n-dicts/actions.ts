@@ -60,8 +60,8 @@ export const actionsDict: Dict = {
   },
   "act.delete.confirmLabel": { zh: "确认删除", en: "Delete" },
   "act.empty": {
-    zh: "这里还没有事项。去「团队与文化发展」或「组织 / 人员视图」里，把分析结论转成待办。",
-    en: "No action items yet. Go to “Team & Culture” or “Org / People” to turn findings into action items.",
+    zh: "这里还没有事项。去「成长与发展」或「组织 / 人员视图」里，把分析结论转成待办。",
+    en: "No action items yet. Go to “Growth & Development” or “Org / People” to turn findings into action items.",
   },
   "act.toast.added": { zh: "已新增待办", en: "Action added" },
   "act.toast.deleted": { zh: "已删除待办", en: "Action deleted" },

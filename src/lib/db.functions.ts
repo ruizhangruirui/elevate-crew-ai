@@ -105,7 +105,7 @@ export const dbQuery = createServerFn({ method: "POST" })
       if (denied) return fail(denied, "403");
     }
 
-    let q: any = db.from(spec.table);
+    let q: any = (db as any).from(spec.table);
     if (spec.op === "select") q = q.select(spec.columns ?? "*", spec.selectOpts);
     else if (spec.op === "insert") q = q.insert(payload);
     else if (spec.op === "upsert") q = q.upsert(payload, spec.upsertOpts);
@@ -126,7 +126,7 @@ export const dbQuery = createServerFn({ method: "POST" })
       else if (spec.table === "team_achievements") q = q.in("org_node_id", [...scope.nodeIds]);
       else if (spec.table === "team_achievement_contributors") {
         const { data: achievements } = scope.nodeIds.size
-          ? await db.from("team_achievements").select("id").in("org_node_id", [...scope.nodeIds])
+          ? await (db as any).from("team_achievements").select("id").in("org_node_id", [...scope.nodeIds])
           : { data: [] };
         q = q.in("achievement_id", (achievements ?? []).map((row: any) => row.id));
       }

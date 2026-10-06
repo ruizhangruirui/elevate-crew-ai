@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CalendarDays, ChevronDown, ExternalLink, Pencil, Plus, Trash2, UserPlus } from "lucide-react";
+import { CalendarDays, ChevronDown, ExternalLink, Info, Pencil, Plus, Trash2, UserPlus } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ActivityDialog } from "@/components/ActivityDialog";
 import { AchievementDialog } from "@/components/AchievementDialog";
