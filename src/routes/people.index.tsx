@@ -344,9 +344,17 @@ function PeopleBody() {
                   })()}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {[p.appointed_role_title || roleName(p.role_id), contractLabel(t, p.contract_type)]
-                    .filter(Boolean)
-                    .join(" · ")}
+                  {(() => {
+                    const { lab, team } = labTeamOf(orgNodes ?? [], p.org_node_id);
+                    const orgPath = [lab?.name, team?.name].filter(Boolean).join(" · ");
+                    return [
+                      p.appointed_role_title || roleName(p.role_id),
+                      contractLabel(t, p.contract_type),
+                      orgPath || null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ");
+                  })()}
                 </p>
                 {(p.tags ?? []).length > 0 && (
                   <div className="mt-1 flex flex-wrap gap-1">
