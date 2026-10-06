@@ -220,7 +220,15 @@ function AchievementPanel({ data, nodes, scope }: { data: Workspace; nodes: OrgN
   const { data: result } = useQuery({ queryKey: ["team-achievements"], queryFn: fetchTeamAchievements });
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<TeamAchievement | null>(null);
-  const allowedNodes = scope === "__all__" ? nodes : nodes.filter((node) => node.id === scope || peopleInSubtree(data.people, nodes, node.id).length > 0);
+  const isInsideScope = (node: OrgNode) => {
+    let current: OrgNode | undefined = node;
+    while (current) {
+      if (current.id === scope) return true;
+      current = current.parent_id ? nodes.find((item) => item.id === current?.parent_id) : undefined;
+    }
+    return false;
+  };
+  const allowedNodes = scope === "__all__" ? nodes : nodes.filter(isInsideScope);
   const allowedNodeIds = new Set(allowedNodes.map((node) => node.id));
   const achievements = (result?.achievements ?? []).filter((achievement) => scope === "__all__" || (achievement.org_node_id && allowedNodeIds.has(achievement.org_node_id)));
   const peopleById = new Map(data.people.map((person) => [person.id, person]));

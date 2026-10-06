@@ -201,6 +201,20 @@ async function checkManager(
     if (rows.some((row) => row.person_id && !scope.personIds.has(row.person_id)))
       return "An achievement contributor is outside your scope";
   }
+  if (spec.table === "team_achievements" && (spec.op === "update" || spec.op === "delete")) {
+    const { data } = await applyFilters(db.from("team_achievements").select("org_node_id"), spec.filters);
+    if ((data ?? []).some((row: any) => !row.org_node_id || !scope.nodeIds.has(row.org_node_id)))
+      return "This team achievement is outside your scope";
+  }
+  if (spec.table === "team_achievement_contributors" && spec.op !== "insert") {
+    const { data } = await applyFilters(db.from("team_achievement_contributors").select("achievement_id"), spec.filters);
+    const achievementIds = [...new Set((data ?? []).map((row: any) => row.achievement_id).filter(Boolean))];
+    if (achievementIds.length) {
+      const { data: achievements } = await db.from("team_achievements").select("id,org_node_id").in("id", achievementIds);
+      if ((achievements ?? []).some((row: any) => !row.org_node_id || !scope.nodeIds.has(row.org_node_id)))
+        return "This team achievement is outside your scope";
+    }
+  }
   if (PERSON_TABLES.has(spec.table) && spec.op !== "update" && spec.op !== "delete") {
     if (rows.some((r) => r.person_id && !scope.personIds.has(r.person_id)))
       return "This person is outside your scope";
