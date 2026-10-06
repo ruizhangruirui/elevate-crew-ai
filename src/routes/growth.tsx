@@ -15,16 +15,19 @@ import {
   latestRating,
 } from "@/lib/growth";
 import { perfLabel, ratingChipClass } from "@/components/GrowthSummary";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BuildingPanel, HeadcountFlow } from "@/routes/capability";
+import { fetchOrgBuilding } from "@/lib/org-building";
 
 export const Route = createFileRoute("/growth")({
   head: () => ({
     meta: [
-      { title: "绩效与成长 · 战略岗位与人才管理系统" },
+      { title: "团队与绩效 · 战略岗位与人才管理系统" },
       {
         name: "description",
         content: "组织级绩效评估覆盖率、晋升与奖项成长轨迹。",
       },
-      { property: "og:title", content: "绩效与成长 · 战略岗位与人才管理系统" },
+      { property: "og:title", content: "团队与绩效 · 战略岗位与人才管理系统" },
       {
         property: "og:description",
         content: "组织级绩效评估覆盖率、晋升与奖项成长轨迹。",
@@ -53,6 +56,7 @@ function GrowthPage() {
   const { t } = useI18n();
   const ws = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
   const growth = useQuery({ queryKey: ["growth-data"], queryFn: fetchGrowthData });
+  const building = useQuery({ queryKey: ["org-building"], queryFn: fetchOrgBuilding });
 
   const people = useMemo(
     () => (ws.data?.people ?? []).filter((p) => p.status === "onboard"),
@@ -82,7 +86,13 @@ function GrowthPage() {
       {loading ? (
         <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
       ) : (
-        <div className="space-y-8">
+        <Tabs defaultValue="performance" className="space-y-8">
+          <TabsList>
+            <TabsTrigger value="performance">{t("growth.tab.performance")}</TabsTrigger>
+            <TabsTrigger value="team">{t("growth.tab.team")}</TabsTrigger>
+            <TabsTrigger value="flow">{t("growth.tab.flow")}</TabsTrigger>
+          </TabsList>
+          <TabsContent value="performance" className="space-y-8">
           {canAssess && <div className="flex justify-end">
             <Button className="gap-2" onClick={() => openReview(null)}>
               <ClipboardCheck className="size-4" /> {t("growth.review.new")}
@@ -242,7 +252,10 @@ function GrowthPage() {
               </div>
             )}
           </section>
-        </div>
+          </TabsContent>
+          {ws.data && <TabsContent value="team"><BuildingPanel data={ws.data} building={building.data ?? null} /></TabsContent>}
+          <TabsContent value="flow"><HeadcountFlow /></TabsContent>
+        </Tabs>
       )}
     </AppShell>
   );

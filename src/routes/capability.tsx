@@ -2,9 +2,10 @@ import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CalendarDays, ChevronDown, Info, Pencil, Plus, Trash2, UserPlus } from "lucide-react";
+import { CalendarDays, ChevronDown, ExternalLink, Info, Pencil, Plus, Trash2, UserPlus } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ActivityDialog } from "@/components/ActivityDialog";
+import { AchievementDialog } from "@/components/AchievementDialog";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { AddActionButton } from "@/components/AddActionButton";
 import { db as supabase } from "@/lib/db-client";
@@ -27,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchOrgNodes, peopleInSubtree, type OrgNode } from "@/lib/org-tree";
 import { fetchArchivedPeople, fetchLifecycleEvents, flowStats } from "@/lib/lifecycle";
+import { fetchTeamAchievements, type TeamAchievement } from "@/lib/team-achievements";
 
 export const Route = createFileRoute("/capability")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -34,15 +36,15 @@ export const Route = createFileRoute("/capability")({
   }),
   head: () => ({
     meta: [
-      { title: "团队与文化发展 · 战略岗位与人才管理系统" },
+      { title: "成长与发展 · 战略岗位与人才管理系统" },
       {
         name: "description",
-        content: "按根因看清能力缺口是招聘问题还是培养问题，并记录团建、技术分享等组织建设活动。",
+        content: "集中查看组织能力与团队专利、论文和组织贡献等发展成果。",
       },
-      { property: "og:title", content: "团队与文化发展 · 战略岗位与人才管理系统" },
+      { property: "og:title", content: "成长与发展 · 战略岗位与人才管理系统" },
       {
         property: "og:description",
-        content: "按根因看清能力缺口是招聘问题还是培养问题，并记录团建、技术分享等组织建设活动。",
+        content: "集中查看组织能力与团队专利、论文和组织贡献等发展成果。",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -63,7 +65,6 @@ function CapabilityPage() {
 function CapabilityBody() {
   const { t } = useI18n();
   const { data } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
-  const { data: building } = useQuery({ queryKey: ["org-building"], queryFn: fetchOrgBuilding });
   const { data: nodes } = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
   const { scope: scopeParam } = useSearch({ from: "/capability" });
   const scope = scopeParam ?? "__all__";
@@ -87,25 +88,12 @@ function CapabilityBody() {
         };
   const scopeName = allNodes.find((n) => n.id === scope)?.name ?? t("cap.scopeAll");
 
-  const scopedPersonIds = new Set(scopedPeople.map((p) => p.id));
-  const scopedBuilding = (() => {
-    if (!building) return null;
-    if (scope === "__all__") return building;
-    const participants = building.participants.filter((p) => scopedPersonIds.has(p.person_id));
-    const keep = new Set(participants.map((p) => p.activity_id));
-    return {
-      activities: building.activities.filter((a) => keep.has(a.id)),
-      participants,
-    };
-  })();
-
   return (
-    <Tabs defaultValue="building" className="space-y-8">
+    <Tabs defaultValue="achievements" className="space-y-8">
       <div className="flex flex-wrap items-center gap-3">
         <TabsList>
-          <TabsTrigger value="building">{t("cap.tab.building")}</TabsTrigger>
-          <TabsTrigger value="trend">{t("cap.tab.trend")}</TabsTrigger>
-          <TabsTrigger value="health">{t("cap.tab.health")}</TabsTrigger>
+          <TabsTrigger value="achievements">{t("cap.tab.achievements")}</TabsTrigger>
+          <TabsTrigger value="capability">{t("cap.tab.health")}</TabsTrigger>
         </TabsList>
         <ScopePicker nodes={allNodes} scope={scope} scopeName={scopeName} onChange={setScope} />
       </div>
@@ -115,14 +103,11 @@ function CapabilityBody() {
           {t("cap.scopeNoteSuffix")}
         </p>
       )}
-      <TabsContent value="health">
-        <HealthPanel data={scoped} activities={scopedBuilding?.activities ?? []} />
+      <TabsContent value="achievements">
+        <AchievementPanel data={scoped} nodes={allNodes} scope={scope} />
       </TabsContent>
-      <TabsContent value="building">
-        <BuildingPanel data={scoped} building={scopedBuilding} />
-      </TabsContent>
-      <TabsContent value="trend">
-        <TrendPanel data={scoped} activities={scopedBuilding?.activities ?? []} />
+      <TabsContent value="capability">
+        <CapabilityPanel data={scoped} />
       </TabsContent>
     </Tabs>
   );
@@ -206,7 +191,61 @@ function ScopePicker({
 
 /* ---------------------------------- 能力体检 --------------------------------- */
 
-type Workspace = NonNullable<Awaited<ReturnType<typeof fetchWorkspace>>>;
+export type Workspace = NonNullable<Awaited<ReturnType<typeof fetchWorkspace>>>;
+
+function CapabilityPanel({ data }: { data: Workspace }) {
+  const { t } = useI18n();
+  const capabilities = useMemo(() => buildCapabilities(data.roles, data.people), [data]);
+  const peopleNames = (capability: Capability) => capability.carriers.map((carrier) => carrier.person.name).join("、") || "—";
+  return (
+    <section className="panel overflow-hidden">
+      <div className="border-b border-border/50 px-5 py-4"><h2 className="font-display text-lg font-semibold">{t("capability.title")}</h2></div>
+      {capabilities.length === 0 ? <p className="px-5 py-8 text-sm text-muted-foreground">{t("capability.empty")}</p> : (
+        <ul className="divide-y divide-border/40">
+          {capabilities.map((capability) => (
+            <li key={capability.key} className="grid gap-2 px-5 py-4 text-sm md:grid-cols-[minmax(0,1fr)_minmax(12rem,1fr)]">
+              <div><p className="font-medium">{capability.label}</p><p className="mt-1 text-xs text-muted-foreground">{t(`cap.kind.${capability.kind}`)} · {capability.roleTitles.join(" / ")}</p></div>
+              <p className="text-xs text-muted-foreground md:text-right">{peopleNames(capability)}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function AchievementPanel({ data, nodes, scope }: { data: Workspace; nodes: OrgNode[]; scope: string }) {
+  const { t } = useI18n();
+  const qc = useQueryClient();
+  const { data: result } = useQuery({ queryKey: ["team-achievements"], queryFn: fetchTeamAchievements });
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<TeamAchievement | null>(null);
+  const isInsideScope = (node: OrgNode) => {
+    let current: OrgNode | undefined = node;
+    while (current) {
+      if (current.id === scope) return true;
+      current = current.parent_id ? nodes.find((item) => item.id === current?.parent_id) : undefined;
+    }
+    return false;
+  };
+  const allowedNodes = scope === "__all__" ? nodes : nodes.filter(isInsideScope);
+  const allowedNodeIds = new Set(allowedNodes.map((node) => node.id));
+  const achievements = (result?.achievements ?? []).filter((achievement) => scope === "__all__" || (achievement.org_node_id && allowedNodeIds.has(achievement.org_node_id)));
+  const peopleById = new Map(data.people.map((person) => [person.id, person]));
+  const nodesById = new Map(nodes.map((node) => [node.id, node]));
+  const remove = useMutation({
+    mutationFn: async (id: string) => { const deleted = await supabase.from("team_achievements").delete().eq("id", id); if (deleted.error) throw deleted.error; },
+    onSuccess: () => { toast.success(t("achievement.deleted")); qc.invalidateQueries({ refetchType: "all" }); },
+    onError: (error: Error) => toast.error(error.message),
+  });
+  return (
+    <section className="panel overflow-hidden">
+      <div className="flex items-center gap-3 border-b border-border/50 px-5 py-4"><h2 className="font-display text-lg font-semibold">{t("achievement.title")}</h2><Button size="sm" className="ml-auto gap-1.5" disabled={!result?.types.length} onClick={() => { setEditing(null); setOpen(true); }}><Plus className="size-4" />{t("achievement.add")}</Button></div>
+      {achievements.length === 0 ? <p className="px-5 py-8 text-sm text-muted-foreground">{t("achievement.empty")}</p> : <ul className="divide-y divide-border/40">{achievements.map((achievement) => { const contributorIds = (result?.contributors ?? []).filter((item) => item.achievement_id === achievement.id).map((item) => item.person_id); return <li key={achievement.id} className="px-5 py-4"><div className="flex flex-wrap items-center gap-2"><span className="rounded bg-brand/15 px-2 py-0.5 text-[10px] text-brand">{achievement.achievement_type}</span><strong className="text-sm">{achievement.title}</strong><span className="text-xs text-muted-foreground">{achievement.achieved_on}</span><div className="ml-auto flex gap-1"><Button size="icon" variant="ghost" className="size-8" onClick={() => { setEditing(achievement); setOpen(true); }}><Pencil className="size-3.5" /></Button><ConfirmAction title={t("achievement.deleteTitle")} description={t("achievement.deleteDesc")} onConfirm={() => remove.mutate(achievement.id)}><Button size="icon" variant="ghost" className="size-8 text-danger"><Trash2 className="size-3.5" /></Button></ConfirmAction></div></div><div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">{achievement.org_node_id && <span>{nodesById.get(achievement.org_node_id)?.name}</span>}{contributorIds.length > 0 && <span>{contributorIds.map((id) => peopleById.get(id)?.name).filter(Boolean).join("、")}</span>}{achievement.link && <a href={achievement.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-brand">{t("achievement.link")}<ExternalLink className="size-3" /></a>}</div>{achievement.note && <p className="mt-2 text-xs text-muted-foreground">{achievement.note}</p>}</li>; })}</ul>}
+      <AchievementDialog open={open} onOpenChange={setOpen} achievement={editing} contributorIds={editing ? (result?.contributors ?? []).filter((item) => item.achievement_id === editing.id).map((item) => item.person_id) : []} types={result?.types ?? []} nodes={allowedNodes} people={data.people} />
+    </section>
+  );
+}
 
 function HealthPanel({ data, activities }: { data: Workspace; activities: Activity[] }) {
   const { t } = useI18n();
@@ -562,7 +601,7 @@ function CapRow({ cap, activities }: { cap: Capability; activities: Activity[] }
 
 /* ---------------------------------- 组织建设 --------------------------------- */
 
-function BuildingPanel({
+export function BuildingPanel({
   data,
   building,
 }: {
@@ -860,7 +899,7 @@ function TrendTile({
 
 const RANGE_OPTIONS = [3, 6, 12, 24];
 
-function HeadcountFlow() {
+export function HeadcountFlow() {
   const { t } = useI18n();
   const [months, setMonths] = useState(6);
   const { data: events } = useQuery({ queryKey: ["lifecycle"], queryFn: fetchLifecycleEvents });
