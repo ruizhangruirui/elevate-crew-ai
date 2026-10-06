@@ -80,6 +80,8 @@ export const dbQuery = createServerFn({ method: "POST" })
     if (spec.table === "people" && spec.op === "insert" && Array.isArray(payload) && user.role !== "owner")
       return fail("Only the Owner can bulk import people", "403");
 
+    if (spec.table === "roles" && spec.op === "insert" && user.role !== "owner")
+      return fail("Only the Owner can add strategic roles", "403");
     if (spec.table === "directions" && spec.op !== "select" && user.role !== "owner")
       return fail("Only the Owner can change strategy directions", "403");
     if (user.role === "recruiter") {
@@ -107,6 +109,14 @@ export const dbQuery = createServerFn({ method: "POST" })
     q = applyFilters(q, spec.filters);
     if (scope && spec.op === "select") {
       if (spec.table === "people") q = q.in("id", [...scope.personIds]);
+      else if (spec.table === "roles") q = q.in("org_node_id", [...scope.nodeIds]);
+      else if (spec.table === "org_nodes") q = q.in("id", [...(await withAncestors(db, scope.nodeIds))]);
+      else if (spec.table === "org_activities") {
+        const { data: ps } = scope.personIds.size
+          ? await db.from("org_activity_participants").select("activity_id").in("person_id", [...scope.personIds])
+          : { data: [] };
+        q = q.in("id", [...new Set((ps ?? []).map((p: any) => p.activity_id))]);
+      }
       else if (PERSON_TABLES.has(spec.table)) q = q.in("person_id", [...scope.personIds]);
       else if (spec.table === "candidates" || spec.table === "candidate_events") {
         const roleIds = await scopedRoleIds(db, scope.nodeIds);
@@ -190,4 +200,16 @@ async function scopedRoleIds(db: any, nodeIds: Set<string>): Promise<string[]> {
   if (!nodeIds.size) return [];
   const { data } = await db.from("roles").select("id").in("org_node_id", [...nodeIds]);
   return (data ?? []).map((r: any) => r.id);
+}
+
+/** Scope nodes plus their ancestors, so managers still see the Lab above their Team. */
+async function withAncestors(db: any, nodeIds: Set<string>): Promise<Set<string>> {
+  const { data } = await db.from("org_nodes").select("id,parent_id");
+  const parent = new Map<string, string | null>((data ?? []).map((n: any) => [n.id, n.parent_id]));
+  const out = new Set<string>();
+  for (const id of nodeIds) {
+    let cur: string | null | undefined = id;
+    while (cur && !out.has(cur)) { out.add(cur); cur = parent.get(cur); }
+  }
+  return out;
 }
