@@ -418,7 +418,7 @@ function RecruitingBody() {
                         </td>
                         <td className="max-w-48 px-3 py-1.5 text-xs">
                           <p className="truncate">{c.next_step || "—"}</p>
-                          {c.next_step_on && <p className="text-muted-foreground tabular-nums">📅 {c.next_step_on}</p>}
+                          {c.next_step_on && <p className="text-muted-foreground tabular-nums">{c.next_step_on}</p>}
                         </td>
                         <td className="px-3 py-1.5">
                           <span className="flex gap-1.5 text-muted-foreground">
