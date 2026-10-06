@@ -250,14 +250,68 @@ function PeopleBody() {
           </div>
         </div>
 
+        <div className="flex flex-wrap items-center gap-2 border-b border-border/60 px-6 py-3">
+          <div className="relative min-w-48 flex-1 sm:max-w-72">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t("ppl.filter.search")}
+              className="h-9 pl-9"
+            />
+          </div>
+          <Select value={labFilter} onValueChange={(v) => { setLabFilter(v); setTeamFilter("all"); }}>
+            <SelectTrigger className="h-9 w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("ppl.filter.allLab")}</SelectItem>
+              {labs.map((n) => (
+                <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={teamFilter} onValueChange={setTeamFilter}>
+            <SelectTrigger className="h-9 w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("ppl.filter.allTeam")}</SelectItem>
+              {teamsOfLab.map((n) => (
+                <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={contractFilter} onValueChange={setContractFilter}>
+            <SelectTrigger className="h-9 w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("ppl.filter.allContract")}</SelectItem>
+              {CONTRACTS.map((c) => (
+                <SelectItem key={c} value={c}>{contractLabel(t, c)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-9 w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("ppl.filter.allStatus")}</SelectItem>
+              <SelectItem value="onboard">{t("ppl.status.onboard")}</SelectItem>
+              <SelectItem value="candidate">{t("ppl.status.candidate")}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         <div className="divide-y divide-border/50">
-          {data.people.map((p) => (
+          {filtered.map((p) => (
             <div
               key={p.id}
               role="button"
               tabIndex={0}
-              onClick={() => (selecting ? toggle(p.id) : openPerson(p.id))}
+              onClick={() => openPerson(p.id)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
