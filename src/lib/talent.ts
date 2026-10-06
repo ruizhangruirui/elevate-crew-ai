@@ -49,6 +49,7 @@ export type Person = {
   org_node_id?: string | null;
   name: string;
   staff_id?: string | null;
+  offer_title?: string | null;
   hire_date?: string | null;
   level: number | null;
   status: string;

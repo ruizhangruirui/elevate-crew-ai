@@ -974,7 +974,7 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
   );
 }
 
-function OwnerOnly({ children }: { children: React.ReactNode }) {
+function OwnerOnly({ children }: { children: import("react").ReactNode }) {
   const { isOwner } = useAuth();
   return isOwner ? <>{children}</> : null;
 }
