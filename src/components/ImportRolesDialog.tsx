@@ -23,7 +23,7 @@ import {
 
 const HEADERS = [
   "direction", "title", "description", "level_min", "level_max", "target_count",
-  "criticality", "lab", "team", "employment_mode", "location",
+  "criticality", "lab", "team", "employment_mode", "location", "owner",
 ] as const;
 const CRIT = ["strategic_critical", "critical", "important"];
 const MODES = ["local", "hq_dispatch"];
@@ -63,12 +63,13 @@ export function ImportRolesDialog() {
       lab: labs[0]?.name ?? "", team: teams.find((x) => x.parent_id === labs[0]?.id)?.name ?? "",
       employment_mode: "local",
       location: locations[0] ?? "Zurich",
+      owner: "",
     }];
     const sheet = XLSX.utils.json_to_sheet(sample, { header: HEADERS as unknown as string[] });
     sheet["!cols"] = HEADERS.map(() => ({ wch: 20 }));
     const ref = XLSX.utils.aoa_to_sheet([
       ["field", "required", "accepted values"],
-      ["direction", "yes", dirs.map((d) => d.title).join(" | ")],
+      ["direction", "no", "existing: " + dirs.map((d) => d.title).join(" | ") + " - new names are created; empty = Unassigned"],
       ["title", "yes", "role name - direction + title is the key: existing roles are updated, new ones added"],
       ["description", "no", "free text"],
       ["level_min / level_max", "no", "number, default 14-16"],
@@ -78,6 +79,7 @@ export function ImportRolesDialog() {
       ["team", "no", teams.map((x) => `${x.name} (${labs.find((l) => l.id === x.parent_id)?.name ?? "-"})`).join(" | ")],
       ["employment_mode", "no", "local (Local Hire) | hq_dispatch (HQ Assignment)"],
       ["location", "no", locations.join(" | ")],
+      ["owner", "no", "person filling the seat: Staff ID or full name; several separated by ;"],
       ["(note)", "", "For existing roles, empty cells are left unchanged."],
     ]);
     ref["!cols"] = [{ wch: 22 }, { wch: 10 }, { wch: 90 }];
@@ -93,7 +95,6 @@ export function ImportRolesDialog() {
       const first = wb.SheetNames[0];
       if (!first) throw new Error("empty");
       const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[first]!, { defval: "" });
-      const dirNames = new Set(dirs.map((d) => d.title.trim().toLowerCase()));
       const parsed = raw.map((r) => {
         const pick = (k: string) => {
           const key = Object.keys(r).find((x) => x.trim().toLowerCase().replace(/\s+/g, "_") === k);
@@ -107,9 +108,9 @@ export function ImportRolesDialog() {
           lab: pick("lab"), team: pick("team"),
           employment_mode: pick("employment_mode").toLowerCase() as Row["employment_mode"],
           location: pick("location"),
+          owner: pick("owner"),
         };
         if (!row.title) row.error = t("rimp.err.title");
-        else if (!dirNames.has(row.direction.toLowerCase())) row.error = t("rimp.err.direction");
         else if ([row.level_min, row.level_max, row.target_count].some((n) => n !== null && !Number.isInteger(n))) row.error = t("imp.err.level");
         else if (row.criticality && !CRIT.includes(row.criticality)) row.error = t("rimp.err.crit");
         else if (row.employment_mode && !MODES.includes(row.employment_mode)) row.error = t("rimp.err.mode");
@@ -129,7 +130,8 @@ export function ImportRolesDialog() {
   const run = useMutation({
     mutationFn: () => importRoles({ data: { rows: valid.map(({ error: _e, ...r }) => r), fileName } }),
     onSuccess: (r) => {
-      toast.success(t("imp.toast.done").replace("{c}", String(r.created)).replace("{u}", String(r.updated)));
+      toast.success(t("imp.toast.done").replace("{c}", String(r.created)).replace("{u}", String(r.updated)) + ` · ${t("rimp.owner")}: ${r.linked}`);
+      if (r.unmatched.length) toast.warning(`${t("rimp.unmatched")}: ${r.unmatched.join(", ")}`, { duration: 10000 });
       setOpen(false); setRows(null); setFileName("");
       qc.invalidateQueries({ refetchType: "all" });
     },
@@ -177,7 +179,7 @@ export function ImportRolesDialog() {
               <div className="max-h-64 overflow-auto rounded-lg border border-border/60">
                 <table className="w-full text-xs">
                   <thead className="sticky top-0 bg-muted/60 text-muted-foreground">
-                    <tr>{["Direction", "Role", "Level", "HC", "Lab / Team", t("loc.location"), t("imp.col.result")].map((h) => (
+                    <tr>{["Direction", "Role", "Level", "HC", "Lab / Team", t("loc.location"), t("rimp.owner"), t("imp.col.result")].map((h) => (
                       <th key={h} className="px-2 py-1.5 text-left">{h}</th>))}</tr>
                   </thead>
                   <tbody>
@@ -189,6 +191,7 @@ export function ImportRolesDialog() {
                         <td className="px-2 py-1.5">{r.target_count ?? "—"}</td>
                         <td className="px-2 py-1.5">{[r.lab, r.team].filter(Boolean).join(" / ") || "—"}</td>
                         <td className="px-2 py-1.5">{r.location || "—"}</td>
+                        <td className="px-2 py-1.5">{r.owner || "—"}</td>
                         <td className="px-2 py-1.5">{r.error ? <span className="text-destructive">{r.error}</span> : <span className="text-brand">{t("imp.ok")}</span>}</td>
                       </tr>
                     ))}
