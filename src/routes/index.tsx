@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { EMPLOYMENT_MODES, employmentModeLabel, useLocations } from "@/lib/locations";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -990,4 +991,48 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
 function OwnerOnly({ children }: { children: import("react").ReactNode }) {
   const { isOwner } = useAuth();
   return isOwner ? <>{children}</> : null;
+}
+
+function ModeLocationFields({
+  mode,
+  location,
+  onMode,
+  onLocation,
+}: {
+  mode: string;
+  location: string;
+  onMode: (v: string) => void;
+  onLocation: (v: string) => void;
+}) {
+  const { t } = useI18n();
+  const { data: locations = [] } = useLocations();
+  const opts = location !== "__none" && !locations.includes(location) ? [...locations, location] : locations;
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <div className="space-y-2">
+        <Label>{t("loc.mode")}</Label>
+        <Select value={mode} onValueChange={onMode}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__none">{t("loc.unset")}</SelectItem>
+            {EMPLOYMENT_MODES.map((m) => (
+              <SelectItem key={m} value={m}>{employmentModeLabel(t, m)}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-2">
+        <Label>{t("loc.location")}</Label>
+        <Select value={location} onValueChange={onLocation}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__none">{t("loc.unset")}</SelectItem>
+            {opts.map((l) => (
+              <SelectItem key={l} value={l}>{l}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
 }
