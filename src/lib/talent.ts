@@ -40,6 +40,8 @@ export type Role = {
   skills: Skill[];
   kpa: string | null;
   recommended_action: string[];
+  employment_mode?: string | null;
+  location?: string | null;
 };
 
 export type Person = {
@@ -52,6 +54,7 @@ export type Person = {
   staff_id?: string | null;
   offer_title?: string | null;
   hire_date?: string | null;
+  location?: string | null;
   level: number | null;
   status: string;
   note: string | null;
