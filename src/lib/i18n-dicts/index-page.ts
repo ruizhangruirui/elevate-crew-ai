@@ -86,5 +86,6 @@ export const indexDict: Dict = {
   "idx.highestLevel": { zh: "最高级别", en: "Highest level" },
   "idx.assignTeam": { zh: "所属团队", en: "Assigned team" },
   "idx.noTeam": { zh: "未指定团队", en: "No team" },
+  "idx.directionField": { zh: "研究 / 工作方向", en: "Work direction" },
 
 };
