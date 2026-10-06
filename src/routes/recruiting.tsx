@@ -769,7 +769,7 @@ function CandidateDialog({
   );
 }
 
-function AddHiringRole({ directionId, orgNodes, onCreated }: { directionId?: string; orgNodes: { id: string; name: string; type: string }[]; onCreated: (id: string) => void }) {
+function AddHiringRole({ directionId, orgNodes, onCreated }: { directionId: string | undefined; orgNodes: { id: string; name: string; type: string }[]; onCreated: (id: string) => void }) {
   const { t } = useI18n();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
