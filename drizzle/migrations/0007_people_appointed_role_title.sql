@@ -1,0 +1,2 @@
+ALTER TABLE public.people ADD COLUMN IF NOT EXISTS appointed_role_title text;
+COMMENT ON COLUMN public.people.appointed_role_title IS 'Appointed role title supplied independently of the strategic role catalog; role_id links catalog assignments, offer_title remains the job title.';

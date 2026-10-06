@@ -310,7 +310,7 @@ function PeopleBody() {
                   })()}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {[roleName(p.role_id), contractLabel(t, p.contract_type)]
+                  {[p.appointed_role_title || roleName(p.role_id), contractLabel(t, p.contract_type)]
                     .filter(Boolean)
                     .join(" · ")}
                 </p>

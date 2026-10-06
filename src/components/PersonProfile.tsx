@@ -422,6 +422,7 @@ export function PersonProfile({
     hire_date: "",
     level: "",
     role_id: "none",
+    appointed_role_title: "",
     offer_title: "",
     status: "onboard",
     tags: "",
@@ -441,6 +442,7 @@ export function PersonProfile({
       hire_date: person.hire_date ?? "",
       level: person.level != null ? String(person.level) : "",
       role_id: person.role_id ?? "none",
+      appointed_role_title: person.appointed_role_title ?? "",
       offer_title: person.offer_title ?? "",
       status: person.status ?? "onboard",
       tags: (person.tags ?? []).join(", "),
@@ -475,6 +477,7 @@ export function PersonProfile({
           hire_date: form.hire_date || null,
           level: form.level ? Number(form.level) : null,
           role_id: form.role_id === "none" ? null : form.role_id,
+          appointed_role_title: form.appointed_role_title.trim() || null,
           offer_title: form.offer_title.trim() || null,
           status: form.status,
           tags: form.tags.split(/[,，\n]/).map((x) => x.trim()).filter(Boolean),
@@ -486,7 +489,7 @@ export function PersonProfile({
         cmp(t("sheet.person.contractType"), contractLabel(t, person.contract_type) ?? "", contractLabel(t, contract) ?? "");
         cmp(t("pp.f.hireDate"), person.hire_date ?? "", form.hire_date);
         cmp(t("sheet.person.level"), person.level != null ? String(person.level) : "", form.level);
-        cmp(t("pp.f.role"), roles.find((r) => r.id === person.role_id)?.title ?? "", roles.find((r) => r.id === form.role_id)?.title ?? "");
+        cmp(t("pp.f.role"), person.appointed_role_title || roles.find((r) => r.id === person.role_id)?.title || "", form.appointed_role_title.trim() || roles.find((r) => r.id === form.role_id)?.title || "");
         cmp(t("pp.f.offerTitle"), person.offer_title ?? "", form.offer_title.trim());
         cmp(t("sheet.person.status"), person.status ?? "", form.status);
         cmp(t("sheet.person.tags"), (person.tags ?? []).join(", "), form.tags);
@@ -612,10 +615,17 @@ export function PersonProfile({
               </div>
               <div className="space-y-1.5">
                 <Label>{t("pp.f.role")}</Label>
-                {sel(form.role_id, (v) => setForm({ ...form, role_id: v }), [
+                {sel(form.role_id === "none" && form.appointed_role_title ? "imported" : form.role_id, (v) => {
+                  if (v === "imported") return;
+                  setForm({ ...form, role_id: v, appointed_role_title: "" });
+                }, [
                   ["none", t("sheet.person.notAssigned")],
+                  ...(form.role_id === "none" && form.appointed_role_title ? [["imported", form.appointed_role_title] as [string, string]] : []),
                   ...roles.map((r) => [r.id, r.title] as [string, string]),
                 ])}
+                {form.role_id === "none" && form.appointed_role_title && (
+                  <Input aria-label={t("pp.f.role")} value={form.appointed_role_title} onChange={(e) => setForm({ ...form, appointed_role_title: e.target.value })} />
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label>{t("pp.f.offerTitle")}</Label>
@@ -649,7 +659,7 @@ export function PersonProfile({
               <Fact label={t("sheet.person.contractType")} value={contractLabel(t, person.contract_type) || "—"} />
               <Fact label={t("pp.f.hireDate")} value={person.hire_date ?? "—"} />
               <Fact label={t("sheet.person.level")} value={person.level != null ? `L${person.level}` : "—"} />
-              <Fact label={t("pp.f.role")} value={role?.title ?? t("sheet.person.notAssigned")} />
+              <Fact label={t("pp.f.role")} value={person.appointed_role_title || role?.title || t("sheet.person.notAssigned")} />
               <Fact label={t("pp.f.offerTitle")} value={person.offer_title || "—"} />
               <Fact label={t("sheet.person.tenure")} value={tenureLabel(t, tenure)} />
               <Fact

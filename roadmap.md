@@ -1,4 +1,7 @@
 - [x] Add Recruiting role editing and confirmed, reversible removal using the shared strategic role controls.
+- [x] Preserve Excel role values as Appointed Role even when unmatched; keep Job Title separate and existing Staff ID updates partial.
+- [x] Combine footer credits and contact into one continuous line that wraps only when space requires.
+- [ ] Verify the real Excel re-upload on the company server (blocked: company server and app-owned login unavailable).
 - [ ] Verify signed-in Recruiting role edit and archive flows (blocked: no app-owned test session is available).
 - [x] Present internal assignment and sourcing equally for vacant seats; hide Gap/Risk/KPA/Action for uncovered roles.
 - [ ] Verify signed-in vacant-role assignment and sourcing presentation (blocked: no app-owned test session is available).

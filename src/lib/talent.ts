@@ -46,6 +46,7 @@ export type Person = {
   id: string;
   org_id: string;
   role_id: string | null;
+  appointed_role_title?: string | null;
   org_node_id?: string | null;
   name: string;
   staff_id?: string | null;
