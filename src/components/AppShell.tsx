@@ -149,6 +149,9 @@ export function AppShell({
           )}
         </header>
         <div className="px-6 py-8 md:px-10">{children}</div>
+        <footer className="border-t border-border/60 px-6 py-5 text-xs text-muted-foreground md:px-10">
+          {t("shell.footer")}
+        </footer>
       </main>
     </div>
   );
