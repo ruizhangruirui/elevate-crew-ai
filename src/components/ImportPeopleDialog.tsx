@@ -21,17 +21,18 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-const HEADERS = ["staff_id", "name", "lab", "team", "contract_type", "hire_date", "level", "role"] as const;
+const HEADERS = ["staff_id", "name", "lab", "team", "contract_type", "hire_date", "level", "role", "job_title"] as const;
 
 type Row = {
   staff_id: string;
   name: string;
   lab: string;
   team: string;
-  contract_type: ContractType;
+  contract_type: ContractType | "";
   hire_date: string | null;
   level: number | null;
   role: string;
+  job_title: string;
   error?: string;
 };
 
@@ -88,6 +89,7 @@ export function ImportPeopleDialog({ children }: { children?: React.ReactNode })
         hire_date: "2024-03-01",
         level: 15,
         role: ws?.roles?.[0]?.title ?? "",
+        job_title: "Research Engineer",
       },
     ];
     const sheet = XLSX.utils.json_to_sheet(sample, { header: HEADERS as unknown as string[] });
@@ -95,14 +97,16 @@ export function ImportPeopleDialog({ children }: { children?: React.ReactNode })
 
     const ref = XLSX.utils.aoa_to_sheet([
       ["field", "required", "accepted values"],
-      ["staff_id", "yes", "unique staff ID"],
-      ["name", "yes", "full name"],
-      ["lab", "yes", labs.map((n) => n.name).join(" | ")],
+      ["staff_id", "yes", "unique staff ID - used as the key: existing IDs are updated, new IDs are added"],
+      ["name", "new only", "full name"],
+      ["lab", "new only", labs.map((n) => n.name).join(" | ")],
       ["team", "no", teams.map((tm) => `${tm.name} (${labs.find((l) => l.id === tm.parent_id)?.name ?? "-"})`).join(" | ")],
-      ["contract_type", "yes", CONTRACTS.join(" | ")],
+      ["contract_type", "new only", CONTRACTS.join(" | ")],
       ["hire_date", "no", "YYYY-MM-DD"],
       ["level", "no", "number, e.g. 13-18"],
       ["role", "no", (ws?.roles ?? []).map((r) => r.title).join(" | ")],
+      ["job_title", "no", "free text, e.g. Research Intern"],
+      ["(note)", "", "For existing staff IDs, empty cells are left unchanged - upload only the columns/rows you want to change."],
     ]);
     ref["!cols"] = [{ wch: 16 }, { wch: 10 }, { wch: 90 }];
 
@@ -138,8 +142,7 @@ export function ImportPeopleDialog({ children }: { children?: React.ReactNode })
           let error: string | undefined;
           if (!staff_id) error = t("imp.err.staffId");
           else if (seen.has(staff_id)) error = t("imp.err.staffDup");
-          else if (!name) error = t("imp.err.name");
-          else if (!(CONTRACTS as readonly string[]).includes(contract)) error = t("imp.err.contract");
+          else if (contract && !(CONTRACTS as readonly string[]).includes(contract)) error = t("imp.err.contract");
           else if (date === "invalid") error = t("imp.err.date");
           else if (level !== null && Number.isNaN(level)) error = t("imp.err.level");
           if (staff_id) seen.add(staff_id);
@@ -148,10 +151,11 @@ export function ImportPeopleDialog({ children }: { children?: React.ReactNode })
             name,
             lab: labName,
             team: teamName,
-            contract_type: contract as ContractType,
+            contract_type: contract as ContractType | "",
             hire_date: date === "invalid" ? null : date,
             level: level !== null && !Number.isNaN(level) ? level : null,
             role: roleTitle,
+            job_title: pick("job_title"),
             ...(error ? { error } : {}),
           } as Row;
         })
@@ -172,8 +176,8 @@ export function ImportPeopleDialog({ children }: { children?: React.ReactNode })
       if (!isOwner) throw new Error(t("imp.ownerOnly"));
       return importPeople({ data: { rows: valid.map(({ error: _error, ...row }) => row), fileName } });
     },
-    onSuccess: (n) => {
-      toast.success(t("imp.toast.done").replace("{n}", String(n)));
+    onSuccess: (r) => {
+      toast.success(t("imp.toast.done").replace("{c}", String(r.created)).replace("{u}", String(r.updated)));
       setOpen(false);
       setRows(null);
       setFileName("");
@@ -261,6 +265,7 @@ export function ImportPeopleDialog({ children }: { children?: React.ReactNode })
                       <th className="px-2 py-1.5 text-left">{t("imp.col.team")}</th>
                       <th className="px-2 py-1.5 text-left">{t("ppl.field.level")}</th>
                       <th className="px-2 py-1.5 text-left">{t("imp.col.role")}</th>
+                      <th className="px-2 py-1.5 text-left">{t("pp.f.offerTitle")}</th>
                       <th className="px-2 py-1.5 text-left">{t("imp.col.result")}</th>
                     </tr>
                   </thead>
@@ -273,6 +278,7 @@ export function ImportPeopleDialog({ children }: { children?: React.ReactNode })
                         <td className="px-2 py-1.5">{r.team || "—"}</td>
                         <td className="px-2 py-1.5">{r.level ?? "—"}</td>
                         <td className="px-2 py-1.5">{r.role || "—"}</td>
+                        <td className="px-2 py-1.5">{r.job_title || "—"}</td>
                         <td className="px-2 py-1.5">
                           {r.error ? (
                             <span className="text-destructive">{r.error}</span>
