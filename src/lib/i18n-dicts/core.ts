@@ -13,9 +13,13 @@ export const coreDict: Dict = {
   "shell.brandSub": { zh: "Talent Architecture", en: "Strategic Roles & Talent" },
   "shell.signOut": { zh: "退出登录", en: "Sign out" },
   "shell.language": { zh: "语言", en: "Language" },
-  "shell.footer": {
-    zh: "本系统由 Rui Zhang 设计与开发 · 如需功能更新或有改进建议，请与她联系。",
-    en: "Designed & developed by Rui Zhang · For feature updates or improvement suggestions, please reach out to her.",
+  "shell.footer.credits": {
+    zh: "本系统由 Rui Zhang 设计、开发并维护。",
+    en: "Designed, developed & maintained by Rui Zhang.",
+  },
+  "shell.footer.contact": {
+    zh: "如需功能需求、反馈或改进建议，请联系 Rui Zhang。",
+    en: "For feature requests, feedback, or suggestions for improvement, please contact Rui Zhang.",
   },
 
   // ---- common ----
