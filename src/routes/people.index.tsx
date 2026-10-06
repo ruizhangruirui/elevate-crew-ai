@@ -165,31 +165,15 @@ function PeopleBody() {
 
       <div className="panel overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-6 py-4">
-          <h2 className="font-display text-lg font-semibold">{t("ppl.list.title")}</h2>
+          <h2 className="font-display text-lg font-semibold">
+            {t("ppl.list.title")}
+            <span className="ml-2 text-xs font-normal text-muted-foreground">
+              {t("ppl.filter.count").replace("{n}", String(filtered.length))}
+            </span>
+          </h2>
           <div className="flex items-center gap-2">
-          {isOwner && selecting && (
-            <>
-              <Button variant="ghost" size="sm" onClick={() => setSelected(selected.size === data.people.length ? new Set() : new Set(data.people.map((p) => p.id)))}>
-                {selected.size === data.people.length ? t("ppl.bulk.none") : t("ppl.bulk.all")}
-              </Button>
-              <ConfirmAction
-                title={t("ppl.bulk.confirmTitle").replace("{n}", String(selected.size))}
-                description={<p>{t("ppl.bulk.confirmDesc")}</p>}
-                confirmLabel={t("ppl.bulk.delete").replace("{n}", String(selected.size))}
-                onConfirm={() => bulkDelete.mutate()}
-              >
-                <Button variant="destructive" size="sm" className="gap-1.5" disabled={!selected.size || bulkDelete.isPending}>
-                  <Trash2 className="size-4" /> {t("ppl.bulk.delete").replace("{n}", String(selected.size))}
-                </Button>
-              </ConfirmAction>
-            </>
-          )}
-          {isOwner && (
-            <Button variant="outline" size="sm" onClick={() => { setSelecting((v) => !v); setSelected(new Set()); }}>
-              {selecting ? t("ppl.bulk.cancel") : t("ppl.bulk.select")}
-            </Button>
-          )}
-          <Dialog open={open} onOpenChange={setOpen}>
+            <Dialog open={open} onOpenChange={setOpen}>
+
 
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1.5">
