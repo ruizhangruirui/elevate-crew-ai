@@ -282,7 +282,7 @@ function RecruitingBody() {
                 onClick={() => navigate({ search: { role: r.id } })}
                 className={`h-auto w-full flex-col items-start gap-0 rounded-lg border border-border/50 px-2.5 py-2 ${canEditRole ? "pr-10" : ""} text-left text-sm whitespace-normal transition-colors ${r.id === roleId ? "border-brand/60 bg-brand/12 text-foreground" : "hover:bg-surface-raised/60"}`}
               >
-                <p className="flex w-full items-center gap-1.5 font-medium"><span className="truncate">{r.title}</span>{r.recruiting_only && <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-normal text-muted-foreground">{t("rec.businessNeed")}</span>}</p>
+                <p className="flex w-full items-center gap-1.5 font-medium"><span className="truncate">{r.title}</span></p>
                 <p className="mt-0.5 flex gap-2 text-[11px] text-muted-foreground">
                   <span className={cov.gap ? "text-danger" : "text-ok"}>
                     {cov.gap ? t("rec.gap").replace("{n}", String(cov.gap)) : t("rec.full")}
