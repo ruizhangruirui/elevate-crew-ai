@@ -70,4 +70,12 @@ export const recruitingDict: Dict = {
   "rec.stageNone": { zh: "未设置", en: "Not set" },
   "rec.allLabs": { zh: "全部 Lab", en: "All Labs" },
   "rec.noRoles": { zh: "没有符合条件的岗位", en: "No matching roles" },
+  "rec.addRole": { zh: "添加招聘岗位", en: "Add hiring role" },
+  "rec.addRoleTitle": { zh: "添加招聘岗位（非战略岗位）", en: "Add hiring role (outside strategic roles)" },
+  "rec.roleTitle": { zh: "岗位名称", en: "Role title" },
+  "rec.roleTeam": { zh: "所属 Lab / Team", en: "Lab / Team" },
+  "rec.roleCount": { zh: "招聘人数", en: "Headcount" },
+  "rec.roleAdded": { zh: "已添加招聘岗位", en: "Hiring role added" },
+  "rec.businessNeed": { zh: "业务需求", en: "Business need" },
+  "rec.needDirection": { zh: "请先在 Settings 中创建至少一个方向", en: "Create at least one direction in Settings first" },
 };

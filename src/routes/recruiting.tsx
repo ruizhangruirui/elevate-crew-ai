@@ -140,7 +140,7 @@ function RecruitingBody() {
   const [rolesOpen, setRolesOpen] = useState(true);
   const [lab, setLab] = useState<string>("all");
 
-  const { data: ws } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
+  const { data: ws } = useQuery({ queryKey: ["workspace", "recruiting"], queryFn: () => fetchWorkspace({ includeRecruiting: true }) });
   const { data: orgNodes = [] } = useQuery({ queryKey: ["orgNodes"], queryFn: fetchOrgNodes });
   const removeRole = useMutation({
     mutationFn: async (id: string) => {
@@ -269,6 +269,7 @@ function RecruitingBody() {
               <input type="checkbox" checked={openOnly} onChange={(e) => setOpenOnly(e.target.checked)} />
               {t("rec.openOnly")}
             </label>
+            {canEditRole && <AddHiringRole directionId={ws.directions[0]?.id} orgNodes={orgNodes} onCreated={(id) => navigate({ search: { role: id } })} />}
           </div>
         </div>
         {rolesOpen && (
@@ -281,7 +282,7 @@ function RecruitingBody() {
                 onClick={() => navigate({ search: { role: r.id } })}
                 className={`h-auto w-full flex-col items-start gap-0 rounded-lg border border-border/50 px-2.5 py-2 ${canEditRole ? "pr-10" : ""} text-left text-sm whitespace-normal transition-colors ${r.id === roleId ? "border-brand/60 bg-brand/12 text-foreground" : "hover:bg-surface-raised/60"}`}
               >
-                <p className="w-full truncate font-medium">{r.title}</p>
+                <p className="flex w-full items-center gap-1.5 font-medium"><span className="truncate">{r.title}</span>{r.recruiting_only && <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-normal text-muted-foreground">{t("rec.businessNeed")}</span>}</p>
                 <p className="mt-0.5 flex gap-2 text-[11px] text-muted-foreground">
                   <span className={cov.gap ? "text-danger" : "text-ok"}>
                     {cov.gap ? t("rec.gap").replace("{n}", String(cov.gap)) : t("rec.full")}
@@ -765,5 +766,68 @@ function CandidateDialog({
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function AddHiringRole({ directionId, orgNodes, onCreated }: { directionId?: string; orgNodes: { id: string; name: string; type: string }[]; onCreated: (id: string) => void }) {
+  const { t } = useI18n();
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [node, setNode] = useState("none");
+  const [count, setCount] = useState("1");
+  const create = useMutation({
+    mutationFn: async () => {
+      if (!directionId) throw new Error(t("rec.needDirection"));
+      const { data, error } = await db
+        .from("roles")
+        .insert({
+          title: title.trim(),
+          direction_id: directionId,
+          org_node_id: node === "none" ? null : node,
+          target_count: Math.max(1, Number(count) || 1),
+          recruiting_only: true,
+          criticality: "important",
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      return (data as { id: string }).id;
+    },
+    onSuccess: (id) => {
+      toast.success(t("rec.roleAdded"));
+      qc.invalidateQueries({ refetchType: "all" });
+      setOpen(false);
+      setTitle("");
+      setNode("none");
+      setCount("1");
+      onCreated(id);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  return (
+    <>
+      <Button size="sm" variant="outline" className="ml-2 h-7 gap-1 text-xs" onClick={() => setOpen(true)}>
+        <Plus className="size-3.5" /> {t("rec.addRole")}
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{t("rec.addRoleTitle")}</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5"><Label>{t("rec.roleTitle")}</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} /></div>
+            <div className="space-y-1.5"><Label>{t("rec.roleTeam")}</Label>
+              <Select value={node} onValueChange={setNode}><SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="none">—</SelectItem>{orgNodes.map((n) => <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5"><Label>{t("rec.roleCount")}</Label><Input type="number" min={1} value={count} onChange={(e) => setCount(e.target.value)} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setOpen(false)}>{t("ui.cancel")}</Button>
+            <Button disabled={!title.trim() || create.isPending} onClick={() => create.mutate()}>{t("ui.save")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
