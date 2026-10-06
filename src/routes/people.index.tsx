@@ -315,15 +315,11 @@ function PeopleBody() {
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
-                  if (selecting) toggle(p.id);
-                  else openPerson(p.id);
+                  openPerson(p.id);
                 }
               }}
               className="flex cursor-pointer flex-wrap items-center gap-4 px-6 py-4 transition-colors hover:bg-surface-raised/50"
             >
-              {selecting && (
-                <Checkbox checked={selected.has(p.id)} onClick={(e) => e.stopPropagation()} onCheckedChange={() => toggle(p.id)} aria-label={p.name} />
-              )}
               <div
                 className="grid size-10 shrink-0 place-items-center rounded-full border border-border/70 bg-surface-raised font-display text-sm font-semibold"
                 aria-hidden
