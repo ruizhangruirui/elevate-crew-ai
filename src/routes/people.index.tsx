@@ -11,7 +11,7 @@ import { ConfirmAction } from "@/components/ConfirmAction";
 import { fetchArchivedPeople, fetchLifecycleEvents, recordJoin, restorePerson } from "@/lib/lifecycle";
 import { completeness, fetchOrgNodes } from "@/lib/org-tree";
 import { StatTile } from "@/components/StatTile";
-import { fetchWorkspace, type Person } from "@/lib/talent";
+import { fetchWorkspace } from "@/lib/talent";
 import { db as supabase } from "@/lib/db-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
