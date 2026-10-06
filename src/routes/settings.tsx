@@ -110,6 +110,7 @@ const CONFIG_GROUPS: [string, string][] = [
   ["actionTypes", "Talent Action Types"],
   ["activityTypes", "Activity Types"],
   ["achievementTypes", "Team Achievement Types"],
+  ["locations", "Work Locations"],
 ];
 
 async function fetchSettings() {

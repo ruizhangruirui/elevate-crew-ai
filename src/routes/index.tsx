@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { EMPLOYMENT_MODES, employmentModeLabel, useLocations } from "@/lib/locations";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -399,6 +400,8 @@ function RoleCard({
           {t("idx.currentCoverage")} {filled}/{role.target_count}
         </span>
         {state !== "empty" && <span className={gap > 0 ? "text-danger" : "text-ok"}>Gap {gap}</span>}
+        {role.employment_mode && <span>{employmentModeLabel(t, role.employment_mode)}</span>}
+        {role.location && <span>{role.location}</span>}
       </div>
 
       <div className="mt-2">
@@ -456,6 +459,8 @@ export function RoleMenu({
   const [targetCount, setTargetCount] = useState(String(role.target_count));
   const [criticality, setCriticality] = useState(role.criticality);
   const [nodeId, setNodeId] = useState(role.org_node_id ?? "__none");
+  const [mode, setMode] = useState(role.employment_mode ?? "__none");
+  const [location, setLocation] = useState(role.location ?? "__none");
 
   const reset = () => {
     setTitle(role.title);
@@ -465,6 +470,8 @@ export function RoleMenu({
     setTargetCount(String(role.target_count));
     setCriticality(role.criticality);
     setNodeId(role.org_node_id ?? "__none");
+    setMode(role.employment_mode ?? "__none");
+    setLocation(role.location ?? "__none");
   };
 
   const save = useMutation({
@@ -479,6 +486,8 @@ export function RoleMenu({
           target_count: Math.max(1, Number(targetCount) || 1),
           criticality,
           org_node_id: nodeId === "__none" ? null : nodeId,
+          employment_mode: mode === "__none" ? null : mode,
+          location: location === "__none" ? null : location,
         })
         .eq("id", role.id);
       if (error) throw error;
@@ -611,6 +620,7 @@ export function RoleMenu({
                 </SelectContent>
               </Select>
             </div>
+            <ModeLocationFields mode={mode} location={location} onMode={setMode} onLocation={setLocation} />
 
             <p className="text-xs text-muted-foreground">
               {t("idx.roleProfileHint")}
@@ -854,14 +864,17 @@ export function NewDirectionDialog({ orgId, onDone }: { orgId: string; onDone: (
 function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: () => void }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({
+  const empty = {
     title: "",
     description: "",
     level_min: "14",
     level_max: "16",
     target_count: "1",
     criticality: "important",
-  });
+    employment_mode: "__none",
+    location: "__none",
+  };
+  const [form, setForm] = useState(empty);
 
   const create = useMutation({
     mutationFn: async () => {
@@ -873,20 +886,15 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
         level_max: Number(form.level_max),
         target_count: Number(form.target_count),
         criticality: form.criticality,
+        employment_mode: form.employment_mode === "__none" ? null : form.employment_mode,
+        location: form.location === "__none" ? null : form.location,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       toastSaved(t("idx.roleCreated"));
       setOpen(false);
-      setForm({
-        title: "",
-        description: "",
-        level_min: "14",
-        level_max: "16",
-        target_count: "1",
-        criticality: "important",
-      });
+      setForm(empty);
       onDone();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -961,6 +969,12 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
               </SelectContent>
             </Select>
           </div>
+          <ModeLocationFields
+            mode={form.employment_mode}
+            location={form.location}
+            onMode={(v) => setForm({ ...form, employment_mode: v })}
+            onLocation={(v) => setForm({ ...form, location: v })}
+          />
         </div>
         <FormActions
           onCancel={() => setOpen(false)}
@@ -977,4 +991,48 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
 function OwnerOnly({ children }: { children: import("react").ReactNode }) {
   const { isOwner } = useAuth();
   return isOwner ? <>{children}</> : null;
+}
+
+function ModeLocationFields({
+  mode,
+  location,
+  onMode,
+  onLocation,
+}: {
+  mode: string;
+  location: string;
+  onMode: (v: string) => void;
+  onLocation: (v: string) => void;
+}) {
+  const { t } = useI18n();
+  const { data: locations = [] } = useLocations();
+  const opts = location !== "__none" && !locations.includes(location) ? [...locations, location] : locations;
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <div className="space-y-2">
+        <Label>{t("loc.mode")}</Label>
+        <Select value={mode} onValueChange={onMode}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__none">{t("loc.unset")}</SelectItem>
+            {EMPLOYMENT_MODES.map((m) => (
+              <SelectItem key={m} value={m}>{employmentModeLabel(t, m)}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-2">
+        <Label>{t("loc.location")}</Label>
+        <Select value={location} onValueChange={onLocation}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__none">{t("loc.unset")}</SelectItem>
+            {opts.map((l) => (
+              <SelectItem key={l} value={l}>{l}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
 }

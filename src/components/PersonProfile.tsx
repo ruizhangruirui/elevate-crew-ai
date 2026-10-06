@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useLocations } from "@/lib/locations";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -410,6 +411,7 @@ export function PersonProfile({
   const canHr = user?.role === "owner" || user?.role === "hr";
   const canMgr = user?.role === "owner" || user?.role === "manager";
   const nodes = orgNodes.data ?? [];
+  const { data: locationOpts = [] } = useLocations();
   const { lab, team } = labTeamOf(nodes, person.org_node_id);
   const tenure = person.hire_date ? tenureMonths(person.hire_date) : (person.tenure_months ?? null);
 
@@ -420,6 +422,7 @@ export function PersonProfile({
     org_node_id: "none",
     contract_type: "unset",
     hire_date: "",
+    location: "",
     level: "",
     role_id: "none",
     appointed_role_title: "",
@@ -440,6 +443,7 @@ export function PersonProfile({
       org_node_id: person.org_node_id ?? "none",
       contract_type: person.contract_type || "unset",
       hire_date: person.hire_date ?? "",
+      location: person.location ?? "",
       level: person.level != null ? String(person.level) : "",
       role_id: person.role_id ?? "none",
       appointed_role_title: person.appointed_role_title ?? "",
@@ -475,6 +479,7 @@ export function PersonProfile({
           org_node_id: nextNode,
           contract_type: contract,
           hire_date: form.hire_date || null,
+          location: form.location || null,
           level: form.level ? Number(form.level) : null,
           role_id: form.role_id === "none" ? null : form.role_id,
           appointed_role_title: form.appointed_role_title.trim() || null,
@@ -488,6 +493,7 @@ export function PersonProfile({
         cmp(t("sheet.person.team"), nodeName(person.org_node_id ?? null), nodeName(nextNode));
         cmp(t("sheet.person.contractType"), contractLabel(t, person.contract_type) ?? "", contractLabel(t, contract) ?? "");
         cmp(t("pp.f.hireDate"), person.hire_date ?? "", form.hire_date);
+        cmp(t("loc.location"), person.location ?? "", form.location);
         cmp(t("sheet.person.level"), person.level != null ? String(person.level) : "", form.level);
         cmp(t("pp.f.role"), person.appointed_role_title || roles.find((r) => r.id === person.role_id)?.title || "", form.appointed_role_title.trim() || roles.find((r) => r.id === form.role_id)?.title || "");
         cmp(t("pp.f.offerTitle"), person.offer_title ?? "", form.offer_title.trim());
@@ -610,6 +616,13 @@ export function PersonProfile({
                 <Input type="date" value={form.hire_date} onChange={(e) => setForm({ ...form, hire_date: e.target.value })} />
               </div>
               <div className="space-y-1.5">
+                <Label>{t("loc.location")}</Label>
+                {sel(form.location || "none", (v) => setForm({ ...form, location: v === "none" ? "" : v }), [
+                  ["none", t("loc.unset")],
+                  ...[...locationOpts, ...(form.location && !locationOpts.includes(form.location) ? [form.location] : [])].map((l) => [l, l] as [string, string]),
+                ])}
+              </div>
+              <div className="space-y-1.5">
                 <Label>{t("sheet.person.level")}</Label>
                 <Input type="number" value={form.level} onChange={(e) => setForm({ ...form, level: e.target.value })} />
               </div>
@@ -658,6 +671,7 @@ export function PersonProfile({
               <Fact label={t("sheet.person.team")} value={team?.name ?? "—"} />
               <Fact label={t("sheet.person.contractType")} value={contractLabel(t, person.contract_type) || "—"} />
               <Fact label={t("pp.f.hireDate")} value={person.hire_date ?? "—"} />
+              <Fact label={t("loc.location")} value={person.location || "—"} />
               <Fact label={t("sheet.person.level")} value={person.level != null ? `L${person.level}` : "—"} />
               <Fact label={t("pp.f.role")} value={person.appointed_role_title || role?.title || t("sheet.person.notAssigned")} />
               <Fact label={t("pp.f.offerTitle")} value={person.offer_title || "—"} />
