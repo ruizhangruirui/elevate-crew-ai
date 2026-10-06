@@ -67,7 +67,10 @@ export const importPeople = createServerFn({ method: "POST" })
         if (row.contract_type) patch["contract_type"] = row.contract_type;
         if (row.hire_date) patch["hire_date"] = row.hire_date;
         if (row.level !== null) patch["level"] = row.level;
-        if (roleId !== undefined) patch["role_id"] = roleId;
+        if (roleId !== undefined) {
+          patch["role_id"] = roleId;
+          patch["appointed_role_title"] = row.role;
+        }
         if (row.job_title) patch["offer_title"] = row.job_title;
         if (Object.keys(patch).length) updates.push({ id, patch });
       } else {
@@ -83,6 +86,7 @@ export const importPeople = createServerFn({ method: "POST" })
           hire_date: row.hire_date,
           org_node_id: nodeFor(row),
           role_id: roleId ?? null,
+          appointed_role_title: row.role || null,
           offer_title: row.job_title || null,
         });
       }
