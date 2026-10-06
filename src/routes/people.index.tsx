@@ -126,6 +126,8 @@ function PeopleBody() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  if (!data) return <div className="text-sm text-muted-foreground">{t("ppl.loading")}</div>;
+
   const labs = (orgNodes ?? []).filter((n) => n.type === "Lab");
   const teamsOfLab = (orgNodes ?? []).filter(
     (n) => n.type === "Team" && (labFilter === "all" || n.parent_id === labFilter),
