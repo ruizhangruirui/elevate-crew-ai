@@ -62,13 +62,13 @@ export const importPeople = createServerFn({ method: "POST" })
       const id = byStaff.get(row.staff_id);
       if (id) {
         const patch: Record<string, unknown> = {};
-        if (row.name) patch.name = row.name;
-        if (row.lab) patch.org_node_id = nodeFor(row);
-        if (row.contract_type) patch.contract_type = row.contract_type;
-        if (row.hire_date) patch.hire_date = row.hire_date;
-        if (row.level !== null) patch.level = row.level;
-        if (roleId !== undefined) patch.role_id = roleId;
-        if (row.job_title) patch.offer_title = row.job_title;
+        if (row.name) patch["name"] = row.name;
+        if (row.lab) patch["org_node_id"] = nodeFor(row);
+        if (row.contract_type) patch["contract_type"] = row.contract_type;
+        if (row.hire_date) patch["hire_date"] = row.hire_date;
+        if (row.level !== null) patch["level"] = row.level;
+        if (roleId !== undefined) patch["role_id"] = roleId;
+        if (row.job_title) patch["offer_title"] = row.job_title;
         if (Object.keys(patch).length) updates.push({ id, patch });
       } else {
         if (!row.name || !row.lab || !row.contract_type)
