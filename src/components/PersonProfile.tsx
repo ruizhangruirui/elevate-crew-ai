@@ -422,6 +422,7 @@ export function PersonProfile({
     hire_date: "",
     level: "",
     role_id: "none",
+    offer_title: "",
     status: "onboard",
     tags: "",
     note: "",
@@ -440,6 +441,7 @@ export function PersonProfile({
       hire_date: person.hire_date ?? "",
       level: person.level != null ? String(person.level) : "",
       role_id: person.role_id ?? "none",
+      offer_title: person.offer_title ?? "",
       status: person.status ?? "onboard",
       tags: (person.tags ?? []).join(", "),
       note: person.note ?? "",
@@ -473,6 +475,7 @@ export function PersonProfile({
           hire_date: form.hire_date || null,
           level: form.level ? Number(form.level) : null,
           role_id: form.role_id === "none" ? null : form.role_id,
+          offer_title: form.offer_title.trim() || null,
           status: form.status,
           tags: form.tags.split(/[,，\n]/).map((x) => x.trim()).filter(Boolean),
           note: form.note || null,
@@ -484,6 +487,7 @@ export function PersonProfile({
         cmp(t("pp.f.hireDate"), person.hire_date ?? "", form.hire_date);
         cmp(t("sheet.person.level"), person.level != null ? String(person.level) : "", form.level);
         cmp(t("pp.f.role"), roles.find((r) => r.id === person.role_id)?.title ?? "", roles.find((r) => r.id === form.role_id)?.title ?? "");
+        cmp(t("pp.f.offerTitle"), person.offer_title ?? "", form.offer_title.trim());
         cmp(t("sheet.person.status"), person.status ?? "", form.status);
         cmp(t("sheet.person.tags"), (person.tags ?? []).join(", "), form.tags);
       } else {
@@ -614,6 +618,10 @@ export function PersonProfile({
                 ])}
               </div>
               <div className="space-y-1.5">
+                <Label>{t("pp.f.offerTitle")}</Label>
+                <Input value={form.offer_title} onChange={(e) => setForm({ ...form, offer_title: e.target.value })} placeholder={t("pp.f.offerTitlePh")} />
+              </div>
+              <div className="space-y-1.5">
                 <Label>{t("sheet.person.status")}</Label>
                 {sel(form.status, (v) => setForm({ ...form, status: v }), [
                   ["onboard", t("sheet.person.onboard")],
@@ -642,6 +650,7 @@ export function PersonProfile({
               <Fact label={t("pp.f.hireDate")} value={person.hire_date ?? "—"} />
               <Fact label={t("sheet.person.level")} value={person.level != null ? `L${person.level}` : "—"} />
               <Fact label={t("pp.f.role")} value={role?.title ?? t("sheet.person.notAssigned")} />
+              <Fact label={t("pp.f.offerTitle")} value={person.offer_title || "—"} />
               <Fact label={t("sheet.person.tenure")} value={tenureLabel(t, tenure)} />
               <Fact
                 label={t("sheet.person.status")}

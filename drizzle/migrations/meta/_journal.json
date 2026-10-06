@@ -43,6 +43,13 @@
       "when": 1791223349879,
       "tag": "0005_app_users_recruiter_role",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791273227522,
+      "tag": "0006_offer_title_and_candidate_priority",
+      "breakpoints": true
     }
   ]
 }

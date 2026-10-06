@@ -53,6 +53,12 @@ const FILTERS = {
 } as const;
 type FilterKey = keyof typeof FILTERS;
 
+const PRIORITY_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 };
+const PRIORITY_TONE: Record<string, string> = {
+  high: "bg-destructive/10 text-destructive",
+  medium: "bg-warn/10 text-warn",
+  low: "bg-muted text-muted-foreground",
+};
 const OUTCOME_TONE: Record<string, string> = {
   active: "bg-brand/12 text-brand",
   on_hold: "bg-muted text-muted-foreground",
@@ -91,6 +97,7 @@ export type Candidate = {
   next_step_on: string | null;
   notes: string | null;
   contract_type: string | null;
+  priority: string;
   person_id: string | null;
   updated_at: string;
 };
@@ -210,7 +217,8 @@ function RecruitingBody() {
       if (!query.trim()) return true;
       const q = query.toLowerCase();
       return [c.name, c.current_company, c.current_title, c.source, c.recruiter, c.stage].some((v) => v?.toLowerCase().includes(q));
-    });
+    })
+    .sort((a, b) => (PRIORITY_RANK[a.priority] ?? 1) - (PRIORITY_RANK[b.priority] ?? 1));
   const countFor = (k: FilterKey) => (candidates ?? []).filter((c) => c.role_id === roleId && (FILTERS[k] as readonly string[]).includes(c.outcome)).length;
 
   const quickUpdate = useMutation({
@@ -337,15 +345,16 @@ function RecruitingBody() {
                 <thead className="sticky top-0 z-10 bg-background/95 text-left text-[11px] uppercase tracking-wide text-muted-foreground backdrop-blur">
                   <tr>
                     <th className="w-8 px-3 py-2">#</th>
+                    <th className="px-3 py-2">{t("rec.c.priority")}</th>
                     <th className="px-3 py-2">{t("rec.c.name")}</th>
                     <th className="px-3 py-2">{t("rec.c.current")}</th>
-                    <th className="px-3 py-2">{t("rec.c.source")}</th>
-                    <th className="px-3 py-2 whitespace-nowrap">{t("rec.c.contract")}</th>
                     <th className="px-3 py-2">{t("rec.c.stage")}</th>
                     <th className="px-3 py-2">{t("rec.c.outcome")}</th>
                     <th className="px-3 py-2">{t("rec.c.next")}</th>
                     <th className="px-3 py-2">{t("rec.c.links")}</th>
                     <th className="px-3 py-2">{t("rec.c.recruiter")}</th>
+                    <th className="px-3 py-2">{t("rec.c.source")}</th>
+                    <th className="px-3 py-2 whitespace-nowrap">{t("rec.c.contract")}</th>
                     <th className="px-3 py-2">{t("rec.c.updated")}</th>
                   </tr>
                 </thead>
@@ -356,6 +365,9 @@ function RecruitingBody() {
                     return (
                       <tr key={c.id} className="border-t border-border/40 hover:bg-surface-raised/40">
                         <td className="px-3 py-1.5 text-xs tabular-nums text-muted-foreground">{i + 1}</td>
+                        <td className="px-3 py-1.5">
+                          <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${PRIORITY_TONE[c.priority] ?? ""}`}>{t(`rec.pr.${c.priority ?? "medium"}`)}</span>
+                        </td>
                         <td className="px-3 py-1.5">
                           <button type="button" className="text-left font-medium hover:text-brand" onClick={() => setEditing(c)}>
                             {c.name}
@@ -369,8 +381,6 @@ function RecruitingBody() {
                         <td className="max-w-48 truncate px-3 py-1.5 text-xs text-muted-foreground">
                           {[c.current_company, c.current_title].filter(Boolean).join(" · ") || "—"}
                         </td>
-                        <td className="px-3 py-1.5 text-xs">{c.source || "—"}</td>
-                        <td className="px-3 py-1.5 text-xs">{ctLabel(t, c.contract_type)}</td>
                         <td className="px-3 py-1.5">
                           <Select
                             value={c.stage ?? ""}
@@ -408,7 +418,7 @@ function RecruitingBody() {
                         </td>
                         <td className="max-w-48 px-3 py-1.5 text-xs">
                           <p className="truncate">{c.next_step || "—"}</p>
-                          {c.next_step_on && <p className="text-muted-foreground">{c.next_step_on}</p>}
+                          {c.next_step_on && <p className="text-muted-foreground tabular-nums">{c.next_step_on}</p>}
                         </td>
                         <td className="px-3 py-1.5">
                           <span className="flex gap-1.5 text-muted-foreground">
@@ -418,6 +428,8 @@ function RecruitingBody() {
                           </span>
                         </td>
                         <td className="px-3 py-1.5 text-xs">{c.recruiter || "—"}</td>
+                        <td className="px-3 py-1.5 text-xs">{c.source || "—"}</td>
+                        <td className="px-3 py-1.5 text-xs">{ctLabel(t, c.contract_type)}</td>
                         <td className="px-3 py-1.5 text-xs tabular-nums text-muted-foreground">{c.updated_at.slice(0, 10)}</td>
                       </tr>
                     );
@@ -484,6 +496,7 @@ function CandidateDialog({
     next_step_on: candidate?.next_step_on ?? "",
     notes: candidate?.notes ?? "",
     contract_type: candidate?.contract_type ?? "",
+    priority: candidate?.priority ?? "medium",
   });
   const [ev, setEv] = useState({ note: "", interviewer: "", happened_on: new Date().toISOString().slice(0, 10) });
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setF({ ...f, [k]: e.target.value });
@@ -524,6 +537,7 @@ function CandidateDialog({
       next_step_on: n(f.next_step_on),
       notes: n(f.notes),
       contract_type: n(f.contract_type),
+      priority: f.priority || "medium",
     };
   };
 
@@ -635,6 +649,15 @@ function CandidateDialog({
           {field("current_company", t("rec.f.company"))}
           {field("current_title", t("rec.f.jobTitle"))}
           {field("location", t("rec.f.location"))}
+          <div className="space-y-1">
+            <Label className="text-xs">{t("rec.c.priority")}</Label>
+            <Select value={f.priority} onValueChange={(v) => setF({ ...f, priority: v })} disabled={!canEdit}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {["high", "medium", "low"].map((p) => <SelectItem key={p} value={p}>{t(`rec.pr.${p}`)}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
           {field("source", t("rec.c.source"))}
           <div className="space-y-1">
             <Label className="text-xs">{t("rec.c.contract")}</Label>

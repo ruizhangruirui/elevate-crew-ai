@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/lib/i18n";
+import { useAuth } from "@/hooks/useAuth";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { RoleDetailSheet } from "@/components/RoleDetailSheet";
 import {
@@ -215,7 +216,7 @@ function StrategyBoard() {
                 {active.title} · {active.description}
               </p>
             </div>
-            <NewRoleDialog directionId={active.id} onDone={invalidate} />
+            <OwnerOnly><NewRoleDialog directionId={active.id} onDone={invalidate} /></OwnerOnly>
           </div>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
@@ -971,4 +972,9 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
       </DialogContent>
     </Dialog>
   );
+}
+
+function OwnerOnly({ children }: { children: import("react").ReactNode }) {
+  const { isOwner } = useAuth();
+  return isOwner ? <>{children}</> : null;
 }
