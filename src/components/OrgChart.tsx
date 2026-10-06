@@ -136,7 +136,10 @@ export function OrgChart({ nodes, people, roles, rolesByNode, onPerson, onRole }
       const k = effectiveImportance(p, roles);
       tiers[k] = (tiers[k] ?? 0) + 1;
     }
-    const direct = peopleOf.get(node.id) ?? [];
+    const direct = [...(peopleOf.get(node.id) ?? [])].sort(
+      (a, b) => Number(!!b.is_leader) - Number(!!a.is_leader),
+    );
+    const leaders = direct.filter((p) => p.is_leader && p.status !== "left");
     const Icon = node.type === "Team" ? Users : Building2;
     const open = isOpen(node.id, depth);
     const teamOpen = openTeam === node.id;
@@ -180,6 +183,22 @@ export function OrgChart({ nodes, people, roles, rolesByNode, onPerson, onRole }
             </p>
           </button>
         </div>
+
+        {leaders.length > 0 && (
+          <div className="flex flex-wrap gap-1 px-3 pb-2">
+            {leaders.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => onPerson(p.id)}
+                className="inline-flex max-w-full items-center gap-1 rounded-full bg-brand/12 px-2 py-0.5 text-[10px] font-medium text-brand hover:bg-brand/20"
+              >
+                <span className="text-muted-foreground">{t("importance.leaderBadge")}</span>
+                <span className="truncate">{p.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* 重要度构成色条 */}
         {onboard.length > 0 && (
