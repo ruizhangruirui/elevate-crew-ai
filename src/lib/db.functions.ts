@@ -86,7 +86,8 @@ export const dbQuery = createServerFn({ method: "POST" })
     if (spec.table === "people" && spec.op === "insert" && Array.isArray(payload) && user.role !== "owner")
       return fail("Only the Owner can bulk import people", "403");
 
-    if (spec.table === "roles" && spec.op === "insert" && user.role !== "owner")
+    const recruitingOnlyInsert = (Array.isArray(payload) ? payload : [payload]).every((r: any) => r?.recruiting_only === true);
+    if (spec.table === "roles" && spec.op === "insert" && user.role !== "owner" && !(user.role === "hr" && recruitingOnlyInsert))
       return fail("Only the Owner can add strategic roles", "403");
     if (spec.table === "directions" && spec.op !== "select" && user.role !== "owner")
       return fail("Only the Owner can change strategy directions", "403");

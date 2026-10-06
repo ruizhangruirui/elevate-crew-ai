@@ -1,0 +1,2 @@
+ALTER TABLE public.roles ADD COLUMN IF NOT EXISTS recruiting_only boolean NOT NULL DEFAULT false;
+COMMENT ON COLUMN public.roles.recruiting_only IS 'Business-need hiring role added from Recruiting; excluded from strategic role views and coverage.';
