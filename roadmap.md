@@ -13,3 +13,5 @@
 - [ ] Verify the signed-in import and archive flows (blocked: no app-owned test account is available in this preview).- [x] Recruiting: roles panel on top, collapsible, Lab filter; managers see only roles/candidates in their scope.
 - [x] Add Recruiter user role (Strategic Roles + Recruiting only, edits candidates only).
 - [x] Move add/edit/archive directions and the Archived bin into Settings (Owner-only, server-enforced).
+
+- [x] Bulk import strategic roles from Excel in Settings (Owner-only, upsert by direction + title).
