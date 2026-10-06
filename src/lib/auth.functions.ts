@@ -118,7 +118,7 @@ export const createUser = createServerFn({ method: "POST" })
       name: data.name,
       email: data.email,
       role: data.role,
-      scope_node_ids: data.role === "manager" ? data.scope_node_ids : [],
+      scope_node_ids: data.role === "manager" || data.role === "hr" ? data.scope_node_ids : [],
       password_hash: await hashPassword(data.password),
       must_change_password: true,
     });
@@ -150,7 +150,7 @@ export const updateUser = createServerFn({ method: "POST" })
       .update({
         name: data.name,
         role: data.role,
-        scope_node_ids: data.role === "manager" ? data.scope_node_ids : [],
+        scope_node_ids: data.role === "manager" || data.role === "hr" ? data.scope_node_ids : [],
         status: data.status,
       })
       .eq("id", data.id);
