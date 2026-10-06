@@ -461,6 +461,20 @@ export function RoleMenu({
   const [nodeId, setNodeId] = useState(role.org_node_id ?? "__none");
   const [mode, setMode] = useState(role.employment_mode ?? "__none");
   const [location, setLocation] = useState(role.location ?? "__none");
+  const [directionId, setDirectionId] = useState(role.direction_id);
+  const dirs = useQuery({
+    queryKey: ["directions-active"],
+    enabled: editing,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("directions")
+        .select("id,title")
+        .eq("archived", false)
+        .order("sort_order");
+      if (error) throw error;
+      return (data ?? []) as { id: string; title: string }[];
+    },
+  });
 
   const reset = () => {
     setTitle(role.title);
@@ -472,6 +486,7 @@ export function RoleMenu({
     setNodeId(role.org_node_id ?? "__none");
     setMode(role.employment_mode ?? "__none");
     setLocation(role.location ?? "__none");
+    setDirectionId(role.direction_id);
   };
 
   const save = useMutation({
@@ -485,6 +500,7 @@ export function RoleMenu({
           level_max: Number(levelMax) || role.level_max,
           target_count: Math.max(1, Number(targetCount) || 1),
           criticality,
+          direction_id: directionId || role.direction_id,
           org_node_id: nodeId === "__none" ? null : nodeId,
           employment_mode: mode === "__none" ? null : mode,
           location: location === "__none" ? null : location,
@@ -587,6 +603,21 @@ export function RoleMenu({
                   onChange={(e) => setTargetCount(e.target.value)}
                 />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label>{t("idx.directionField")}</Label>
+              <Select value={directionId} onValueChange={setDirectionId}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(dirs.data ?? []).map((d) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>{t("idx.criticality")}</Label>
