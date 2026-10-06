@@ -1,0 +1,1 @@
+ALTER TABLE public.roles ADD COLUMN IF NOT EXISTS recruiting_archived boolean NOT NULL DEFAULT false;
