@@ -42,6 +42,7 @@ export type Role = {
   recommended_action: string[];
   employment_mode?: string | null;
   recruiting_only?: boolean;
+  recruiting_archived?: boolean;
   location?: string | null;
 };
 
@@ -102,7 +103,10 @@ async function loadWorkspace(includeRecruiting: boolean) {
     org: (orgs.data?.[0] ?? null) as Org | null,
     directions: (directions.data ?? []) as Direction[],
     roles: ((roles.data ?? []) as unknown[])
-      .filter((r) => includeRecruiting || !(r as { recruiting_only?: boolean }).recruiting_only)
+      .filter((r) => {
+        const x = r as { recruiting_only?: boolean; recruiting_archived?: boolean };
+        return includeRecruiting ? !x.recruiting_archived : !x.recruiting_only;
+      })
       .map((r) => {
       const row = r as Record<string, unknown>;
       return { ...row, skills: Array.isArray(row["skills"]) ? row["skills"] : [] } as Role;

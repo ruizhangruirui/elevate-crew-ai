@@ -143,8 +143,10 @@ function RecruitingBody() {
   const { data: ws } = useQuery({ queryKey: ["workspace", "recruiting"], queryFn: fetchRecruitingWorkspace });
   const { data: orgNodes = [] } = useQuery({ queryKey: ["orgNodes"], queryFn: fetchOrgNodes });
   const removeRole = useMutation({
+    // Strategic roles are only hidden from Recruiting; recruiting-only roles are archived outright.
     mutationFn: async (id: string) => {
-      const { error } = await db.from("roles").update({ archived: true }).eq("id", id);
+      const role = ws?.roles.find((r) => r.id === id);
+      const { error } = await db.from("roles").update(role?.recruiting_only ? { archived: true } : { recruiting_archived: true }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: (_data, id) => {
@@ -154,7 +156,7 @@ function RecruitingBody() {
       }
       qc.invalidateQueries({ refetchType: "all" });
       toastUndoable(t("rec.roleRemoved"), t("ui.undo"), async () => {
-        const { error } = await db.from("roles").update({ archived: false }).eq("id", id);
+        const { error } = await db.from("roles").update({ archived: false, recruiting_archived: false }).eq("id", id);
         if (error) { toast.error(error.message); return; }
         qc.invalidateQueries({ refetchType: "all" });
         navigate({ search: { role: id } });
