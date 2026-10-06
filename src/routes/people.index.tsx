@@ -2,20 +2,17 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Plus, RotateCcw, Search, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/lib/i18n";
-import { contractLabel } from "@/lib/contract";
+import { CONTRACTS, contractLabel, labTeamOf } from "@/lib/contract";
 import { badgeImportance, IMPORTANCE_TONE } from "@/lib/importance";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { fetchArchivedPeople, fetchLifecycleEvents, recordJoin, restorePerson } from "@/lib/lifecycle";
-import { completeness } from "@/lib/org-tree";
+import { completeness, fetchOrgNodes } from "@/lib/org-tree";
 import { StatTile } from "@/components/StatTile";
-import { fetchWorkspace, type Person } from "@/lib/talent";
+import { fetchWorkspace } from "@/lib/talent";
 import { db as supabase } from "@/lib/db-client";
-import { bulkDeletePeople } from "@/lib/import-people.functions";
-import { useAuth } from "@/hooks/useAuth";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -68,26 +65,12 @@ function PeopleBody() {
   const { data: archived } = useQuery({ queryKey: ["archived-people"], queryFn: fetchArchivedPeople });
   const { data: lifecycle } = useQuery({ queryKey: ["lifecycle"], queryFn: fetchLifecycleEvents });
   const [showArchived, setShowArchived] = useState(false);
-  const { isOwner } = useAuth();
-  const [selecting, setSelecting] = useState(false);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const toggle = (id: string) =>
-    setSelected((s) => {
-      const n = new Set(s);
-      if (n.has(id)) n.delete(id);
-      else n.add(id);
-      return n;
-    });
-  const bulkDelete = useMutation({
-    mutationFn: () => bulkDeletePeople({ data: { ids: [...selected] } }),
-    onSuccess: (n) => {
-      toast.success(t("ppl.bulk.done").replace("{n}", String(n)));
-      setSelected(new Set());
-      setSelecting(false);
-      qc.invalidateQueries({ refetchType: "all" });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
+  const { data: orgNodes } = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
+  const [query, setQuery] = useState("");
+  const [labFilter, setLabFilter] = useState("all");
+  const [teamFilter, setTeamFilter] = useState("all");
+  const [contractFilter, setContractFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const openPerson = (id: string) =>
@@ -145,6 +128,23 @@ function PeopleBody() {
 
   if (!data) return <div className="text-sm text-muted-foreground">{t("ppl.loading")}</div>;
 
+  const labs = (orgNodes ?? []).filter((n) => n.type === "Lab");
+  const teamsOfLab = (orgNodes ?? []).filter(
+    (n) => n.type === "Team" && (labFilter === "all" || n.parent_id === labFilter),
+  );
+  const q = query.trim().toLowerCase();
+  const filtered = data.people.filter((p) => {
+    if (q && !`${p.name} ${p.staff_id ?? ""}`.toLowerCase().includes(q)) return false;
+    if (contractFilter !== "all" && p.contract_type !== contractFilter) return false;
+    if (statusFilter !== "all" && p.status !== statusFilter) return false;
+    if (labFilter !== "all" || teamFilter !== "all") {
+      const { lab, team } = labTeamOf(orgNodes ?? [], p.org_node_id);
+      if (labFilter !== "all" && lab?.id !== labFilter) return false;
+      if (teamFilter !== "all" && team?.id !== teamFilter) return false;
+    }
+    return true;
+  });
+
   const roleName = (id: string | null) =>
     data.roles.find((r) => r.id === id)?.title ?? t("ppl.role.noRole");
   const onboard = data.people.filter((p) => p.status === "onboard");
@@ -165,31 +165,15 @@ function PeopleBody() {
 
       <div className="panel overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-6 py-4">
-          <h2 className="font-display text-lg font-semibold">{t("ppl.list.title")}</h2>
+          <h2 className="font-display text-lg font-semibold">
+            {t("ppl.list.title")}
+            <span className="ml-2 text-xs font-normal text-muted-foreground">
+              {t("ppl.filter.count").replace("{n}", String(filtered.length))}
+            </span>
+          </h2>
           <div className="flex items-center gap-2">
-          {isOwner && selecting && (
-            <>
-              <Button variant="ghost" size="sm" onClick={() => setSelected(selected.size === data.people.length ? new Set() : new Set(data.people.map((p) => p.id)))}>
-                {selected.size === data.people.length ? t("ppl.bulk.none") : t("ppl.bulk.all")}
-              </Button>
-              <ConfirmAction
-                title={t("ppl.bulk.confirmTitle").replace("{n}", String(selected.size))}
-                description={<p>{t("ppl.bulk.confirmDesc")}</p>}
-                confirmLabel={t("ppl.bulk.delete").replace("{n}", String(selected.size))}
-                onConfirm={() => bulkDelete.mutate()}
-              >
-                <Button variant="destructive" size="sm" className="gap-1.5" disabled={!selected.size || bulkDelete.isPending}>
-                  <Trash2 className="size-4" /> {t("ppl.bulk.delete").replace("{n}", String(selected.size))}
-                </Button>
-              </ConfirmAction>
-            </>
-          )}
-          {isOwner && (
-            <Button variant="outline" size="sm" onClick={() => { setSelecting((v) => !v); setSelected(new Set()); }}>
-              {selecting ? t("ppl.bulk.cancel") : t("ppl.bulk.select")}
-            </Button>
-          )}
-          <Dialog open={open} onOpenChange={setOpen}>
+            <Dialog open={open} onOpenChange={setOpen}>
+
 
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1.5">
@@ -266,26 +250,76 @@ function PeopleBody() {
           </div>
         </div>
 
+        <div className="flex flex-wrap items-center gap-2 border-b border-border/60 px-6 py-3">
+          <div className="relative min-w-48 flex-1 sm:max-w-72">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t("ppl.filter.search")}
+              className="h-9 pl-9"
+            />
+          </div>
+          <Select value={labFilter} onValueChange={(v) => { setLabFilter(v); setTeamFilter("all"); }}>
+            <SelectTrigger className="h-9 w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("ppl.filter.allLab")}</SelectItem>
+              {labs.map((n) => (
+                <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={teamFilter} onValueChange={setTeamFilter}>
+            <SelectTrigger className="h-9 w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("ppl.filter.allTeam")}</SelectItem>
+              {teamsOfLab.map((n) => (
+                <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={contractFilter} onValueChange={setContractFilter}>
+            <SelectTrigger className="h-9 w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("ppl.filter.allContract")}</SelectItem>
+              {CONTRACTS.map((c) => (
+                <SelectItem key={c} value={c}>{contractLabel(t, c)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-9 w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("ppl.filter.allStatus")}</SelectItem>
+              <SelectItem value="onboard">{t("ppl.status.onboard")}</SelectItem>
+              <SelectItem value="candidate">{t("ppl.status.candidate")}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         <div className="divide-y divide-border/50">
-          {data.people.map((p) => (
+          {filtered.map((p) => (
             <div
               key={p.id}
               role="button"
               tabIndex={0}
-              onClick={() => (selecting ? toggle(p.id) : openPerson(p.id))}
+              onClick={() => openPerson(p.id)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
-                  if (selecting) toggle(p.id);
-                  else openPerson(p.id);
+                  openPerson(p.id);
                 }
               }}
               className="flex cursor-pointer flex-wrap items-center gap-4 px-6 py-4 transition-colors hover:bg-surface-raised/50"
             >
-              {selecting && (
-                <Checkbox checked={selected.has(p.id)} onClick={(e) => e.stopPropagation()} onCheckedChange={() => toggle(p.id)} aria-label={p.name} />
-              )}
               <div
                 className="grid size-10 shrink-0 place-items-center rounded-full border border-border/70 bg-surface-raised font-display text-sm font-semibold"
                 aria-hidden
@@ -347,8 +381,10 @@ function PeopleBody() {
               )}
             </div>
           ))}
-          {data.people.length === 0 && (
-            <p className="px-6 py-10 text-center text-sm text-muted-foreground">{t("ppl.empty")}</p>
+          {filtered.length === 0 && (
+            <p className="px-6 py-10 text-center text-sm text-muted-foreground">
+              {data.people.length ? t("ppl.filter.empty") : t("ppl.empty")}
+            </p>
           )}
         </div>
       </div>
