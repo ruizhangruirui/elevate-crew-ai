@@ -100,9 +100,13 @@ export const dbQuery = createServerFn({ method: "POST" })
     const denied = checkSection(user, spec, payload);
     if (denied) return fail(denied, "403");
 
-    const scope = user.role === "manager" ? await managerScope(user) : null;
+    // Managers are always scoped; HRBPs are scoped when the Owner assigned Labs/Teams (empty = all data).
+    const scoped = user.role === "manager" || (user.role === "hr" && user.scope_node_ids.length > 0);
+    const scope = scoped ? await managerScope(user) : null;
     if (scope) {
-      const denied = await checkManager(user, spec, payload, scope, db);
+      const denied = user.role === "manager"
+        ? await checkManager(user, spec, payload, scope, db)
+        : await checkHrScope(spec, payload, scope, db);
       if (denied) return fail(denied, "403");
     }
 
@@ -227,6 +231,34 @@ async function checkManager(
     const { data } = await applyFilters(db.from(spec.table).select(col), spec.filters);
     if ((data ?? []).some((r: any) => r[col] && !scope.personIds.has(r[col])))
       return "This person is outside your scope";
+  }
+  return null;
+}
+
+/** HRBP writes: people and person-linked records must stay inside the assigned Labs/Teams. */
+async function checkHrScope(
+  spec: DbSpec,
+  payload: any,
+  scope: { personIds: Set<string>; nodeIds: Set<string> },
+  db: any,
+): Promise<string | null> {
+  if (spec.op === "select") return null;
+  const rows: any[] = payload === undefined ? [] : Array.isArray(payload) ? payload : [payload];
+  if (spec.table === "people") {
+    if (rows.some((r) => r.org_node_id && !scope.nodeIds.has(r.org_node_id)))
+      return "Cannot place a person outside your scope";
+    if (spec.op === "insert" && rows.some((r) => !r.org_node_id)) return "Choose a Lab/Team inside your scope";
+  }
+  if (spec.table === "team_achievements" && rows.some((r) => r.org_node_id && !scope.nodeIds.has(r.org_node_id)))
+    return "This team is outside your scope";
+  if (PERSON_TABLES.has(spec.table) && (spec.op === "insert" || spec.op === "upsert")) {
+    if (rows.some((r) => r.person_id && !scope.personIds.has(r.person_id))) return "This person is outside your scope";
+    return null;
+  }
+  if ((spec.table === "people" && spec.op !== "insert") || PERSON_TABLES.has(spec.table)) {
+    const col = spec.table === "people" ? "id" : "person_id";
+    const { data } = await applyFilters(db.from(spec.table).select(col), spec.filters);
+    if ((data ?? []).some((r: any) => r[col] && !scope.personIds.has(r[col]))) return "This person is outside your scope";
   }
   return null;
 }
