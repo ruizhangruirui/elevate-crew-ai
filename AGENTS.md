@@ -20,4 +20,4 @@
 - Recruiter role is enforced in `dbQuery` (read allowlist, writes only candidates/candidate_events) and AppShell redirects; managers' candidate reads are filtered to roles in their org scope — UI hiding alone is bypassable.
 - Team achievements use dedicated achievement and contributor tables with server-enforced manager scope; achievement types remain configurable in Settings.
 
-- Bulk role imports use a dedicated owner-only server function (upsert by direction + title) for the same reason as people imports.
+- Bulk role imports use a dedicated owner-only server function (upsert by direction + title, auto-creating directions, optional owner linked via people.role_id) for the same reason as people imports.
