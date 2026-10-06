@@ -79,7 +79,15 @@ export const criticalityLabel: Record<string, string> = {
   important: "Important",
 };
 
-export async function fetchWorkspace(opts: { includeRecruiting?: boolean } = {}) {
+export function fetchWorkspace() {
+  return loadWorkspace(false);
+}
+
+export function fetchRecruitingWorkspace() {
+  return loadWorkspace(true);
+}
+
+async function loadWorkspace(includeRecruiting: boolean) {
   const [orgs, directions, roles, people] = await Promise.all([
     supabase.from("orgs").select("*").limit(1),
     supabase.from("directions").select("*").eq("archived", false).order("sort_order"),
@@ -94,7 +102,7 @@ export async function fetchWorkspace(opts: { includeRecruiting?: boolean } = {})
     org: (orgs.data?.[0] ?? null) as Org | null,
     directions: (directions.data ?? []) as Direction[],
     roles: ((roles.data ?? []) as unknown[])
-      .filter((r) => opts.includeRecruiting || !(r as { recruiting_only?: boolean }).recruiting_only)
+      .filter((r) => includeRecruiting || !(r as { recruiting_only?: boolean }).recruiting_only)
       .map((r) => {
       const row = r as Record<string, unknown>;
       return { ...row, skills: Array.isArray(row["skills"]) ? row["skills"] : [] } as Role;

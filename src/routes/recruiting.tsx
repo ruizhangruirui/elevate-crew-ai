@@ -12,7 +12,7 @@ import { RoleMenu } from "@/routes/index";
 import { fetchOrgNodes, subtreeIds } from "@/lib/org-tree";
 import { toastUndoable } from "@/lib/ui-feedback";
 import { db } from "@/lib/db-client";
-import { coverageOf, fetchWorkspace } from "@/lib/talent";
+import { coverageOf, fetchRecruitingWorkspace } from "@/lib/talent";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -140,7 +140,7 @@ function RecruitingBody() {
   const [rolesOpen, setRolesOpen] = useState(true);
   const [lab, setLab] = useState<string>("all");
 
-  const { data: ws } = useQuery({ queryKey: ["workspace", "recruiting"], queryFn: () => fetchWorkspace({ includeRecruiting: true }) });
+  const { data: ws } = useQuery({ queryKey: ["workspace", "recruiting"], queryFn: fetchRecruitingWorkspace });
   const { data: orgNodes = [] } = useQuery({ queryKey: ["orgNodes"], queryFn: fetchOrgNodes });
   const removeRole = useMutation({
     mutationFn: async (id: string) => {
