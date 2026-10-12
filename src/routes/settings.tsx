@@ -16,6 +16,7 @@ import { fetchWorkspace } from "@/lib/talent";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/lib/i18n";
 import { ConfirmAction } from "@/components/ConfirmAction";
+import { LeaderPicker } from "@/components/LeaderPicker";
 import { db as supabase } from "@/lib/db-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -310,6 +311,7 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
                 </Badge>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">{node.mission || "No mission"}</p>
+              {node.type !== "Org" && node.parent_id && <LeaderPicker node={node} nodes={live} />}
             </div>
             <div className="flex gap-1">
               <Button size="sm" variant="ghost" onClick={() => setEditing(node)}>
