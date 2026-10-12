@@ -395,10 +395,10 @@ function LetterDialog({
               )}
               {isHr && (letter.status === "approved" || letter.status === "submitted") && (
                 <>
-                  <Button variant="outline" className="gap-1.5" onClick={() => downloadDocx(current, signer)}>
+                  <Button variant="outline" className="gap-1.5" onClick={() => downloadDocx(current, signer, sup?.offer_title || sup?.appointed_role_title || "").catch((e: unknown) => toast.error(String((e as Error)?.message ?? e)))}>
                     <Download className="size-4" /> {t("ref.word")}
                   </Button>
-                  <Button variant="outline" className="gap-1.5" onClick={() => downloadPdf(current, signer)}>
+                  <Button variant="outline" className="gap-1.5" onClick={() => downloadPdf(current, signer, sup?.offer_title || sup?.appointed_role_title || "").catch((e: unknown) => toast.error(String((e as Error)?.message ?? e)))}>
                     <Download className="size-4" /> {t("ref.pdf")}
                   </Button>
                 </>
