@@ -23,7 +23,9 @@ import {
   downloadPdf,
   fetchRefTemplates,
   fetchReferenceLetters,
+  fetchLetterhead,
   fillTemplate,
+  referenceDoc,
   type RefFacts,
   type ReferenceLetter,
 } from "@/lib/reference-letters";
@@ -124,6 +126,7 @@ function RequestDialog({
   const [facts, setFacts] = useState<RefFacts | null>(null);
   const [supId, setSupId] = useState("");
   const [intro, setIntro] = useState("");
+  const [address, setAddress] = useState("");
 
   const pick = (id: string) => {
     setPersonId(id);
@@ -162,7 +165,7 @@ function RequestDialog({
       const closing = fillTemplate(tpl.data?.text.closing ?? "", facts);
       const { data, error } = await supabase
         .from("reference_letters")
-        .insert({ person_id: personId, supervisor_person_id: sup.id, status: "requested", facts, intro_text: intro, closing_text: closing } as never)
+        .insert({ person_id: personId, supervisor_person_id: sup.id, status: "requested", facts: { ...facts, employee_address: address.trim() }, intro_text: intro, closing_text: closing } as never)
         .select("id")
         .single();
       if (error) throw error;
@@ -224,6 +227,10 @@ function RequestDialog({
                 ))}
               </div>
               <div className="space-y-1.5">
+                <Label>{t("ref.f.address")}</Label>
+                <Textarea rows={3} maxLength={500} value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t("ref.f.addressPh")} />
+              </div>
+              <div className="space-y-1.5">
                 <Label>{t("ref.supervisor")}</Label>
                 <Select value={supId} onValueChange={setSupId}>
                   <SelectTrigger><SelectValue placeholder={t("ref.noSupervisor")} /></SelectTrigger>
@@ -271,6 +278,7 @@ function LetterDialog({
   const { user } = useAuth();
   const qc = useQueryClient();
   const growth = useQuery({ queryKey: ["growth-data"], queryFn: fetchGrowthData });
+  const tpl = useQuery({ queryKey: ["ref-templates"], queryFn: fetchRefTemplates });
   const isHr = user?.role === "owner" || user?.role === "hr";
   const canWrite = (user?.role === "owner" || user?.role === "manager") && letter.status === "requested";
   const [body, setBody] = useState(letter.supervisor_text ?? "");
@@ -309,7 +317,6 @@ function LetterDialog({
   });
 
   const current: ReferenceLetter = { ...letter, intro_text: intro, supervisor_text: body, closing_text: closing };
-  const signer = sup?.name ?? "";
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -336,6 +343,12 @@ function LetterDialog({
                 <p className="text-muted-foreground">{t("ref.supervisor")}</p>
                 <p className="font-medium">{sup?.name ?? "—"}</p>
               </div>
+              {letter.facts.employee_address ? (
+                <div className="col-span-2">
+                  <p className="text-muted-foreground">{t("ref.f.address")}</p>
+                  <p className="whitespace-pre-wrap font-medium">{letter.facts.employee_address}</p>
+                </div>
+              ) : null}
             </div>
 
             <div className="space-y-1.5">
@@ -348,6 +361,11 @@ function LetterDialog({
             </div>
             <div className="space-y-1.5">
               <Label>{t("ref.body")}</Label>
+              {canWrite && tpl.data?.text.guide ? (
+                <p className="whitespace-pre-wrap rounded-md border border-brand/30 bg-brand/5 p-3 text-xs text-foreground/80">
+                  <span className="font-medium text-brand">{t("ref.guideLabel")}: </span>{tpl.data.text.guide}
+                </p>
+              ) : null}
               {canWrite ? (
                 <Textarea rows={8} value={body} onChange={(e) => setBody(e.target.value)} placeholder={t("ref.bodyPh")} />
               ) : (
@@ -395,10 +413,10 @@ function LetterDialog({
               )}
               {isHr && (letter.status === "approved" || letter.status === "submitted") && (
                 <>
-                  <Button variant="outline" className="gap-1.5" onClick={() => downloadDocx(current, signer, sup?.offer_title || sup?.appointed_role_title || "").catch((e: unknown) => toast.error(String((e as Error)?.message ?? e)))}>
+                  <Button variant="outline" className="gap-1.5" onClick={() => fetchLetterhead().then((lh) => downloadDocx(referenceDoc(current, lh.stationery))).catch((e: unknown) => toast.error(String((e as Error)?.message ?? e)))}>
                     <Download className="size-4" /> {t("ref.word")}
                   </Button>
-                  <Button variant="outline" className="gap-1.5" onClick={() => downloadPdf(current, signer, sup?.offer_title || sup?.appointed_role_title || "").catch((e: unknown) => toast.error(String((e as Error)?.message ?? e)))}>
+                  <Button variant="outline" className="gap-1.5" onClick={() => fetchLetterhead().then((lh) => downloadPdf(referenceDoc(current, lh.stationery))).catch((e: unknown) => toast.error(String((e as Error)?.message ?? e)))}>
                     <Download className="size-4" /> {t("ref.pdf")}
                   </Button>
                 </>

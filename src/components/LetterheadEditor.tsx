@@ -48,6 +48,7 @@ export function LetterheadEditor() {
     <div className="mt-8 space-y-3 border-t border-border/50 pt-6">
       <div>
         <h3 className="font-display text-base font-semibold">{t("ref.logo.title")}</h3>
+        <p className="mt-1 text-xs text-muted-foreground">{t("ref.stationery.hint")}</p>
       </div>
       <div className="flex flex-wrap items-center gap-4">
         {lh?.logo ? (
