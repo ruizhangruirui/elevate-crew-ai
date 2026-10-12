@@ -65,6 +65,8 @@ export type Person = {
   is_leader?: boolean | null;
   supervisor_id?: string | null;
   workload_pct?: number | null;
+  company_email?: string | null;
+  personal_email?: string | null;
   tags?: string[];
   assessed_skills?: Skill[];
   performance?: string | null;

@@ -664,6 +664,7 @@ export type Database = {
           assessed_by: string | null
           assessed_skills: Json
           attrition_risk: string
+          company_email: string | null
           contract_type: string | null
           created_at: string
           hire_date: string | null
@@ -676,6 +677,7 @@ export type Database = {
           org_id: string
           org_node_id: string | null
           performance: string | null
+          personal_email: string | null
           prior_experience: string[]
           readiness: string
           role_id: string | null
@@ -694,6 +696,7 @@ export type Database = {
           assessed_by?: string | null
           assessed_skills?: Json
           attrition_risk?: string
+          company_email?: string | null
           contract_type?: string | null
           created_at?: string
           hire_date?: string | null
@@ -706,6 +709,7 @@ export type Database = {
           org_id: string
           org_node_id?: string | null
           performance?: string | null
+          personal_email?: string | null
           prior_experience?: string[]
           readiness?: string
           role_id?: string | null
@@ -724,6 +728,7 @@ export type Database = {
           assessed_by?: string | null
           assessed_skills?: Json
           attrition_risk?: string
+          company_email?: string | null
           contract_type?: string | null
           created_at?: string
           hire_date?: string | null
@@ -736,6 +741,7 @@ export type Database = {
           org_id?: string
           org_node_id?: string | null
           performance?: string | null
+          personal_email?: string | null
           prior_experience?: string[]
           readiness?: string
           role_id?: string | null
