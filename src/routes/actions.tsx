@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -184,6 +184,15 @@ function ActionsBoard() {
                   className={`text-sm font-medium ${done ? "text-muted-foreground line-through" : ""}`}
                 >
                   {a.title}
+                  {(a.source_kind === "reference" || a.source_kind === "reference_review") && a.source_key && !done && (
+                    <Link
+                      to="/growth"
+                      search={{ tab: "reference", letter: a.source_key }}
+                      className="ml-2 rounded-full border border-brand/40 px-2 py-0.5 text-[11px] font-normal text-brand hover:bg-brand/10"
+                    >
+                      {t("act.open")} →
+                    </Link>
+                  )}
                 </p>
                 {workflow.description && (
                   <p className="mt-1 text-xs leading-relaxed text-muted-foreground">

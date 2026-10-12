@@ -44,7 +44,7 @@ async function fetchAllPeople() {
   return (data ?? []) as unknown as Person[];
 }
 
-export function ReferenceLettersPanel() {
+export function ReferenceLettersPanel({ initialOpenId }: { initialOpenId?: string | undefined } = {}) {
   const { t } = useI18n();
   const { user } = useAuth();
   const isHr = user?.role === "owner" || user?.role === "hr";
@@ -52,7 +52,7 @@ export function ReferenceLettersPanel() {
   const nodes = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
   const letters = useQuery({ queryKey: ["reference-letters"], queryFn: fetchReferenceLetters });
   const [creating, setCreating] = useState(false);
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(initialOpenId ?? null);
 
   const byId = useMemo(() => new Map((people.data ?? []).map((p) => [p.id, p])), [people.data]);
   const list = letters.data ?? [];
@@ -294,11 +294,23 @@ function LetterDialog({
     mutationFn: async (patch: Record<string, unknown>) => {
       const { error } = await supabase.from("reference_letters").update(patch as never).eq("id", letter.id);
       if (error) throw error;
+      const close = (kind: string) => supabase.from("actions").update({ status: "done", completed_at: new Date().toISOString() } as never)
+        .eq("source_kind", kind).eq("source_key", letter.id).neq("status", "done");
       if (patch["status"] === "submitted") {
-        await supabase.from("actions").update({ status: "done", completed_at: new Date().toISOString() } as never)
-          .eq("source_kind", "reference").eq("source_key", letter.id);
+        await close("reference");
+        await supabase.from("actions").insert({
+          title: t("ref.reviewTodo").replace("{name}", letter.facts.name),
+          source_kind: "reference_review",
+          source_key: letter.id,
+          person_id: letter.person_id,
+          owner: "HR",
+          priority: "normal",
+          status: "todo",
+        } as never);
       }
+      if (patch["status"] === "approved") await close("reference_review");
       if (patch["status"] === "requested") {
+        await close("reference_review");
         await supabase.from("actions").update({ status: "todo", completed_at: null } as never)
           .eq("source_kind", "reference").eq("source_key", letter.id);
       }

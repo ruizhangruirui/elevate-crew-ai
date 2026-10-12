@@ -22,6 +22,10 @@ import { ReferenceLettersPanel } from "@/components/ReferenceLettersPanel";
 import { EmploymentCertificatePanel } from "@/components/EmploymentCertificatePanel";
 
 export const Route = createFileRoute("/growth")({
+  validateSearch: (s: Record<string, unknown>): { tab?: string; letter?: string } => ({
+    ...(typeof s["tab"] === "string" ? { tab: s["tab"] } : {}),
+    ...(typeof s["letter"] === "string" ? { letter: s["letter"] } : {}),
+  }),
   head: () => ({
     meta: [
       { title: "团队与绩效 · 岗位与人才管理系统" },
@@ -56,6 +60,7 @@ function PersonChip({ person, rating }: { person: Person; rating: string | null 
 
 function GrowthPage() {
   const { t } = useI18n();
+  const search = Route.useSearch();
   const ws = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
   const growth = useQuery({ queryKey: ["growth-data"], queryFn: fetchGrowthData });
   const building = useQuery({ queryKey: ["org-building"], queryFn: fetchOrgBuilding });
@@ -88,7 +93,7 @@ function GrowthPage() {
       {loading ? (
         <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
       ) : (
-        <Tabs defaultValue="performance" className="space-y-8">
+        <Tabs defaultValue={search.tab ?? "performance"} className="space-y-8">
           <TabsList>
             <TabsTrigger value="performance">{t("growth.tab.performance")}</TabsTrigger>
             <TabsTrigger value="team">{t("growth.tab.team")}</TabsTrigger>
@@ -259,7 +264,7 @@ function GrowthPage() {
           </TabsContent>
           {ws.data && <TabsContent value="team"><BuildingPanel data={ws.data} building={building.data ?? null} /></TabsContent>}
           <TabsContent value="flow"><HeadcountFlow /></TabsContent>
-          <TabsContent value="reference"><ReferenceLettersPanel /></TabsContent>
+          <TabsContent value="reference"><ReferenceLettersPanel initialOpenId={search.letter} /></TabsContent>
           <TabsContent value="certificate"><EmploymentCertificatePanel /></TabsContent>
         </Tabs>
       )}
