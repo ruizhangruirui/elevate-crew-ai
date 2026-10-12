@@ -18,6 +18,7 @@ import { perfLabel, ratingChipClass } from "@/components/GrowthSummary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BuildingPanel, HeadcountFlow } from "@/routes/capability";
 import { fetchOrgBuilding } from "@/lib/org-building";
+import { ReferenceLettersPanel } from "@/components/ReferenceLettersPanel";
 
 export const Route = createFileRoute("/growth")({
   head: () => ({
@@ -91,6 +92,7 @@ function GrowthPage() {
             <TabsTrigger value="performance">{t("growth.tab.performance")}</TabsTrigger>
             <TabsTrigger value="team">{t("growth.tab.team")}</TabsTrigger>
             <TabsTrigger value="flow">{t("growth.tab.flow")}</TabsTrigger>
+            <TabsTrigger value="reference">{t("ref.tab")}</TabsTrigger>
           </TabsList>
           <TabsContent value="performance" className="space-y-8">
           {canAssess && <div className="flex justify-end">
@@ -255,6 +257,7 @@ function GrowthPage() {
           </TabsContent>
           {ws.data && <TabsContent value="team"><BuildingPanel data={ws.data} building={building.data ?? null} /></TabsContent>}
           <TabsContent value="flow"><HeadcountFlow /></TabsContent>
+          <TabsContent value="reference"><ReferenceLettersPanel /></TabsContent>
         </Tabs>
       )}
     </AppShell>
