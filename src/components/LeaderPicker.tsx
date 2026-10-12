@@ -24,7 +24,10 @@ export function LeaderPicker({ node, nodes }: { node: Node; nodes: Node[] }) {
   const [pending, setPending] = useState<string | null>(null);
 
   // Candidates: active people on this node or any node beneath it.
-  const sub = new Set([node.id]);
+  // For Teams, widen to the whole parent Lab subtree: many people sit directly
+  // on the Lab node, and assigning them as Team Lead moves them into the Team.
+  const rootId = node.type === "Team" && node.parent_id ? node.parent_id : node.id;
+  const sub = new Set([rootId]);
   let grew = true;
   while (grew) {
     grew = false;
