@@ -160,8 +160,20 @@ export const dbQuery = createServerFn({ method: "POST" })
     if (spec.single === "single") q = q.single();
     if (spec.single === "maybe") q = q.maybeSingle();
 
+    // Action Center: scoped users only see/act on to-dos linked to their own Lab/Team.
+    if (scope && spec.table === "actions" && (spec.op === "update" || spec.op === "delete")) {
+      const { data: rows } = await applyFilters(db.from("actions").select("*"), spec.filters);
+      const visible = await actionVisibility(db, user, scope);
+      if ((rows ?? []).some((r: any) => !visible(r))) return fail("This to-do is outside your scope", "403");
+    }
+
     const { data, error, count } = await q;
-    return { data: data ?? null, error: error ? { message: error.message, code: error.code } : null, count: count ?? null };
+    let out: any = data ?? null;
+    if (scope && spec.table === "actions" && spec.op === "select" && out) {
+      const visible = await actionVisibility(db, user, scope);
+      out = Array.isArray(out) ? out.filter(visible) : visible(out) ? out : null;
+    }
+    return { data: out, error: error ? { message: error.message, code: error.code } : null, count: count ?? null };
   });
 
 /** Fields on people that belong to the manager assessment section. */
@@ -282,6 +294,26 @@ async function checkHrScope(
     if ((data ?? []).some((r: any) => r[col] && !scope.personIds.has(r[col]))) return "This person is outside your scope";
   }
   return null;
+}
+
+/**
+ * Which Action Center rows a scoped user may see. Person-linked to-dos (e.g. reference
+ * letters) follow the person's Lab/Team, so only that team's lead and the Lab Director
+ * see them; HR review to-dos are never shown to managers.
+ */
+async function actionVisibility(
+  db: any,
+  user: AppUser,
+  scope: { personIds: Set<string>; nodeIds: Set<string> },
+): Promise<(r: any) => boolean> {
+  const roleIds = new Set(await scopedRoleIds(db, scope.nodeIds));
+  return (r: any) => {
+    if (user.role === "manager" && r.source_kind === "reference_review") return false;
+    if (r.person_id) return scope.personIds.has(r.person_id);
+    if (r.org_node_id) return scope.nodeIds.has(r.org_node_id);
+    if (r.role_id) return roleIds.has(r.role_id);
+    return true;
+  };
 }
 
 /** Roles whose team/lab lies inside the manager's scope. */
