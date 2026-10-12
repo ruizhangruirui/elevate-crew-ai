@@ -199,7 +199,7 @@ export async function downloadDocx(l: ReferenceLetter, signer: string, signerTit
       {
         properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: Math.max(1440, 720 + (lh.logo ? 1000 : 0) + headerLineCount * 240), right: 1440, bottom: Math.max(1440, 720 + footerLines.length * 240), left: 1440, header: 400, footer: 400 } } },
         ...(headerKids.length ? { headers: { default: new Header({ children: headerKids }) } } : {}),
-        ...(footerLines.length ? { footers: { default: new Footer({ children: footerLines.map((text) => new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text, size: 18 })] })) }) } : {}),
+        ...(footerLines.length ? { footers: { default: new Footer({ children: footerLines.map((text) => new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text, size: 18 })] })) }) } } : {}),
         children: [
           new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun([s.place, today].filter(Boolean).join(", "))] }),
           ...lines(fillTemplate(s.title, l.facts)).map((text) => new Paragraph({ keepNext: true, spacing: { before: 400, after: 400 }, children: [new TextRun({ text, bold: true, size: 32 })] })),
