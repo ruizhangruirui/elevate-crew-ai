@@ -32,13 +32,13 @@ export function CertificateTemplateEditor() {
 
   const set = (k: keyof CertSettings, v: string) => setForm({ ...form, [k]: v });
   return (
-    <div className="mt-8 space-y-4 border-t border-border/50 pt-6">
+    <div className="space-y-3">
       <div>
         <h3 className="font-display text-base font-semibold">{t("cert.settings")}</h3>
         <p className="mt-1 text-xs text-muted-foreground">{t("cert.hint")}</p>
-        <p className="mt-1 text-xs text-muted-foreground">{t("ref.tpl.vars")}: {CERT_PLACEHOLDERS.map((p) => `{${p}}`).join("  ")}</p>
+        <p className="mt-1 break-words text-xs text-muted-foreground">{t("ref.tpl.vars")}: {CERT_PLACEHOLDERS.map((p) => `{${p}}`).join("  ")}</p>
       </div>
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3">
         {(["title", "salutation", "fullTimeHours"] as const).map((k) => (
           <div key={k} className="space-y-1.5">
             <Label>{t(`cert.s.${k}`)}</Label>
@@ -52,7 +52,7 @@ export function CertificateTemplateEditor() {
           <Textarea rows={k === "body" ? 4 : 2} value={form[k]} onChange={(e) => set(k, e.target.value)} />
         </div>
       ))}
-      <div className="flex justify-end gap-2">
+      <div className="flex justify-end gap-2 border-t border-border/50 pt-3">
         <Button variant="ghost" onClick={() => setForm({ ...DEFAULT_CERT })}>{t("ref.tpl.reset")}</Button>
         <ConfirmAction title={t("cert.settings")} description={t("ref.save")} onConfirm={() => save.mutate()}>
           <Button disabled={save.isPending}>{t("ref.save")}</Button>

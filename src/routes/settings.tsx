@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Archive, Download } from "lucide-react";
+import { Plus, Pencil, Archive, Download, Search, Trash2, Building2, Compass, Users, ShieldCheck, SlidersHorizontal, History, Settings2, ListFilter, FileText, Stamp, Briefcase } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { LetterheadEditor } from "@/components/LetterheadEditor";
 import { CertificateTemplateEditor } from "@/components/CertificateTemplateEditor";
@@ -23,6 +23,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -103,19 +106,19 @@ type AuditRow = {
 };
 
 const CONFIG_GROUPS: [string, string][] = [
-  ["candidateStages", "Candidate Pipeline Stages"],
-  ["tags", "Talent Tags"],
-  ["awards", "Awards"],
-  ["criticalities", "Position Criticality"],
-  ["coverageStatuses", "Coverage Status"],
-  ["readiness", "Readiness"],
-  ["futureRoleRelationships", "Future Role Relationship"],
-  ["riskTypes", "Risk Types"],
-  ["talentRecordTypes", "Talent Record Types"],
-  ["actionTypes", "Talent Action Types"],
-  ["activityTypes", "Activity Types"],
-  ["achievementTypes", "Team Achievement Types"],
-  ["locations", "Work Locations"],
+  ["candidateStages", "set.config.group.candidateStages"],
+  ["tags", "set.config.group.tags"],
+  ["awards", "set.config.group.awards"],
+  ["criticalities", "set.config.group.criticalities"],
+  ["coverageStatuses", "set.config.group.coverageStatuses"],
+  ["readiness", "set.config.group.readiness"],
+  ["futureRoleRelationships", "set.config.group.futureRoleRelationships"],
+  ["riskTypes", "set.config.group.riskTypes"],
+  ["talentRecordTypes", "set.config.group.talentRecordTypes"],
+  ["actionTypes", "set.config.group.actionTypes"],
+  ["activityTypes", "set.config.group.activityTypes"],
+  ["achievementTypes", "set.config.group.achievementTypes"],
+  ["locations", "set.config.group.locations"],
 ];
 
 async function fetchSettings() {
@@ -156,6 +159,11 @@ const SECTION_LABEL_KEYS: Record<Section, string> = {
   "系统设置": "set.nav.system",
 };
 
+const SECTION_ICONS = {
+  "组织管理": Building2, "战略方向": Compass, "人员管理": Users,
+  "权限管理": ShieldCheck, "人才配置": SlidersHorizontal, "操作记录": History, "系统设置": Settings2,
+};
+
 function SettingsBody() {
   const { t } = useI18n();
   const { user } = useAuth();
@@ -171,24 +179,28 @@ function SettingsBody() {
   const { data } = useQuery({ queryKey: ["settings"], queryFn: fetchSettings });
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[200px_minmax(0,1fr)]">
-      <nav className="flex flex-wrap gap-1 lg:flex-col">
-        {visible.map((s) => (
-          <button
+    <div className="grid items-start gap-4 lg:grid-cols-[176px_minmax(0,1fr)]">
+      <nav aria-label={t("set.title")} className="flex flex-wrap gap-1 border-b border-border/60 pb-3 lg:sticky lg:top-4 lg:flex-col lg:border-b-0 lg:border-r lg:pb-0 lg:pr-3">
+        {visible.map((s) => {
+          const Icon = SECTION_ICONS[s];
+          return <Button
             key={s}
+            variant="ghost"
+            aria-current={section === s ? "page" : undefined}
             onClick={() => setSection(s)}
-            className={`rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+            className={`h-auto min-h-9 justify-start gap-2 whitespace-normal px-3 py-2 text-left text-sm ${
               section === s
-                ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground shadow-[inset_2px_0_0_0_var(--color-brand)]"
+                ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
                 : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground"
             }`}
           >
+            <Icon className="size-4 shrink-0" />
             {t(SECTION_LABEL_KEYS[s])}
-          </button>
-        ))}
+          </Button>;
+        })}
       </nav>
 
-      <div className="panel min-h-[24rem] p-6">
+      <div className="min-w-0 py-1 lg:pl-1">
         {!data ? (
           <p className="text-sm text-muted-foreground">{t("set.loading")}</p>
         ) : section === "组织管理" ? (
@@ -200,12 +212,7 @@ function SettingsBody() {
         ) : section === "权限管理" ? (
           <UserAccessSection nodes={data.orgNodes} />
         ) : section === "人才配置" ? (
-          <>
-            <ConfigSection items={data.config} />
-            <ReferenceTemplateEditor />
-            <LetterheadEditor />
-            <CertificateTemplateEditor />
-          </>
+          <TalentConfiguration items={data.config} />
         ) : section === "操作记录" ? (
           <AuditSection rows={data.audit} />
         ) : (
@@ -226,7 +233,7 @@ function SectionHeader({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+    <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
       <div>
         <h2 className="font-display text-xl font-semibold">{title}</h2>
         {desc && <p className="mt-1 text-sm text-muted-foreground">{desc}</p>}
@@ -476,31 +483,65 @@ function PeopleOpsSection({ isOwner }: { isOwner: boolean }) {
 
 /* ---------------- 人才配置 ---------------- */
 
+function TalentConfiguration({ items }: { items: ConfigItem[] }) {
+  const { t } = useI18n();
+  return (
+    <>
+      <SectionHeader title={t("set.config.title")} desc="" />
+      <Tabs defaultValue="options">
+        <TabsList className="mb-4 grid h-auto w-full grid-cols-2 gap-1 bg-muted/60 sm:grid-cols-4">
+          {[
+            ["options", "set.config.options", ListFilter],
+            ["reference", "set.config.reference", FileText],
+            ["stationery", "set.config.stationery", Stamp],
+            ["certificate", "set.config.certificate", Briefcase],
+          ].map(([value, label, Icon]) => {
+            const TabIcon = Icon as typeof ListFilter;
+            return <TabsTrigger key={String(value)} value={String(value)} className="h-auto min-h-9 gap-2 whitespace-normal px-2 text-xs"><TabIcon className="size-4 shrink-0" />{t(String(label))}</TabsTrigger>;
+          })}
+        </TabsList>
+        <TabsContent value="options" forceMount className="mt-0 data-[state=inactive]:hidden"><ConfigSection items={items} /></TabsContent>
+        <TabsContent value="reference" forceMount className="mt-0 data-[state=inactive]:hidden"><ReferenceTemplateEditor /></TabsContent>
+        <TabsContent value="stationery" forceMount className="mt-0 data-[state=inactive]:hidden"><LetterheadEditor /></TabsContent>
+        <TabsContent value="certificate" forceMount className="mt-0 data-[state=inactive]:hidden"><CertificateTemplateEditor /></TabsContent>
+      </Tabs>
+    </>
+  );
+}
+
 function ConfigSection({ items }: { items: ConfigItem[] }) {
   const { t } = useI18n();
   const qc = useQueryClient();
   const [adding, setAdding] = useState<string | null>(null);
   const [name, setName] = useState("");
+  const [category, setCategory] = useState(CONFIG_GROUPS[0]?.[0] ?? "candidateStages");
+  const [search, setSearch] = useState("");
+  const categoryItems = items.filter((item) => item.category === category);
+  const shownItems = categoryItems.filter((item) => item.name.toLocaleLowerCase().includes(search.toLocaleLowerCase().trim()));
+  const categoryTitle = t(CONFIG_GROUPS.find(([key]) => key === category)?.[1] ?? "set.config.options");
 
   const mutate = useMutation({
     mutationFn: async (op: { type: "add" | "toggle" | "delete"; item?: ConfigItem; category?: string }) => {
       if (op.type === "add") {
+        if (!op.category) return;
         const { error } = await supabase
           .from("config_items")
-          .insert({ category: op.category!, name, sort_order: 99 });
+          .insert({ category: op.category, name, sort_order: 99 });
         if (error) throw error;
         await logAudit("Create", "人才配置", `新增 ${op.category}: ${name}`);
       } else if (op.type === "toggle") {
+        if (!op.item) return;
         const { error } = await supabase
           .from("config_items")
-          .update({ active: !op.item!.active })
-          .eq("id", op.item!.id);
+          .update({ active: !op.item.active })
+          .eq("id", op.item.id);
         if (error) throw error;
-        await logAudit("Edit", "人才配置", `${op.item!.name} 状态切换`);
+        await logAudit("Edit", "人才配置", `${op.item.name} 状态切换`);
       } else {
-        const { error } = await supabase.from("config_items").delete().eq("id", op.item!.id);
+        if (!op.item) return;
+        const { error } = await supabase.from("config_items").delete().eq("id", op.item.id);
         if (error) throw error;
-        await logAudit("Delete", "人才配置", `删除 ${op.item!.name}`);
+        await logAudit("Delete", "人才配置", `删除 ${op.item.name}`);
       }
     },
     onSuccess: () => {
@@ -514,32 +555,47 @@ function ConfigSection({ items }: { items: ConfigItem[] }) {
 
   return (
     <>
-      <SectionHeader title={t("set.config.title")} desc={t("set.config.desc")} />
-      <div className="grid gap-4 md:grid-cols-2">
-        {CONFIG_GROUPS.map(([key, title]) => (
-          <article key={key} className="rounded-lg border border-border/60 bg-card/40 p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold">{title}</h3>
+      <div className="grid items-start gap-4 xl:grid-cols-[210px_minmax(0,1fr)]">
+        <div className="xl:hidden">
+          <Select value={category} onValueChange={(value) => { setCategory(value); setSearch(""); }}>
+            <SelectTrigger aria-label={t("set.config.categories")}><SelectValue /></SelectTrigger>
+            <SelectContent>{CONFIG_GROUPS.map(([key, title]) => <SelectItem key={key} value={key}>{t(title)} · {items.filter((item) => item.category === key).length}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div role="group" aria-label={t("set.config.categories")} className="hidden gap-0.5 xl:grid xl:grid-cols-1 xl:border-r xl:border-border/60 xl:pr-3">
+          {CONFIG_GROUPS.map(([key, title]) => (
+            <Button key={key} variant="ghost" aria-pressed={category === key} onClick={() => { setCategory(key); setSearch(""); }} className={`h-auto min-h-9 justify-between gap-2 whitespace-normal px-2.5 py-2 text-left text-xs ${category === key ? "bg-accent text-accent-foreground" : "text-muted-foreground"}`}>
+              <span>{t(title)}</span><span className="shrink-0 text-xs tabular-nums text-muted-foreground">{items.filter((item) => item.category === key).length}</span>
+            </Button>
+          ))}
+        </div>
+        <div className="min-w-0">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold">{categoryTitle} <span className="ml-1 font-normal tabular-nums text-muted-foreground">{categoryItems.length}</span></h3>
               <Button
                 size="sm"
-                variant="ghost"
+                variant="secondary"
                 onClick={() => {
-                  setAdding(key);
+                  setAdding(category);
                   setName("");
                 }}
               >
-                <Plus className="size-3.5" /> Add
+                <Plus className="size-3.5" /> {t("set.config.add")}
               </Button>
             </div>
-            <ul className="space-y-1.5">
-              {items
-                .filter((i) => i.category === key)
-                .map((item) => (
-                  <li key={item.id} className="flex items-center justify-between gap-2 text-sm">
-                    <span className={item.active ? "" : "text-muted-foreground line-through"}>
+            <div className="relative mb-3">
+              <Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-muted-foreground" />
+              <Input aria-label={t("set.config.search")} placeholder={t("set.config.search")} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+            </div>
+            <div className="mb-1 flex justify-between border-b border-border/60 px-2 pb-2 text-xs text-muted-foreground"><span>{t("set.org.name")}</span><span>{t("access.status")}</span></div>
+            <TooltipProvider>
+            <ul className="divide-y divide-border/50">
+              {shownItems.map((item) => (
+                  <li key={item.id} className="flex min-h-11 items-center justify-between gap-3 px-2 py-2 text-sm">
+                    <span className={`min-w-0 break-words ${item.active ? "" : "text-muted-foreground line-through"}`}>
                       {item.name}
                     </span>
-                    <span className="flex shrink-0 gap-1">
+                    <span className="flex w-20 shrink-0 items-center justify-end gap-2">
                       {item.active ? (
                         <ConfirmAction
                           title={t("set.config.confirmDeactivateTitle").replace("{name}", item.name)}
@@ -547,20 +603,13 @@ function ConfigSection({ items }: { items: ConfigItem[] }) {
                           confirmLabel={t("set.config.confirmDeactivateLabel")}
                           onConfirm={() => mutate.mutate({ type: "toggle", item })}
                         >
-                          <button className="text-xs text-muted-foreground hover:text-foreground">
-                            Deactivate
-                          </button>
+                          <Switch checked aria-label={t("set.config.confirmDeactivateLabel") + ": " + item.name} disabled={mutate.isPending} />
                         </ConfirmAction>
                       ) : (
-                        <button
-                          className="text-xs text-muted-foreground hover:text-foreground"
-                          onClick={() => mutate.mutate({ type: "toggle", item })}
-                        >
-                          Activate
-                        </button>
+                        <Switch checked={false} aria-label={t("set.config.activate") + ": " + item.name} disabled={mutate.isPending} onCheckedChange={() => mutate.mutate({ type: "toggle", item })} />
                       )}
                       {!item.active && (
-                        <ConfirmAction
+                        <Tooltip><TooltipTrigger asChild><span><ConfirmAction
                           title={t("set.config.confirmDeleteTitle").replace("{name}", item.name)}
                           description={
                             <>
@@ -570,20 +619,19 @@ function ConfigSection({ items }: { items: ConfigItem[] }) {
                           confirmLabel={t("set.config.confirmDeleteLabel")}
                           onConfirm={() => mutate.mutate({ type: "delete", item })}
                         >
-                          <button className="text-xs text-destructive hover:opacity-80">
-                            Delete
-                          </button>
-                        </ConfirmAction>
+                          <Button variant="ghost" size="icon" className="size-7 text-destructive" aria-label={t("access.delete") + ": " + item.name} disabled={mutate.isPending}><Trash2 className="size-3.5" /></Button>
+                        </ConfirmAction></span></TooltipTrigger><TooltipContent>{t("access.delete")}</TooltipContent></Tooltip>
                       )}
+                      {item.active && <span className="size-7" aria-hidden="true" />}
                     </span>
                   </li>
                 ))}
-              {items.filter((i) => i.category === key).length === 0 && (
-                <li className="text-xs text-muted-foreground">{t("set.config.empty")}</li>
+              {shownItems.length === 0 && (
+                <li className="py-6 text-center text-xs text-muted-foreground">{t(search ? "set.config.noResults" : "set.config.empty")}</li>
               )}
             </ul>
-          </article>
-        ))}
+            </TooltipProvider>
+        </div>
       </div>
 
       <Dialog open={!!adding} onOpenChange={(o) => !o && setAdding(null)}>
@@ -598,7 +646,7 @@ function ConfigSection({ items }: { items: ConfigItem[] }) {
           <DialogFooter>
             <Button
               disabled={!name.trim()}
-              onClick={() => mutate.mutate({ type: "add", category: adding! })}
+              onClick={() => { if (adding) mutate.mutate({ type: "add", category: adding }); }}
             >
               {t("set.org.save")}
             </Button>
