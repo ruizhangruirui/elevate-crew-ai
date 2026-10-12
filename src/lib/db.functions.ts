@@ -23,6 +23,7 @@ const TABLES = [
   "candidate_events",
   "team_achievements",
   "team_achievement_contributors",
+  "reference_letters",
 ] as const;
 
 const FILTERS = ["eq", "neq", "gt", "gte", "lt", "lte", "in", "is", "like", "ilike", "contains", "not", "or", "match", "filter"] as const;
@@ -35,6 +36,7 @@ const PERSON_TABLES = new Set([
   "person_role_fit",
   "org_activity_participants",
   "audit_log",
+  "reference_letters",
 ]);
 /** Structure tables managers may read but never change. */
 const MANAGER_READONLY = new Set(["org_nodes", "roles", "directions", "orgs", "config_items", "access_users", "capability_snapshots", "candidates", "candidate_events"]);
@@ -77,6 +79,13 @@ export const dbQuery = createServerFn({ method: "POST" })
       if (!row || typeof row !== "object") return row;
       if (spec.table === "audit_log" || spec.table === "candidate_events") return { ...row, actor: user.name };
       if (spec.table === "team_achievements") return { ...row, created_by: row.created_by ?? user.name };
+      if (spec.table === "reference_letters") {
+        const r = { ...row };
+        if (spec.op === "insert") r.requested_by = user.name;
+        if (r.status === "submitted") { r.submitted_by = user.name; r.submitted_at = new Date().toISOString(); }
+        if (r.status === "approved") { r.approved_by = user.name; r.approved_at = new Date().toISOString(); }
+        return r;
+      }
       return row;
     };
     let payload = spec.payload;
@@ -166,6 +175,18 @@ const ASSESSMENT_FIELDS = new Set(["assessed_skills", "assessed_at", "performanc
 function checkSection(user: AppUser, spec: DbSpec, payload: any): string | null {
   if (spec.op === "select" || user.role === "owner") return null;
   const rows: any[] = payload === undefined ? [] : Array.isArray(payload) ? payload : [payload];
+  if (spec.table === "reference_letters") {
+    const MGR = new Set(["supervisor_text", "closing_text", "status", "submitted_by", "submitted_at"]);
+    if (user.role === "manager") {
+      if (spec.op !== "update") return "Reference letters are requested by HR";
+      if (rows.some((r) => Object.keys(r).some((k) => !MGR.has(k)) || (r.status && r.status !== "submitted")))
+        return "Supervisors can only write and submit their section";
+    } else if (user.role === "hr") {
+      if (rows.some((r) => r.supervisor_text !== undefined || r.status === "submitted"))
+        return "The supervisor section is written by the supervisor";
+    } else return "Not allowed";
+    return null;
+  }
   if (user.role === "hr") {
     if (spec.table === "performance_records") return "Performance records are maintained by managers";
     if (spec.table === "people" && spec.op === "update" && rows.some((r) => Object.keys(r).some((k) => ASSESSMENT_FIELDS.has(k))))
