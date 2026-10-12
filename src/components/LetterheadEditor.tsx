@@ -15,7 +15,7 @@ export function LetterheadEditor() {
   const q = useQuery({ queryKey: ["letterhead"], queryFn: fetchLetterhead });
 
   const upsert = useMutation({
-    mutationFn: async ({ key, value, rowId }: { key: string; value: string | null; rowId?: string }) => {
+    mutationFn: async ({ key, value, rowId }: { key: string; value: string | null; rowId?: string | undefined }) => {
       const res = value === null
         ? await supabase.from("config_items").delete().eq("id", rowId!)
         : rowId
@@ -29,7 +29,7 @@ export function LetterheadEditor() {
 
   const onFile = (file?: File) => {
     if (!file) return;
-    if (file.size > 1024 * 1024) return toast.error(t("ref.logo.tooBig"));
+    if (file.size > 1024 * 1024) { toast.error(t("ref.logo.tooBig")); return; }
     const reader = new FileReader();
     reader.onload = () => upsert.mutate({ key: LOGO_KEY, value: String(reader.result), rowId: q.data?.logoRow?.id });
     reader.readAsDataURL(file);
