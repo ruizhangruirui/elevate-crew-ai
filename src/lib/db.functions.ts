@@ -41,7 +41,7 @@ const PERSON_TABLES = new Set([
 /** Structure tables managers may read but never change. */
 const MANAGER_READONLY = new Set(["org_nodes", "roles", "directions", "orgs", "config_items", "access_users", "capability_snapshots", "candidates", "candidate_events"]);
 
-/** Tables a recruiter may read (Strategic Roles + Recruiting pages). */
+/** Tables a recruiter may read (Positions + Recruiting pages). */
 const RECRUITER_READ = new Set(["roles", "directions", "orgs", "org_nodes", "config_items", "people", "candidates", "candidate_events"]);
 
 const specSchema = z.object({
@@ -101,7 +101,7 @@ export const dbQuery = createServerFn({ method: "POST" })
     if (spec.table === "directions" && spec.op !== "select" && user.role !== "owner")
       return fail("Only the Owner can change strategy directions", "403");
     if (user.role === "recruiter") {
-      if (!RECRUITER_READ.has(spec.table)) return fail("Recruiters can only access Strategic Roles and Recruiting", "403");
+      if (!RECRUITER_READ.has(spec.table)) return fail("Recruiters can only access Positions and Recruiting", "403");
       if (spec.op !== "select" && spec.table !== "candidates" && spec.table !== "candidate_events")
         return fail("Recruiters can only maintain candidates", "403");
     }

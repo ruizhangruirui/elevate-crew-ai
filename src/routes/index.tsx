@@ -54,17 +54,20 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "战略岗位视图 · 战略岗位与人才管理系统" },
+      { title: "战略岗位视图 · 岗位与人才管理系统" },
       {
         name: "description",
         content: "从未来战略出发，定义关键研究方向与目标岗位架构，识别人才覆盖、Gap 与风险。",
       },
-      { property: "og:title", content: "战略岗位视图 · 战略岗位与人才管理系统" },
+      { property: "og:title", content: "战略岗位视图 · 岗位与人才管理系统" },
       {
         property: "og:description",
         content: "从未来战略出发，定义关键研究方向与目标岗位架构，识别人才覆盖、Gap 与风险。",
@@ -464,7 +467,6 @@ export function RoleMenu({
   const [directionId, setDirectionId] = useState(role.direction_id);
   const dirs = useQuery({
     queryKey: ["directions-active"],
-    enabled: editing,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("directions")
@@ -488,6 +490,23 @@ export function RoleMenu({
     setLocation(role.location ?? "__none");
     setDirectionId(role.direction_id);
   };
+
+  const move = useMutation({
+    mutationFn: async (to: string) => {
+      const { error } = await supabase.from("roles").update({ direction_id: to }).eq("id", role.id);
+      if (error) throw error;
+      return to;
+    },
+    onSuccess: (to) => {
+      const from = role.direction_id;
+      onSaved();
+      toastUndoable(t("idx.roleMoved"), t("ui.undo"), () => {
+        void supabase.from("roles").update({ direction_id: from }).eq("id", role.id).then(() => onSaved());
+      });
+      void to;
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const save = useMutation({
     mutationFn: async () => {
@@ -530,7 +549,7 @@ export function RoleMenu({
             <span className="sr-only">{t("idx.roleActionsSr")}</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
+        <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuItem
             onSelect={() => {
               reset();
@@ -539,6 +558,21 @@ export function RoleMenu({
           >
             <Pencil className="size-3.5" /> {t("idx.editRole")}
           </DropdownMenuItem>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>{t("idx.moveRole")}</DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="w-56">
+              {(dirs.data ?? []).filter((d) => d.id !== role.direction_id).map((d) => (
+                <ConfirmAction
+                  key={d.id}
+                  title={t("idx.moveRole")}
+                  description={t("idx.moveRoleDesc").replace("{title}", role.title).replace("{dir}", d.title)}
+                  onConfirm={() => move.mutate(d.id)}
+                >
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>{d.title}</DropdownMenuItem>
+                </ConfirmAction>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
           <ConfirmAction
             title={t("idx.confirmArchiveRoleTitle").replace("{title}", role.title)}
             description={

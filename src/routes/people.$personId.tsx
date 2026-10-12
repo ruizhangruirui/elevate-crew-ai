@@ -12,12 +12,12 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/people/$personId")({
   head: () => ({
     meta: [
-      { title: "人员档案 · 战略岗位与人才管理系统" },
+      { title: "人员档案 · 岗位与人才管理系统" },
       {
         name: "description",
         content: "查看单个人员的 HR 档案与主管评估：基础信息、晋升奖项、绩效与技能评估。",
       },
-      { property: "og:title", content: "人员档案 · 战略岗位与人才管理系统" },
+      { property: "og:title", content: "人员档案 · 岗位与人才管理系统" },
       {
         property: "og:description",
         content: "查看单个人员的 HR 档案与主管评估：基础信息、晋升奖项、绩效与技能评估。",

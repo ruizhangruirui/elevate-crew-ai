@@ -35,9 +35,9 @@ import {
 export const Route = createFileRoute("/people/")({
   head: () => ({
     meta: [
-      { title: "人员视图 · 战略岗位与人才管理系统" },
+      { title: "人员视图 · 岗位与人才管理系统" },
       { name: "description", content: "查看在岗人员与候选人的职级分布、岗位归属与人才缺口。" },
-      { property: "og:title", content: "人员视图 · 战略岗位与人才管理系统" },
+      { property: "og:title", content: "人员视图 · 岗位与人才管理系统" },
       {
         property: "og:description",
         content: "查看在岗人员与候选人的职级分布、岗位归属与人才缺口。",

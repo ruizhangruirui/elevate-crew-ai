@@ -13,9 +13,9 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "登录 · 战略岗位与人才管理系统" },
+      { title: "登录 · 岗位与人才管理系统" },
       { name: "description", content: "登录以查看研究方向、目标岗位架构与人才覆盖情况。" },
-      { property: "og:title", content: "登录 · 战略岗位与人才管理系统" },
+      { property: "og:title", content: "登录 · 岗位与人才管理系统" },
       { property: "og:description", content: "登录以查看研究方向、目标岗位架构与人才覆盖情况。" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

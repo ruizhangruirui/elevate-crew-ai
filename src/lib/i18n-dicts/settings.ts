@@ -117,7 +117,9 @@ export const settingsDict: Dict = {
 
   "auth.registerSuccess": { zh: "注册成功，正在进入系统", en: "Registration successful, entering the system" },
   "auth.actionFailed": { zh: "操作失败", en: "Action failed" },
-  "auth.brandTitle": { zh: "战略岗位与人才管理系统", en: "Strategic Roles & Talent Management System" },
+  "set.org.leaderSaved": { zh: "负责人已更新", en: "Leader updated" },
+  "set.org.leaderConfirm": { zh: "确认将 {name} 设为 {role}？原负责人将取消该身份。", en: "Set {name} as {role}? The previous leader will be unassigned." },
+  "auth.brandTitle": { zh: "岗位与人才管理系统", en: "Positions & Talent Management System" },
   "auth.brandSubtitle": {
     zh: "从未来战略出发，定义关键研究方向与目标岗位架构。",
     en: "Starting from future strategy, define key research directions and target role structures.",
@@ -156,7 +158,7 @@ export const settingsDict: Dict = {
   "access.roleDesc.owner": { zh: "全部功能，并可管理用户与权限。", en: "Everything, plus user and permission management." },
   "access.roleDesc.hr": { zh: "查看和编辑负责 Lab / Team 内的人才数据（未选范围则为全部），不能管理用户。", en: "Views and edits talent data in the assigned Labs / Teams (all data if none selected); cannot manage users." },
   "access.role.recruiter": { zh: "招聘专员", en: "Recruiter" },
-  "access.roleDesc.recruiter": { zh: "仅可查看战略岗位与招聘页面，并维护候选人。", en: "Only sees Strategic Roles and Recruiting, and maintains candidates." },
+  "access.roleDesc.recruiter": { zh: "仅可查看岗位与招聘页面，并维护候选人。", en: "Only sees Positions and Recruiting, and maintains candidates." },
   "set.nav.strategy": { zh: "战略方向", en: "Strategy Directions" },
   "set.strategy.desc": { zh: "仅 Owner 可新增、编辑、归档研究/工作方向，并恢复已归档的方向和岗位。", en: "Only the Owner can add, edit and archive directions, and restore archived directions and roles." },
   "access.roleDesc.manager": { zh: "只看/改负责范围内的人员，可做绩效与技能评估；不能改组织结构与岗位。", en: "Sees and edits only people in scope, can do reviews and skill assessments; cannot change structure or roles." },

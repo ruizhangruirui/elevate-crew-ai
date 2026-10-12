@@ -16,6 +16,7 @@ import { fetchWorkspace } from "@/lib/talent";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/lib/i18n";
 import { ConfirmAction } from "@/components/ConfirmAction";
+import { LeaderPicker } from "@/components/LeaderPicker";
 import { db as supabase } from "@/lib/db-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,12 +49,12 @@ import {
 export const Route = createFileRoute("/settings")({
   head: () => ({
     meta: [
-      { title: "系统设置 · 战略岗位与人才管理系统" },
+      { title: "系统设置 · 岗位与人才管理系统" },
       {
         name: "description",
         content: "集中管理组织结构、人员操作、权限范围、人才配置项与操作审计记录。",
       },
-      { property: "og:title", content: "系统设置 · 战略岗位与人才管理系统" },
+      { property: "og:title", content: "系统设置 · 岗位与人才管理系统" },
       {
         property: "og:description",
         content: "集中管理组织结构、人员操作、权限范围、人才配置项与操作审计记录。",
@@ -105,7 +106,7 @@ const CONFIG_GROUPS: [string, string][] = [
   ["candidateStages", "Candidate Pipeline Stages"],
   ["tags", "Talent Tags"],
   ["awards", "Awards"],
-  ["criticalities", "Strategic Role Criticality"],
+  ["criticalities", "Position Criticality"],
   ["coverageStatuses", "Coverage Status"],
   ["readiness", "Readiness"],
   ["futureRoleRelationships", "Future Role Relationship"],
@@ -310,6 +311,7 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
                 </Badge>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">{node.mission || "No mission"}</p>
+              {node.type !== "Org" && node.parent_id && <LeaderPicker node={node} nodes={live} />}
             </div>
             <div className="flex gap-1">
               <Button size="sm" variant="ghost" onClick={() => setEditing(node)}>

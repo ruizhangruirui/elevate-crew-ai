@@ -60,7 +60,7 @@ export const personPageDict: Dict = {
   "loc.mode.hq": { zh: "总部派遣", en: "HQ Assignment" },
   "loc.unset": { zh: "未设置", en: "Not set" },
   "rimp.trigger": { zh: "批量导入岗位", en: "Bulk import roles" },
-  "rimp.title": { zh: "批量导入战略岗位", en: "Bulk Import Strategic Roles" },
+  "rimp.title": { zh: "批量导入岗位", en: "Bulk Import Positions" },
   "rimp.desc": { zh: "以「方向 + 岗位名称」为索引：已有岗位只更新非空单元格，新岗位与新方向会自动创建；Owner 列（选填）会关联承担该岗位的人员。", en: "Keyed by direction + role title: existing roles update only non-empty cells; new roles and directions are created. The optional owner column links the person filling the seat." },
   "rimp.confirmDesc": { zh: "将导入 {n} 个岗位。", en: "{n} roles will be imported." },
   "rimp.owner": { zh: "承担人", en: "Owner" },

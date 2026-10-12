@@ -36,12 +36,12 @@ export const Route = createFileRoute("/capability")({
   }),
   head: () => ({
     meta: [
-      { title: "成长与发展 · 战略岗位与人才管理系统" },
+      { title: "成长与发展 · 岗位与人才管理系统" },
       {
         name: "description",
         content: "集中查看组织能力与团队专利、论文和组织贡献等发展成果。",
       },
-      { property: "og:title", content: "成长与发展 · 战略岗位与人才管理系统" },
+      { property: "og:title", content: "成长与发展 · 岗位与人才管理系统" },
       {
         property: "og:description",
         content: "集中查看组织能力与团队专利、论文和组织贡献等发展成果。",

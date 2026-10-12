@@ -23,7 +23,11 @@ export function ConfirmAction({
   cancelLabel,
   onConfirm,
   children,
+  open,
+  onOpenChange,
 }: {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   title: string;
   description: ReactNode;
   confirmLabel?: string;
@@ -35,7 +39,7 @@ export function ConfirmAction({
   const resolvedConfirmLabel = confirmLabel ?? t("sheet.confirm.defaultConfirmLabel");
   const resolvedCancelLabel = cancelLabel ?? t("sheet.confirm.defaultCancelLabel");
   return (
-    <AlertDialog>
+    <AlertDialog {...(open !== undefined ? { open } : {})} {...(onOpenChange ? { onOpenChange } : {})}>
       <AlertDialogTrigger asChild onClick={(e) => e.stopPropagation()}>
         {children}
       </AlertDialogTrigger>
