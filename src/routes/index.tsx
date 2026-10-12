@@ -62,12 +62,12 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "战略岗位视图 · 战略岗位与人才管理系统" },
+      { title: "战略岗位视图 · 岗位与人才管理系统" },
       {
         name: "description",
         content: "从未来战略出发，定义关键研究方向与目标岗位架构，识别人才覆盖、Gap 与风险。",
       },
-      { property: "og:title", content: "战略岗位视图 · 战略岗位与人才管理系统" },
+      { property: "og:title", content: "战略岗位视图 · 岗位与人才管理系统" },
       {
         property: "og:description",
         content: "从未来战略出发，定义关键研究方向与目标岗位架构，识别人才覆盖、Gap 与风险。",

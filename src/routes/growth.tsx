@@ -24,12 +24,12 @@ import { EmploymentCertificatePanel } from "@/components/EmploymentCertificatePa
 export const Route = createFileRoute("/growth")({
   head: () => ({
     meta: [
-      { title: "团队与绩效 · 战略岗位与人才管理系统" },
+      { title: "团队与绩效 · 岗位与人才管理系统" },
       {
         name: "description",
         content: "组织级绩效评估覆盖率、晋升与奖项成长轨迹。",
       },
-      { property: "og:title", content: "团队与绩效 · 战略岗位与人才管理系统" },
+      { property: "og:title", content: "团队与绩效 · 岗位与人才管理系统" },
       {
         property: "og:description",
         content: "组织级绩效评估覆盖率、晋升与奖项成长轨迹。",

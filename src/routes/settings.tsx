@@ -49,12 +49,12 @@ import {
 export const Route = createFileRoute("/settings")({
   head: () => ({
     meta: [
-      { title: "系统设置 · 战略岗位与人才管理系统" },
+      { title: "系统设置 · 岗位与人才管理系统" },
       {
         name: "description",
         content: "集中管理组织结构、人员操作、权限范围、人才配置项与操作审计记录。",
       },
-      { property: "og:title", content: "系统设置 · 战略岗位与人才管理系统" },
+      { property: "og:title", content: "系统设置 · 岗位与人才管理系统" },
       {
         property: "og:description",
         content: "集中管理组织结构、人员操作、权限范围、人才配置项与操作审计记录。",
@@ -106,7 +106,7 @@ const CONFIG_GROUPS: [string, string][] = [
   ["candidateStages", "Candidate Pipeline Stages"],
   ["tags", "Talent Tags"],
   ["awards", "Awards"],
-  ["criticalities", "Strategic Role Criticality"],
+  ["criticalities", "Position Criticality"],
   ["coverageStatuses", "Coverage Status"],
   ["readiness", "Readiness"],
   ["futureRoleRelationships", "Future Role Relationship"],

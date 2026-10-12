@@ -44,12 +44,12 @@ import {
 export const Route = createFileRoute("/actions")({
   head: () => ({
     meta: [
-      { title: "待办中心 · 战略岗位与人才管理系统" },
+      { title: "待办中心 · 岗位与人才管理系统" },
       {
         name: "description",
         content: "把能力缺口、岗位空缺与 AI 诊断结论落成有负责人、有时间的跟进事项。",
       },
-      { property: "og:title", content: "待办中心 · 战略岗位与人才管理系统" },
+      { property: "og:title", content: "待办中心 · 岗位与人才管理系统" },
       {
         property: "og:description",
         content: "把能力缺口、岗位空缺与 AI 诊断结论落成有负责人、有时间的跟进事项。",
