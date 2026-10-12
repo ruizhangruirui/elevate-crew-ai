@@ -23,8 +23,8 @@ import { EmploymentCertificatePanel } from "@/components/EmploymentCertificatePa
 
 export const Route = createFileRoute("/growth")({
   validateSearch: (s: Record<string, unknown>): { tab?: string; letter?: string } => ({
-    ...(typeof s.tab === "string" ? { tab: s.tab } : {}),
-    ...(typeof s.letter === "string" ? { letter: s.letter } : {}),
+    ...(typeof s["tab"] === "string" ? { tab: s["tab"] } : {}),
+    ...(typeof s["letter"] === "string" ? { letter: s["letter"] } : {}),
   }),
   head: () => ({
     meta: [
