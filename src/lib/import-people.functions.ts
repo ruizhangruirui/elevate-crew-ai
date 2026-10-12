@@ -13,6 +13,8 @@ const importRow = z.object({
   level: z.number().int().min(0).max(100).nullable(),
   role: z.string().trim().max(200),
   job_title: z.string().trim().max(200),
+  company_email: z.union([z.string().trim().email().max(255), z.literal("")]).default(""),
+  personal_email: z.union([z.string().trim().email().max(255), z.literal("")]).default(""),
 });
 
 /**
@@ -72,6 +74,8 @@ export const importPeople = createServerFn({ method: "POST" })
           patch["appointed_role_title"] = row.role;
         }
         if (row.job_title) patch["offer_title"] = row.job_title;
+        if (row.company_email) patch["company_email"] = row.company_email;
+        if (row.personal_email) patch["personal_email"] = row.personal_email;
         if (Object.keys(patch).length) updates.push({ id, patch });
       } else {
         if (!row.name || !row.lab || !row.contract_type)
@@ -88,6 +92,8 @@ export const importPeople = createServerFn({ method: "POST" })
           role_id: roleId ?? null,
           appointed_role_title: row.role || null,
           offer_title: row.job_title || null,
+          company_email: row.company_email || null,
+          personal_email: row.personal_email || null,
         });
       }
     }

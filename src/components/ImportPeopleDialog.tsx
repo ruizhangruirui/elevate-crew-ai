@@ -21,7 +21,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-const HEADERS = ["staff_id", "name", "lab", "team", "contract_type", "hire_date", "level", "role", "job_title"] as const;
+const HEADERS = ["staff_id", "name", "lab", "team", "contract_type", "hire_date", "level", "role", "job_title", "company_email", "personal_email"] as const;
 
 type Row = {
   staff_id: string;
@@ -33,6 +33,8 @@ type Row = {
   level: number | null;
   role: string;
   job_title: string;
+  company_email: string;
+  personal_email: string;
   error?: string;
 };
 
@@ -90,6 +92,8 @@ export function ImportPeopleDialog({ children }: { children?: React.ReactNode })
         level: 15,
         role: ws?.roles?.[0]?.title ?? "",
         job_title: "Research Engineer",
+        company_email: "jane.doe@company.com",
+        personal_email: "",
       },
     ];
     const sheet = XLSX.utils.json_to_sheet(sample, { header: HEADERS as unknown as string[] });
@@ -106,6 +110,8 @@ export function ImportPeopleDialog({ children }: { children?: React.ReactNode })
       ["level", "no", "number, e.g. 13-18"],
       ["role", "no", (ws?.roles ?? []).map((r) => r.title).join(" | ")],
       ["job_title", "no", "free text, e.g. Research Intern"],
+      ["company_email", "no", "work email, e.g. jane.doe@company.com"],
+      ["personal_email", "no", "private email (optional)"],
       ["(note)", "", "For existing staff IDs, empty cells are left unchanged - upload only the columns/rows you want to change."],
     ]);
     ref["!cols"] = [{ wch: 16 }, { wch: 10 }, { wch: 90 }];
@@ -139,12 +145,16 @@ export function ImportPeopleDialog({ children }: { children?: React.ReactNode })
           const levelRaw = pick("level");
           const level = levelRaw ? Number(levelRaw) : null;
           const roleTitle = pick("role");
+          const company_email = pick("company_email").toLowerCase();
+          const personal_email = pick("personal_email").toLowerCase();
+          const badEmail = [company_email, personal_email].some((e) => e && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
           let error: string | undefined;
           if (!staff_id) error = t("imp.err.staffId");
           else if (seen.has(staff_id)) error = t("imp.err.staffDup");
           else if (contract && !(CONTRACTS as readonly string[]).includes(contract)) error = t("imp.err.contract");
           else if (date === "invalid") error = t("imp.err.date");
           else if (level !== null && Number.isNaN(level)) error = t("imp.err.level");
+          else if (badEmail) error = t("imp.err.email");
           if (staff_id) seen.add(staff_id);
           return {
             staff_id,
@@ -156,6 +166,8 @@ export function ImportPeopleDialog({ children }: { children?: React.ReactNode })
             level: level !== null && !Number.isNaN(level) ? level : null,
             role: roleTitle,
             job_title: pick("job_title"),
+            company_email,
+            personal_email,
             ...(error ? { error } : {}),
           } as Row;
         })
