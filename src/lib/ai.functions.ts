@@ -187,7 +187,7 @@ export const analyzeRoleFit = createServerFn({ method: "POST" })
           gaps: r.gaps,
           recommendation: r.recommendation,
           source: "ai",
-          model: "openai/gpt-5.6-sol",
+          model: process.env["AI_MODEL"] || "openai/gpt-6-astra",
           updated_at: new Date().toISOString(),
         })),
         { onConflict: "person_id,role_id" },
