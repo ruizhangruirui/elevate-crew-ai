@@ -67,8 +67,8 @@ export const capabilityDict: Dict = {
   "cap.group.expandPrefix": { zh: "展开其余", en: "Show" },
   "cap.group.expandSuffix": { zh: "项（重要度较低）", en: "more (lower priority)" },
   "cap.group.noProfile": {
-    zh: "这个方向的岗位还没有填写画像信息，先去「战略岗位视图」补齐或用 AI 生成。",
-    en: "This direction's roles don't have profile info yet — fill it in under \"Strategic Roles View\" or generate it with AI.",
+    zh: "这个方向的岗位还没有填写画像信息，先去「岗位」补齐或用 AI 生成。",
+    en: "This direction's roles don't have profile info yet — fill it in under \"Positions\" or generate it with AI.",
   },
 
   "cap.footer.info": {

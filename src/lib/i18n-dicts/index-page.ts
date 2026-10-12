@@ -39,8 +39,8 @@ export const indexDict: Dict = {
   "idx.editRole": { zh: "编辑岗位", en: "Edit role" },
   "idx.confirmArchiveRoleTitle": { zh: "确认归档岗位「{title}」？", en: "Archive role \"{title}\"?" },
   "idx.archiveRoleDesc1": {
-    zh: "归档后该岗位会从战略岗位视图和组织能力视图中移除，其画像所承载的能力将不再计入覆盖统计。",
-    en: "Once archived, this role will be removed from the Strategic Roles and Org Capability views, and its capabilities will no longer count toward coverage.",
+    zh: "归档后该岗位会从岗位和组织能力视图中移除，其画像所承载的能力将不再计入覆盖统计。",
+    en: "Once archived, this role will be removed from the Positions and Org Capability views, and its capabilities will no longer count toward coverage.",
   },
   "idx.archiveRoleDesc2": {
     zh: "已归属该岗位的人员不会被删除，但会显示为未分配岗位。",
@@ -72,8 +72,8 @@ export const indexDict: Dict = {
   "idx.directionDescription": { zh: "方向描述", en: "Direction description" },
   "idx.archiveDirectionConfirmTitle": { zh: "归档「{title}」？", en: "Archive \"{title}\"?" },
   "idx.archiveDirectionDesc1": {
-    zh: "归档后该方向会从战略岗位视图与能力视图中消失。",
-    en: "Once archived, this direction will disappear from the Strategic Roles and Capability views.",
+    zh: "归档后该方向会从岗位与能力视图中消失。",
+    en: "Once archived, this direction will disappear from the Positions and Capability views.",
   },
   "idx.archiveDirectionDesc2": {
     zh: "该方向下仍挂着 {count} 个目标岗位类型，它们将一并不再展示。",
@@ -83,8 +83,8 @@ export const indexDict: Dict = {
   "idx.directionCreated": { zh: "已新增研究方向", en: "Direction added" },
   "idx.newDirection": { zh: "新增研究方向", en: "Add direction" },
   "idx.newDirectionTitle": { zh: "新增研究 / 工作方向", en: "Add research / work direction" },
-  "idx.roleCreated": { zh: "已新增战略岗位", en: "Role added" },
-  "idx.newRole": { zh: "新增战略岗位", en: "Add strategic role" },
+  "idx.roleCreated": { zh: "已新增岗位", en: "Role added" },
+  "idx.newRole": { zh: "新增岗位", en: "Add position" },
   "idx.lowestLevel": { zh: "最低级别", en: "Lowest level" },
   "idx.highestLevel": { zh: "最高级别", en: "Highest level" },
   "idx.assignTeam": { zh: "所属团队", en: "Assigned team" },

@@ -2,15 +2,15 @@ import type { Dict } from "../i18n-types";
 
 export const coreDict: Dict = {
   // ---- nav / shell ----
-  "nav.index": { zh: "战略岗位视图", en: "Strategic Roles" },
+  "nav.index": { zh: "岗位", en: "Positions" },
   "nav.capability": { zh: "成长与发展", en: "Growth & Development" },
   "nav.org": { zh: "组织视图", en: "Org Structure" },
   "nav.people": { zh: "人员视图", en: "People" },
   "nav.recruiting": { zh: "招聘", en: "Recruiting" },
   "nav.actions": { zh: "待办中心", en: "Action Center" },
   "nav.settings": { zh: "系统设置", en: "Settings" },
-  "shell.brand": { zh: "战略岗位与人才", en: "Talent Architecture" },
-  "shell.brandSub": { zh: "Talent Architecture", en: "Strategic Roles & Talent" },
+  "shell.brand": { zh: "岗位与人才", en: "Talent Architecture" },
+  "shell.brandSub": { zh: "Talent Architecture", en: "Positions & Talent" },
   "shell.signOut": { zh: "退出登录", en: "Sign out" },
   "shell.language": { zh: "语言", en: "Language" },
   "shell.footer.credits": {
@@ -80,7 +80,7 @@ export const coreDict: Dict = {
     en: "Assign them to a Lab / Team and the tree will link them automatically.",
   },
   "org.selectTeam": { zh: "选择所属团队", en: "Select a team" },
-  "org.noStrategicRole": { zh: "未匹配战略岗位", en: "No strategic role" },
+  "org.noStrategicRole": { zh: "未匹配岗位", en: "No position" },
   "org.roleAttached": { zh: "岗位归属已更新", en: "Role placement updated" },
   "org.personAssigned": { zh: "归属已更新", en: "Assignment updated" },
   "importance.core": { zh: "核心", en: "Core" },
