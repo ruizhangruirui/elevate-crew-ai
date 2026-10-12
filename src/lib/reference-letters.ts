@@ -11,6 +11,8 @@ export type RefFacts = {
   workload: string;
   exit_date: string;
   exit_reason: string;
+  /** Employee postal address (HR enters it on request); printed top-left. */
+  employee_address?: string;
 };
 
 export type ReferenceLetter = {
@@ -35,6 +37,7 @@ export const TEMPLATE_KEYS = {
   current: "ref_template_current",
   left: "ref_template_left",
   closing: "ref_template_closing",
+  guide: "ref_template_guide",
 } as const;
 
 export const DEFAULT_TEMPLATES: Record<keyof typeof TEMPLATE_KEYS, string> = {
@@ -43,6 +46,7 @@ export const DEFAULT_TEMPLATES: Record<keyof typeof TEMPLATE_KEYS, string> = {
   left:
     "This is to confirm that {name} was employed with us from {hire_date} to {exit_date} as {job_title} in {lab} / {team}, with a workload of {workload}. {name} left the company: {exit_reason}.",
   closing: "We thank {name} for the contribution and wish every success in the future.",
+  guide: "Please describe: main responsibilities and projects; key achievements; professional skills; collaboration and conduct; and an overall recommendation.",
 };
 
 export const PLACEHOLDERS = Object.keys({
@@ -71,8 +75,9 @@ export async function fetchRefTemplates() {
   const get = (k: keyof typeof TEMPLATE_KEYS) =>
     rows.find((r) => r.category === TEMPLATE_KEYS[k]) ?? null;
   return {
-    rows: { current: get("current"), left: get("left"), closing: get("closing") },
+    rows: { current: get("current"), left: get("left"), closing: get("closing"), guide: get("guide") },
     text: {
+      guide: get("guide")?.name || DEFAULT_TEMPLATES.guide,
       current: get("current")?.name || DEFAULT_TEMPLATES.current,
       left: get("left")?.name || DEFAULT_TEMPLATES.left,
       closing: get("closing")?.name || DEFAULT_TEMPLATES.closing,
@@ -148,11 +153,36 @@ const fit = (img: { w: number; h: number }, maxW: number, maxH: number) => {
 
 /* ------------------------------ Export ------------------------------ */
 
+/** A rendered letter: employee block top-left, HRD signature + company bottom-left. */
+export type LetterDoc = {
+  title: string;
+  salutation: string;
+  recipient: string[];
+  paragraphs: string[];
+  fileBase: string;
+};
+
+const splitLines = (text: string) => text.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+
 function paragraphs(l: ReferenceLetter) {
-  return [l.intro_text, l.supervisor_text ?? "", l.closing_text ?? ""]
-    .flatMap((s) => s.split(/\n{2,}|\n/))
-    .map((s) => s.trim())
-    .filter(Boolean);
+  return [l.intro_text, l.supervisor_text ?? "", l.closing_text ?? ""].flatMap(splitLines);
+}
+
+export function referenceDoc(l: ReferenceLetter, s: LetterStationery): LetterDoc {
+  return {
+    title: fillTemplate(s.title, l.facts),
+    salutation: fillTemplate(s.salutation, l.facts),
+    recipient: [l.facts.name, ...splitLines(l.facts.employee_address ?? "")],
+    paragraphs: paragraphs(l),
+    fileBase: `Reference_Letter_${l.facts.name.replace(/\s+/g, "_")}`,
+  };
+}
+
+function signatureLines(s: LetterStationery) {
+  return [s.signoff, s.signatureName, s.signatureTitle, s.signatureContact].flatMap(splitLines);
+}
+function companyLines(s: LetterStationery) {
+  return [s.company, s.address].flatMap(splitLines);
 }
 
 function save(blob: Blob, filename: string) {
@@ -164,14 +194,10 @@ function save(blob: Blob, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-const fileBase = (l: ReferenceLetter) => `Reference_Letter_${l.facts.name.replace(/\s+/g, "_")}`;
-
-export async function downloadDocx(l: ReferenceLetter, signer: string, signerTitle = "") {
+export async function downloadDocx(d: LetterDoc) {
   const { Document, Packer, Paragraph, TextRun, AlignmentType, Header, Footer, ImageRun, HorizontalPositionRelativeFrom, VerticalPositionRelativeFrom, HorizontalPositionAlign, VerticalPositionAlign, TextWrappingType } = await import("docx");
   const lh = await letterhead();
   const s = lh.stationery;
-  const lines = (text: string) => text.split(/\r?\n/).filter((line) => line.trim());
-  const signature = [s.signoff, s.signatureName || signer, s.signatureTitle || signerTitle, s.signatureContact].flatMap(lines);
   const headerKids: InstanceType<typeof Paragraph>[] = [];
   if (lh.logo) {
     const runs = [new ImageRun({ type: "png", data: lh.logo.data, transformation: fit(lh.logo, 160, 50), altText: { title: "Logo", description: "Company logo", name: "logo" } })];
@@ -187,33 +213,33 @@ export async function downloadDocx(l: ReferenceLetter, signer: string, signerTit
       }));
     headerKids.push(new Paragraph({ alignment: AlignmentType.RIGHT, children: runs }));
   }
-  for (const text of [s.company, s.address].flatMap(lines)) {
-    headerKids.push(new Paragraph({ children: [new TextRun({ text, size: 18, bold: text === s.company })] }));
-  }
-  const headerLineCount = [s.company, s.address].flatMap(lines).reduce((n, line) => n + Math.max(1, Math.ceil(line.length / 80)), 0);
-  const footerLines = lines(s.footer);
+  const footerLines = splitLines(s.footer);
+  const signature = signatureLines(s);
+  const company = companyLines(s);
   const today = new Date().toISOString().slice(0, 10);
   const doc = new Document({
     styles: { default: { document: { run: { font: "Arial", size: 22 } } } },
     sections: [
       {
-        properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: Math.max(1440, 720 + (lh.logo ? 1000 : 0) + headerLineCount * 240), right: 1440, bottom: Math.max(1440, 720 + footerLines.length * 240), left: 1440, header: 400, footer: 400 } } },
+        properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: lh.logo ? 2000 : 1440, right: 1440, bottom: Math.max(1440, 720 + footerLines.length * 240), left: 1440, header: 400, footer: 400 } } },
         ...(headerKids.length ? { headers: { default: new Header({ children: headerKids }) } } : {}),
         ...(footerLines.length ? { footers: { default: new Footer({ children: footerLines.map((text) => new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text, size: 18 })] })) }) } } : {}),
         children: [
-          new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun([s.place, today].filter(Boolean).join(", "))] }),
-          ...lines(fillTemplate(s.title, l.facts)).map((text) => new Paragraph({ keepNext: true, spacing: { before: 400, after: 400 }, children: [new TextRun({ text, bold: true, size: 32 })] })),
-          ...lines(fillTemplate(s.salutation, l.facts)).map((text) => new Paragraph({ keepNext: true, spacing: { after: 240 }, children: [new TextRun(text)] })),
-          ...paragraphs(l).map((p) => new Paragraph({ spacing: { after: 240 }, children: [new TextRun(p)] })),
-          ...signature.map((text, i) => new Paragraph({ keepNext: i < signature.length - 1, spacing: { before: i === 0 ? 600 : 0, after: i === 0 && s.signoff ? 480 : 60 }, children: [new TextRun(text)] })),
+          ...d.recipient.map((text) => new Paragraph({ children: [new TextRun(text)] })),
+          new Paragraph({ alignment: AlignmentType.RIGHT, spacing: { before: 240 }, children: [new TextRun([s.place, today].filter(Boolean).join(", "))] }),
+          ...splitLines(d.title).map((text) => new Paragraph({ keepNext: true, spacing: { before: 400, after: 400 }, children: [new TextRun({ text, bold: true, size: 32 })] })),
+          ...splitLines(d.salutation).map((text) => new Paragraph({ keepNext: true, spacing: { after: 240 }, children: [new TextRun(text)] })),
+          ...d.paragraphs.map((p) => new Paragraph({ spacing: { after: 240 }, children: [new TextRun(p)] })),
+          ...signature.map((text, i) => new Paragraph({ keepNext: true, spacing: { before: i === 0 ? 600 : 0, after: i === 0 && s.signoff ? 480 : 60 }, children: [new TextRun(text)] })),
+          ...company.map((text, i) => new Paragraph({ keepNext: i < company.length - 1, spacing: { before: i === 0 ? 240 : 0 }, children: [new TextRun({ text, size: 18, bold: text === s.company })] })),
         ],
       },
     ],
   });
-  save(await Packer.toBlob(doc), `${fileBase(l)}.docx`);
+  save(await Packer.toBlob(doc), `${d.fileBase}.docx`);
 }
 
-export async function downloadPdf(l: ReferenceLetter, signer: string, signerTitle = "") {
+export async function downloadPdf(d: LetterDoc) {
   const { jsPDF } = await import("jspdf");
   const pdf = new jsPDF({ unit: "pt", format: "a4" });
   const margin = 72;
@@ -224,7 +250,7 @@ export async function downloadPdf(l: ReferenceLetter, signer: string, signerTitl
   const s = lh.stationery;
   const footerLines = pdf.splitTextToSize(s.footer, width) as string[];
   const bottom = pageH - Math.max(margin, footerLines.length * 12 + 32);
-  // Canvas fallback keeps non-Latin stationery readable without remote font requests.
+  // Canvas fallback keeps non-Latin text readable without remote font requests.
   const drawText = (text: string, x: number, y: number, size: number, bold = false, align: "left" | "right" | "center" = "left") => {
     pdf.setFont("helvetica", bold ? "bold" : "normal").setFontSize(size);
     if (!/[^\u0020-\u00ff]/.test(text)) { pdf.text(text, x, y, { align }); return; }
@@ -259,42 +285,78 @@ export async function downloadPdf(l: ReferenceLetter, signer: string, signerTitl
   let contentTop = margin;
   const decorate = () => {
     if (lh.mark) {
-      const s = fit(lh.mark, 360, 360);
-      pdf.addImage(lh.mark.url, "PNG", (pageW - s.width) / 2, (pageH - s.height) / 2, s.width, s.height);
+      const m = fit(lh.mark, 360, 360);
+      pdf.addImage(lh.mark.url, "PNG", (pageW - m.width) / 2, (pageH - m.height) / 2, m.width, m.height);
     }
-    let headerY = 38;
+    contentTop = margin;
     if (lh.logo) {
       const size = fit(lh.logo, 140, 44);
       pdf.addImage(lh.logo.url, "PNG", pageW - margin - size.width, 28, size.width, size.height);
-      headerY = 88;
+      contentTop = Math.max(margin, 28 + size.height + 30);
     }
-    for (const text of [s.company, s.address].filter(Boolean)) {
-      for (const line of wrap(text, 9)) { drawText(line, margin, headerY, 9, text === s.company); headerY += 13; }
-    }
-    contentTop = Math.max(margin, headerY + 18);
     wrap(s.footer, 9).forEach((line, i, all) => drawText(line, pageW / 2, pageH - 28 - (all.length - 1 - i) * 12, 9, false, "center"));
   };
   decorate();
   let y = contentTop;
-  for (const line of wrap([s.place, new Date().toISOString().slice(0, 10)].filter(Boolean).join(", "), 10)) {
-    drawText(line, margin + width, y, 10, false, "right"); y += 14;
-  }
-  y += 40;
-  const write = (text: string, size = 11, bold = false) => {
+  const write = (text: string, size = 11, bold = false, gap = 10) => {
     for (const line of wrap(text, size)) {
       if (y > bottom) { pdf.addPage(); decorate(); y = contentTop; }
       drawText(line, margin, y, size, bold);
       y += size + 5;
     }
-    y += 10;
+    y += gap;
   };
-  if (s.title) write(fillTemplate(s.title, l.facts), 16, true);
-  if (s.salutation) write(fillTemplate(s.salutation, l.facts));
-  for (const p of paragraphs(l)) write(p);
-  const signature = [s.signoff, s.signatureName || signer, s.signatureTitle || signerTitle, s.signatureContact].filter(Boolean);
-  const signatureHeight = signature.reduce((h, text) => h + wrap(text).length * 16 + 10, 30) + (s.signoff ? 24 : 0);
-  if (y + signatureHeight > bottom && signatureHeight < bottom - contentTop) { pdf.addPage(); decorate(); y = contentTop; }
+  for (const line of d.recipient) write(line, 11, false, 0);
+  y += 14;
+  drawText([s.place, new Date().toISOString().slice(0, 10)].filter(Boolean).join(", "), margin + width, y, 10, false, "right");
+  y += 40;
+  if (d.title) write(d.title, 16, true);
+  if (d.salutation) write(d.salutation);
+  for (const p of d.paragraphs) write(p);
+  const signature = signatureLines(s);
+  const company = companyLines(s);
+  const blockH = [...signature, ...company].reduce((h, text) => h + wrap(text).length * 16 + 4, 60) + (s.signoff ? 24 : 0);
+  if (y + blockH > bottom && blockH < bottom - contentTop) { pdf.addPage(); decorate(); y = contentTop; }
   y += 24;
-  signature.forEach((text, i) => { write(text); if (i === 0 && s.signoff) y += 24; });
-  pdf.save(`${fileBase(l)}.pdf`);
+  signature.forEach((text, i) => { write(text, 11, false, 2); if (i === 0 && s.signoff) y += 24; });
+  y += 12;
+  company.forEach((text) => write(text, 9, text === s.company, 0));
+  pdf.save(`${d.fileBase}.pdf`);
+}
+
+/* ---------------------- Employment certificate ---------------------- */
+
+export const CERT_KEY = "emp_cert_settings";
+export const CERT_PLACEHOLDERS = ["name", "hire_date", "role", "workload", "weekly_hours"] as const;
+export type CertFacts = Record<(typeof CERT_PLACEHOLDERS)[number], string> & { employee_address: string };
+export const DEFAULT_CERT = {
+  title: "Employment Certificate",
+  salutation: "To whom it may concern,",
+  body: "This is to certify that {name} has been employed with our company since {hire_date} as {role}, with a workload of {workload} ({weekly_hours} hours per week).",
+  closing: "This certificate is issued at the request of the employee.",
+  fullTimeHours: "42",
+};
+export type CertSettings = typeof DEFAULT_CERT;
+
+export async function fetchCertSettings() {
+  const { data, error } = await supabase.from("config_items").select("*").eq("category", CERT_KEY);
+  if (error) throw error;
+  const row = ((data ?? []) as unknown as RefTemplateRow[])[0] ?? null;
+  const settings = { ...DEFAULT_CERT };
+  try {
+    const parsed = JSON.parse(row?.name ?? "{}") as Record<string, unknown>;
+    for (const k of Object.keys(settings) as (keyof CertSettings)[]) if (typeof parsed[k] === "string") settings[k] = parsed[k] as string;
+  } catch { /* keep defaults */ }
+  return { row, settings };
+}
+
+export function certDoc(f: CertFacts, c: CertSettings): LetterDoc {
+  const fill = (s: string) => s.replace(/\{(\w+)\}/g, (m, k: string) => (k in f ? (f as Record<string, string>)[k] || "—" : m));
+  return {
+    title: fill(c.title),
+    salutation: fill(c.salutation),
+    recipient: [f.name, ...splitLines(f.employee_address)],
+    paragraphs: [c.body, c.closing].map(fill).flatMap(splitLines),
+    fileBase: `Employment_Certificate_${f.name.replace(/\s+/g, "_")}`,
+  };
 }
