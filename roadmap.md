@@ -15,3 +15,6 @@
 - [x] Move add/edit/archive directions and the Archived bin into Settings (Owner-only, server-enforced).
 
 - [x] Bulk import strategic roles from Excel in Settings (Owner-only, upsert by direction + title).
+- [x] Org chart shows Lab Director / Team Lead (or Vacant); person card shows Supervisor and Workload.
+- [x] Reference letters: HR request with auto facts → supervisor to-do → supervisor submits → HR approves → Word/PDF download; templates editable in Settings.
+- [ ] Email the supervisor when a reference letter is requested (blocked: needs a sender email domain the company owns).
