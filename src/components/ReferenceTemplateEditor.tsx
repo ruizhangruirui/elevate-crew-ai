@@ -34,13 +34,14 @@ export function ReferenceTemplateEditor() {
   });
 
   return (
-    <div className="mt-8 space-y-4 border-t border-border/50 pt-6">
+    <div className="space-y-3">
       <div>
         <h3 className="font-display text-base font-semibold">{t("ref.tpl.title")}</h3>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 break-words text-xs text-muted-foreground">
           {t("ref.tpl.vars")}: {PLACEHOLDERS.map((p) => `{${p}}`).join("  ")}
         </p>
       </div>
+      <div className="grid gap-3 lg:grid-cols-2">
       {KEYS.map((k) => (
         <div key={k} className="space-y-1.5">
           <Label>{t(`ref.tpl.${k}`)}</Label>
@@ -48,7 +49,8 @@ export function ReferenceTemplateEditor() {
           <Textarea rows={3} value={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} />
         </div>
       ))}
-      <div className="flex justify-end gap-2">
+      </div>
+      <div className="flex justify-end gap-2 border-t border-border/50 pt-3">
         <Button variant="ghost" onClick={() => setForm(DEFAULT_TEMPLATES)}>{t("ref.tpl.reset")}</Button>
         <ConfirmAction title={t("ref.tpl.title")} description={t("ref.save")} onConfirm={() => save.mutate()}>
           <Button disabled={save.isPending}>{t("ref.save")}</Button>

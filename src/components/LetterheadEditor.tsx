@@ -45,7 +45,7 @@ export function LetterheadEditor() {
 
   const lh = q.data;
   return (
-    <div className="mt-8 space-y-3 border-t border-border/50 pt-6">
+    <div className="space-y-3">
       <div>
         <h3 className="font-display text-base font-semibold">{t("ref.logo.title")}</h3>
         <p className="mt-1 text-xs text-muted-foreground">{t("ref.stationery.hint")}</p>
@@ -74,8 +74,8 @@ export function LetterheadEditor() {
         )}
       </div>
       {q.isError ? <p role="alert" className="text-sm text-destructive">{t("ref.stationery.loadError")}</p> : null}
-      <fieldset disabled={!q.data || upsert.isPending} className="space-y-5 pt-3">
-        <div className="grid gap-4 sm:grid-cols-2">
+      <fieldset disabled={!q.data || upsert.isPending} className="space-y-3 pt-1">
+        <div className="grid gap-3 sm:grid-cols-2">
           {(["company", "title", "place", "salutation"] as const).map((key) => (
             <div key={key} className="min-w-0 space-y-1.5">
               <Label htmlFor={`letter-${key}`}>{t(`ref.stationery.${key}`)}</Label>
@@ -87,8 +87,8 @@ export function LetterheadEditor() {
           <Label htmlFor="letter-address">{t("ref.stationery.address")}</Label>
           <Textarea id="letter-address" rows={2} maxLength={500} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
         </div>
-        <h4 className="font-medium">{t("ref.stationery.signature")}</h4>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <h4 className="border-t border-border/50 pt-3 text-sm font-medium">{t("ref.stationery.signature")}</h4>
+        <div className="grid gap-3 sm:grid-cols-2">
           {(["signoff", "signatureName", "signatureTitle"] as const).map((key) => (
             <div key={key} className="min-w-0 space-y-1.5">
               <Label htmlFor={`letter-${key}`}>{t(`ref.stationery.${key}`)}</Label>
@@ -104,7 +104,7 @@ export function LetterheadEditor() {
           <Label htmlFor="letter-footer">{t("ref.stationery.footer")}</Label>
           <Textarea id="letter-footer" rows={2} maxLength={400} value={form.footer} onChange={(e) => setForm({ ...form, footer: e.target.value })} />
         </div>
-        <div className="flex justify-end gap-2 border-t border-border/50 pt-4">
+        <div className="flex justify-end gap-2 border-t border-border/50 pt-3">
           <Button variant="ghost" disabled={!dirty} onClick={() => q.data && setForm(q.data.stationery)}>{t("ui.cancel")}</Button>
           <ConfirmAction title={t("ref.stationery.save")} description={t("ref.stationery.confirm")} confirmLabel={t("ref.stationery.save")} onConfirm={() => upsert.mutate({ key: STATIONERY_KEY, value: JSON.stringify(form), rowId: q.data?.stationeryRow?.id })}>
             <Button disabled={!dirty || upsert.isPending}>{t("ref.stationery.save")}</Button>
