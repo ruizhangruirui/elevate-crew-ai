@@ -500,7 +500,7 @@ export function RoleMenu({
     onSuccess: (to) => {
       const from = role.direction_id;
       onSaved();
-      toastUndoable(t("idx.roleMoved"), t("common.undo"), () => {
+      toastUndoable(t("idx.roleMoved"), t("ui.undo"), () => {
         void supabase.from("roles").update({ direction_id: from }).eq("id", role.id).then(() => onSaved());
       });
       void to;
