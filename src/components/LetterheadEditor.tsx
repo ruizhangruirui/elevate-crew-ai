@@ -104,7 +104,7 @@ export function LetterheadEditor() {
           <Textarea id="letter-footer" rows={2} maxLength={400} value={form.footer} onChange={(e) => setForm({ ...form, footer: e.target.value })} />
         </div>
         <div className="flex justify-end gap-2 border-t border-border/50 pt-4">
-          <Button variant="ghost" disabled={!dirty} onClick={() => q.data && setForm(q.data.stationery)}>{t("common.cancel")}</Button>
+          <Button variant="ghost" disabled={!dirty} onClick={() => q.data && setForm(q.data.stationery)}>{t("ui.cancel")}</Button>
           <ConfirmAction title={t("ref.stationery.save")} description={t("ref.stationery.confirm")} confirmLabel={t("ref.stationery.save")} onConfirm={() => upsert.mutate({ key: STATIONERY_KEY, value: JSON.stringify(form), rowId: q.data?.stationeryRow?.id })}>
             <Button disabled={!dirty || upsert.isPending}>{t("ref.stationery.save")}</Button>
           </ConfirmAction>
