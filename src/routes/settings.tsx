@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Plus, Pencil, Archive, Download } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { LetterheadEditor } from "@/components/LetterheadEditor";
+import { CertificateTemplateEditor } from "@/components/CertificateTemplateEditor";
 import { ReferenceTemplateEditor } from "@/components/ReferenceTemplateEditor";
 import { UserAccessSection } from "@/components/UserAccessSection";
 import { ImportPeopleDialog } from "@/components/ImportPeopleDialog";
@@ -202,6 +203,7 @@ function SettingsBody() {
             <ConfigSection items={data.config} />
             <ReferenceTemplateEditor />
             <LetterheadEditor />
+            <CertificateTemplateEditor />
           </>
         ) : section === "操作记录" ? (
           <AuditSection rows={data.audit} />

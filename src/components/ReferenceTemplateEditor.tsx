@@ -10,7 +10,7 @@ import { useI18n } from "@/lib/i18n";
 import { DEFAULT_TEMPLATES, PLACEHOLDERS, TEMPLATE_KEYS, fetchRefTemplates } from "@/lib/reference-letters";
 
 type K = keyof typeof TEMPLATE_KEYS;
-const KEYS: K[] = ["current", "left", "closing"];
+const KEYS: K[] = ["current", "left", "closing", "guide"];
 
 export function ReferenceTemplateEditor() {
   const { t } = useI18n();
@@ -44,6 +44,7 @@ export function ReferenceTemplateEditor() {
       {KEYS.map((k) => (
         <div key={k} className="space-y-1.5">
           <Label>{t(`ref.tpl.${k}`)}</Label>
+          {k === "guide" && <p className="text-xs text-muted-foreground">{t("ref.tpl.guideHint")}</p>}
           <Textarea rows={3} value={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} />
         </div>
       ))}

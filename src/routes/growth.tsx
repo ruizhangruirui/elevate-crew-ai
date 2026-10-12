@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BuildingPanel, HeadcountFlow } from "@/routes/capability";
 import { fetchOrgBuilding } from "@/lib/org-building";
 import { ReferenceLettersPanel } from "@/components/ReferenceLettersPanel";
+import { EmploymentCertificatePanel } from "@/components/EmploymentCertificatePanel";
 
 export const Route = createFileRoute("/growth")({
   head: () => ({
@@ -93,6 +94,7 @@ function GrowthPage() {
             <TabsTrigger value="team">{t("growth.tab.team")}</TabsTrigger>
             <TabsTrigger value="flow">{t("growth.tab.flow")}</TabsTrigger>
             <TabsTrigger value="reference">{t("ref.tab")}</TabsTrigger>
+            {(user?.role === "owner" || user?.role === "hr") && <TabsTrigger value="certificate">{t("cert.tab")}</TabsTrigger>}
           </TabsList>
           <TabsContent value="performance" className="space-y-8">
           {canAssess && <div className="flex justify-end">
@@ -258,6 +260,7 @@ function GrowthPage() {
           {ws.data && <TabsContent value="team"><BuildingPanel data={ws.data} building={building.data ?? null} /></TabsContent>}
           <TabsContent value="flow"><HeadcountFlow /></TabsContent>
           <TabsContent value="reference"><ReferenceLettersPanel /></TabsContent>
+          <TabsContent value="certificate"><EmploymentCertificatePanel /></TabsContent>
         </Tabs>
       )}
     </AppShell>
