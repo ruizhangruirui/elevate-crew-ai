@@ -1,7 +1,23 @@
 type JsonSchema = Record<string, unknown>;
 
 /**
- * Calls the Lovable AI Gateway Responses API and returns strict JSON output.
+ * AI 调用配置（全部可在服务器环境变量中覆盖，方便内网部署切换到公司模型）：
+ * - AI_BASE_URL：OpenAI 兼容接口地址，默认 Lovable AI 网关
+ * - AI_API_KEY：接口密钥，默认 LOVABLE_API_KEY
+ * - AI_MODEL：模型 ID，默认 openai/gpt-6-astra
+ */
+const DEFAULT_BASE_URL = "https://ai.gateway.lovable.dev/v1";
+const DEFAULT_MODEL = "openai/gpt-6-astra";
+
+export function aiConfig() {
+  const baseURL = (process.env["AI_BASE_URL"] || DEFAULT_BASE_URL).replace(/\/+$/, "");
+  const apiKey = process.env["AI_API_KEY"] || process.env["LOVABLE_API_KEY"];
+  if (!apiKey) throw new Error("AI 服务未配置：请在服务器环境变量中设置 AI_API_KEY");
+  return { baseURL, apiKey, model: process.env["AI_MODEL"] || DEFAULT_MODEL };
+}
+
+/**
+ * Calls an OpenAI-compatible Responses API and returns strict JSON output.
  * Always streams (reasoning models can run for minutes) and accumulates the deltas.
  */
 export async function generateStructured<T>({
@@ -9,7 +25,7 @@ export async function generateStructured<T>({
   input,
   schemaName,
   schema,
-  model = "openai/gpt-5.6-sol",
+  model,
 }: {
   system: string;
   input: string;
@@ -17,18 +33,19 @@ export async function generateStructured<T>({
   schema: JsonSchema;
   model?: string;
 }): Promise<T> {
-  const apiKey = process.env["LOVABLE_API_KEY"];
-  if (!apiKey) throw new Error("AI 服务未配置");
+  const config = aiConfig();
+  const usedModel = model || config.model;
 
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
+  const res = await fetch(`${config.baseURL}/responses`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Lovable-API-Key": apiKey,
+      Authorization: `Bearer ${config.apiKey}`,
+      "Lovable-API-Key": config.apiKey,
       "X-Lovable-AIG-SDK": "fetch",
     },
     body: JSON.stringify({
-      model,
+      model: usedModel,
       instructions: system,
       input,
       stream: true,
