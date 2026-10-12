@@ -296,6 +296,26 @@ async function checkHrScope(
   return null;
 }
 
+/**
+ * Which Action Center rows a scoped user may see. Person-linked to-dos (e.g. reference
+ * letters) follow the person's Lab/Team, so only that team's lead and the Lab Director
+ * see them; HR review to-dos are never shown to managers.
+ */
+async function actionVisibility(
+  db: any,
+  user: AppUser,
+  scope: { personIds: Set<string>; nodeIds: Set<string> },
+): Promise<(r: any) => boolean> {
+  const roleIds = new Set(await scopedRoleIds(db, scope.nodeIds));
+  return (r: any) => {
+    if (user.role === "manager" && r.source_kind === "reference_review") return false;
+    if (r.person_id) return scope.personIds.has(r.person_id);
+    if (r.org_node_id) return scope.nodeIds.has(r.org_node_id);
+    if (r.role_id) return roleIds.has(r.role_id);
+    return true;
+  };
+}
+
 /** Roles whose team/lab lies inside the manager's scope. */
 async function scopedRoleIds(db: any, nodeIds: Set<string>): Promise<string[]> {
   if (!nodeIds.size) return [];
