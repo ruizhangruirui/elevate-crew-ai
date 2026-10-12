@@ -184,8 +184,13 @@ export function OrgChart({ nodes, people, roles, rolesByNode, onPerson, onRole }
           </button>
         </div>
 
-        {leaders.length > 0 && (
+        {(node.type === "Lab" || node.type === "Team" || leaders.length > 0) && (
           <div className="flex flex-wrap gap-1 px-3 pb-2">
+            {leaders.length === 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-warn/50 px-2 py-0.5 text-[10px] text-warn">
+                {node.type === "Lab" ? t("chart.labDirector") : t("chart.teamLead")}: {t("chart.vacant")}
+              </span>
+            )}
             {leaders.map((p) => (
               <button
                 key={p.id}
@@ -193,7 +198,9 @@ export function OrgChart({ nodes, people, roles, rolesByNode, onPerson, onRole }
                 onClick={() => onPerson(p.id)}
                 className="inline-flex max-w-full items-center gap-1 rounded-full bg-brand/12 px-2 py-0.5 text-[10px] font-medium text-brand hover:bg-brand/20"
               >
-                <span className="text-muted-foreground">{t("importance.leaderBadge")}</span>
+                <span className="text-muted-foreground">
+                  {node.type === "Lab" ? t("chart.labDirector") : node.type === "Team" ? t("chart.teamLead") : t("importance.leaderBadge")}
+                </span>
                 <span className="truncate">{p.name}</span>
               </button>
             ))}
