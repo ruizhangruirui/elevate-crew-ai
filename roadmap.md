@@ -18,4 +18,5 @@
 - [x] Org chart shows Lab Director / Team Lead (or Vacant); person card shows Supervisor and Workload.
 - [x] Reference letters: HR request with auto facts → supervisor to-do → supervisor submits → HR approves → Word/PDF download; templates editable in Settings.
 - [ ] Email the supervisor when a reference letter is requested (blocked: needs a sender email domain the company owns).
-- [ ] Add Settings fields for reference letter heading, signature and stationery text, applying them to Word/PDF exports.
+- [x] Add Settings fields for reference letter heading, signature and stationery text, applying them to Word/PDF exports; isolated save/readback and document QA passed.
+- [ ] Verify letter settings save/readback with a real signed-in Owner/HRBP (blocked: app-owned login session unavailable; managed cloud session does not authenticate this app).
