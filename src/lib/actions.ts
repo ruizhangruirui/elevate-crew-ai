@@ -50,6 +50,7 @@ export const sourceKindKey: Record<string, string> = {
   ai: "act.source.ai",
   data: "act.source.data",
   manual: "act.source.manual",
+  reference: "act.source.reference",
 };
 
 export const statusKey: Record<string, string> = {
