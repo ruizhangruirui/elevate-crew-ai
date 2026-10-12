@@ -51,7 +51,7 @@ export const DEFAULT_TEMPLATES: Record<keyof typeof TEMPLATE_KEYS, string> = {
 
 export const PLACEHOLDERS = Object.keys({
   name: 1, lab: 1, team: 1, hire_date: 1, job_title: 1, workload: 1, exit_date: 1, exit_reason: 1,
-} satisfies Record<keyof RefFacts, 1>);
+} satisfies Record<Exclude<keyof RefFacts, "employee_address">, 1>);
 
 export function fillTemplate(tpl: string, f: RefFacts) {
   return tpl.replace(/\{(\w+)\}/g, (m, k: string) => ((f as Record<string, string>)[k] || (k in f ? "—" : m)));
