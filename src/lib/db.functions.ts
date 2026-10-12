@@ -160,8 +160,20 @@ export const dbQuery = createServerFn({ method: "POST" })
     if (spec.single === "single") q = q.single();
     if (spec.single === "maybe") q = q.maybeSingle();
 
+    // Action Center: scoped users only see/act on to-dos linked to their own Lab/Team.
+    if (scope && spec.table === "actions" && (spec.op === "update" || spec.op === "delete")) {
+      const { data: rows } = await applyFilters(db.from("actions").select("*"), spec.filters);
+      const visible = await actionVisibility(db, user, scope);
+      if ((rows ?? []).some((r: any) => !visible(r))) return fail("This to-do is outside your scope", "403");
+    }
+
     const { data, error, count } = await q;
-    return { data: data ?? null, error: error ? { message: error.message, code: error.code } : null, count: count ?? null };
+    let out: any = data ?? null;
+    if (scope && spec.table === "actions" && spec.op === "select" && out) {
+      const visible = await actionVisibility(db, user, scope);
+      out = Array.isArray(out) ? out.filter(visible) : visible(out) ? out : null;
+    }
+    return { data: out, error: error ? { message: error.message, code: error.code } : null, count: count ?? null };
   });
 
 /** Fields on people that belong to the manager assessment section. */
