@@ -523,22 +523,25 @@ function ConfigSection({ items }: { items: ConfigItem[] }) {
   const mutate = useMutation({
     mutationFn: async (op: { type: "add" | "toggle" | "delete"; item?: ConfigItem; category?: string }) => {
       if (op.type === "add") {
+        if (!op.category) return;
         const { error } = await supabase
           .from("config_items")
-          .insert({ category: op.category!, name, sort_order: 99 });
+          .insert({ category: op.category, name, sort_order: 99 });
         if (error) throw error;
         await logAudit("Create", "人才配置", `新增 ${op.category}: ${name}`);
       } else if (op.type === "toggle") {
+        if (!op.item) return;
         const { error } = await supabase
           .from("config_items")
-          .update({ active: !op.item!.active })
-          .eq("id", op.item!.id);
+          .update({ active: !op.item.active })
+          .eq("id", op.item.id);
         if (error) throw error;
-        await logAudit("Edit", "人才配置", `${op.item!.name} 状态切换`);
+        await logAudit("Edit", "人才配置", `${op.item.name} 状态切换`);
       } else {
-        const { error } = await supabase.from("config_items").delete().eq("id", op.item!.id);
+        if (!op.item) return;
+        const { error } = await supabase.from("config_items").delete().eq("id", op.item.id);
         if (error) throw error;
-        await logAudit("Delete", "人才配置", `删除 ${op.item!.name}`);
+        await logAudit("Delete", "人才配置", `删除 ${op.item.name}`);
       }
     },
     onSuccess: () => {
@@ -553,7 +556,13 @@ function ConfigSection({ items }: { items: ConfigItem[] }) {
   return (
     <>
       <div className="grid items-start gap-4 xl:grid-cols-[210px_minmax(0,1fr)]">
-        <div role="group" aria-label={t("set.config.categories")} className="grid grid-cols-1 gap-0.5 border-b border-border/60 pb-3 sm:grid-cols-2 xl:grid-cols-1 xl:border-b-0 xl:border-r xl:pb-0 xl:pr-3">
+        <div className="xl:hidden">
+          <Select value={category} onValueChange={(value) => { setCategory(value); setSearch(""); }}>
+            <SelectTrigger aria-label={t("set.config.categories")}><SelectValue /></SelectTrigger>
+            <SelectContent>{CONFIG_GROUPS.map(([key, title]) => <SelectItem key={key} value={key}>{t(title)} · {items.filter((item) => item.category === key).length}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div role="group" aria-label={t("set.config.categories")} className="hidden gap-0.5 xl:grid xl:grid-cols-1 xl:border-r xl:border-border/60 xl:pr-3">
           {CONFIG_GROUPS.map(([key, title]) => (
             <Button key={key} variant="ghost" aria-pressed={category === key} onClick={() => { setCategory(key); setSearch(""); }} className={`h-auto min-h-9 justify-between gap-2 whitespace-normal px-2.5 py-2 text-left text-xs ${category === key ? "bg-accent text-accent-foreground" : "text-muted-foreground"}`}>
               <span>{t(title)}</span><span className="shrink-0 text-xs tabular-nums text-muted-foreground">{items.filter((item) => item.category === key).length}</span>

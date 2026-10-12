@@ -20,4 +20,5 @@
 - [ ] Email the supervisor when a reference letter is requested (blocked: needs a sender email domain the company owns).
 - [x] Add Settings fields for reference letter heading, signature and stationery text, applying them to Word/PDF exports; isolated save/readback and document QA passed.
 - [ ] Verify letter settings save/readback with a real signed-in Owner/HRBP (blocked: app-owned login session unavailable; managed cloud session does not authenticate this app).
-- [ ] Tighten Settings layout and organize Talent Configuration without changing permissions or data behavior.
+- [x] Tighten Settings layout and organize Talent Configuration without changing permissions or data behavior.
+- [ ] Verify signed-in Talent Configuration navigation and editing (blocked: no app-owned login session is available; public-page browser check redirects to sign-in).
