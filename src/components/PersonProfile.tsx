@@ -1,3 +1,4 @@
+import { supervisorOf } from "@/lib/supervisor";
 import { useMemo, useState } from "react";
 import { useLocations } from "@/lib/locations";
 import { useNavigate } from "@tanstack/react-router";
@@ -413,6 +414,8 @@ export function PersonProfile({
   const nodes = orgNodes.data ?? [];
   const { data: locationOpts = [] } = useLocations();
   const { lab, team } = labTeamOf(nodes, person.org_node_id);
+  const autoSupervisor = supervisorOf({ ...person, supervisor_id: null }, people, nodes);
+  const supervisor = supervisorOf(person, people, nodes);
   const tenure = person.hire_date ? tenureMonths(person.hire_date) : (person.tenure_months ?? null);
 
   const [editing, setEditing] = useState<"basic" | "career" | null>(null);
@@ -427,6 +430,8 @@ export function PersonProfile({
     role_id: "none",
     appointed_role_title: "",
     offer_title: "",
+    supervisor_id: "auto",
+    workload_pct: "100",
     status: "onboard",
     tags: "",
     note: "",
@@ -448,6 +453,8 @@ export function PersonProfile({
       role_id: person.role_id ?? "none",
       appointed_role_title: person.appointed_role_title ?? "",
       offer_title: person.offer_title ?? "",
+      supervisor_id: person.supervisor_id ?? "auto",
+      workload_pct: String(person.workload_pct ?? 100),
       status: person.status ?? "onboard",
       tags: (person.tags ?? []).join(", "),
       note: person.note ?? "",
@@ -484,6 +491,8 @@ export function PersonProfile({
           role_id: form.role_id === "none" ? null : form.role_id,
           appointed_role_title: form.appointed_role_title.trim() || null,
           offer_title: form.offer_title.trim() || null,
+          supervisor_id: form.supervisor_id === "auto" ? null : form.supervisor_id,
+          workload_pct: form.workload_pct ? Math.max(0, Math.min(100, Number(form.workload_pct))) : null,
           status: form.status,
           tags: form.tags.split(/[,，\n]/).map((x) => x.trim()).filter(Boolean),
           note: form.note || null,
@@ -497,6 +506,8 @@ export function PersonProfile({
         cmp(t("sheet.person.level"), person.level != null ? String(person.level) : "", form.level);
         cmp(t("pp.f.role"), person.appointed_role_title || roles.find((r) => r.id === person.role_id)?.title || "", form.appointed_role_title.trim() || roles.find((r) => r.id === form.role_id)?.title || "");
         cmp(t("pp.f.offerTitle"), person.offer_title ?? "", form.offer_title.trim());
+        cmp(t("pp.f.workload"), String(person.workload_pct ?? 100), form.workload_pct);
+        cmp(t("pp.f.supervisor"), people.find((x) => x.id === person.supervisor_id)?.name ?? "", people.find((x) => x.id === form.supervisor_id)?.name ?? "");
         cmp(t("sheet.person.status"), person.status ?? "", form.status);
         cmp(t("sheet.person.tags"), (person.tags ?? []).join(", "), form.tags);
       } else {
@@ -645,6 +656,17 @@ export function PersonProfile({
                 <Input value={form.offer_title} onChange={(e) => setForm({ ...form, offer_title: e.target.value })} placeholder={t("pp.f.offerTitlePh")} />
               </div>
               <div className="space-y-1.5">
+                <Label>{t("pp.f.workload")}</Label>
+                <Input type="number" min={0} max={100} value={form.workload_pct} onChange={(e) => setForm({ ...form, workload_pct: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("pp.f.supervisor")}</Label>
+                {sel(form.supervisor_id, (v) => setForm({ ...form, supervisor_id: v }), [
+                  ["auto", `${t("pp.f.supervisorAuto")}${autoSupervisor ? ` · ${autoSupervisor.name}` : ""}`],
+                  ...people.filter((x) => x.id !== person.id).map((x) => [x.id, x.name] as [string, string]),
+                ])}
+              </div>
+              <div className="space-y-1.5">
                 <Label>{t("sheet.person.status")}</Label>
                 {sel(form.status, (v) => setForm({ ...form, status: v }), [
                   ["onboard", t("sheet.person.onboard")],
@@ -675,6 +697,8 @@ export function PersonProfile({
               <Fact label={t("sheet.person.level")} value={person.level != null ? `L${person.level}` : "—"} />
               <Fact label={t("pp.f.role")} value={person.appointed_role_title || role?.title || t("sheet.person.notAssigned")} />
               <Fact label={t("pp.f.offerTitle")} value={person.offer_title || "—"} />
+              <Fact label={t("pp.f.supervisor")} value={supervisor?.name ?? "—"} tone={supervisor ? undefined : "warn"} />
+              <Fact label={t("pp.f.workload")} value={`${person.workload_pct ?? 100}%`} />
               <Fact label={t("sheet.person.tenure")} value={tenureLabel(t, tenure)} />
               <Fact
                 label={t("sheet.person.status")}

@@ -681,9 +681,11 @@ export type Database = {
           role_id: string | null
           staff_id: string | null
           status: string
+          supervisor_id: string | null
           tags: string[]
           tenure_months: number | null
           updated_at: string
+          workload_pct: number | null
         }
         Insert: {
           archived?: boolean
@@ -709,9 +711,11 @@ export type Database = {
           role_id?: string | null
           staff_id?: string | null
           status?: string
+          supervisor_id?: string | null
           tags?: string[]
           tenure_months?: number | null
           updated_at?: string
+          workload_pct?: number | null
         }
         Update: {
           archived?: boolean
@@ -737,9 +741,11 @@ export type Database = {
           role_id?: string | null
           staff_id?: string | null
           status?: string
+          supervisor_id?: string | null
           tags?: string[]
           tenure_months?: number | null
           updated_at?: string
+          workload_pct?: number | null
         }
         Relationships: [
           {
@@ -761,6 +767,13 @@ export type Database = {
             columns: ["role_id"]
             isOneToOne: false
             referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "people_supervisor_id_fkey"
+            columns: ["supervisor_id"]
+            isOneToOne: false
+            referencedRelation: "people"
             referencedColumns: ["id"]
           },
         ]
@@ -965,6 +978,78 @@ export type Database = {
             columns: ["role_id"]
             isOneToOne: false
             referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reference_letters: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          closing_text: string | null
+          created_at: string
+          facts: Json
+          hr_note: string | null
+          id: string
+          intro_text: string
+          person_id: string
+          requested_by: string | null
+          status: string
+          submitted_at: string | null
+          submitted_by: string | null
+          supervisor_person_id: string | null
+          supervisor_text: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          closing_text?: string | null
+          created_at?: string
+          facts?: Json
+          hr_note?: string | null
+          id?: string
+          intro_text?: string
+          person_id: string
+          requested_by?: string | null
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          supervisor_person_id?: string | null
+          supervisor_text?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          closing_text?: string | null
+          created_at?: string
+          facts?: Json
+          hr_note?: string | null
+          id?: string
+          intro_text?: string
+          person_id?: string
+          requested_by?: string | null
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          supervisor_person_id?: string | null
+          supervisor_text?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reference_letters_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reference_letters_supervisor_person_id_fkey"
+            columns: ["supervisor_person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
             referencedColumns: ["id"]
           },
         ]

@@ -21,3 +21,5 @@
 - Team achievements use dedicated achievement and contributor tables with server-enforced manager scope; achievement types remain configurable in Settings.
 
 - Bulk role imports use a dedicated owner-only server function (upsert by direction + title, auto-creating directions, optional owner linked via people.role_id) for the same reason as people imports.
+- Supervisor is derived from org leaders (is_leader on the person's node, walking up to parent nodes) unless people.supervisor_id overrides it; one helper (`src/lib/supervisor.ts`) keeps org chart, profile and reference letters consistent.
+- Reference letters live in `reference_letters` (person-scoped in dbQuery); HR requests/approves, only the supervisor writes and submits the supervisor section — enforced in `checkSection`. Templates are config_items rows keyed by category so they stay editable in Settings.
