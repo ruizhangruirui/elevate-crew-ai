@@ -432,6 +432,8 @@ export function PersonProfile({
     offer_title: "",
     supervisor_id: "auto",
     workload_pct: "100",
+    company_email: "",
+    personal_email: "",
     status: "onboard",
     tags: "",
     note: "",
@@ -455,6 +457,8 @@ export function PersonProfile({
       offer_title: person.offer_title ?? "",
       supervisor_id: person.supervisor_id ?? "auto",
       workload_pct: String(person.workload_pct ?? 100),
+      company_email: person.company_email ?? "",
+      personal_email: person.personal_email ?? "",
       status: person.status ?? "onboard",
       tags: (person.tags ?? []).join(", "),
       note: person.note ?? "",
@@ -492,6 +496,8 @@ export function PersonProfile({
           appointed_role_title: form.appointed_role_title.trim() || null,
           offer_title: form.offer_title.trim() || null,
           supervisor_id: form.supervisor_id === "auto" ? null : form.supervisor_id,
+          company_email: form.company_email.trim().toLowerCase() || null,
+          personal_email: form.personal_email.trim().toLowerCase() || null,
           workload_pct: form.workload_pct ? Math.max(0, Math.min(100, Number(form.workload_pct))) : null,
           status: form.status,
           tags: form.tags.split(/[,，\n]/).map((x) => x.trim()).filter(Boolean),
@@ -506,6 +512,8 @@ export function PersonProfile({
         cmp(t("sheet.person.level"), person.level != null ? String(person.level) : "", form.level);
         cmp(t("pp.f.role"), person.appointed_role_title || roles.find((r) => r.id === person.role_id)?.title || "", form.appointed_role_title.trim() || roles.find((r) => r.id === form.role_id)?.title || "");
         cmp(t("pp.f.offerTitle"), person.offer_title ?? "", form.offer_title.trim());
+        cmp(t("pp.f.companyEmail"), person.company_email ?? "", form.company_email.trim().toLowerCase());
+        cmp(t("pp.f.personalEmail"), person.personal_email ?? "", form.personal_email.trim().toLowerCase());
         cmp(t("pp.f.workload"), String(person.workload_pct ?? 100), form.workload_pct);
         cmp(t("pp.f.supervisor"), people.find((x) => x.id === person.supervisor_id)?.name ?? "", people.find((x) => x.id === form.supervisor_id)?.name ?? "");
         cmp(t("sheet.person.status"), person.status ?? "", form.status);
@@ -656,6 +664,14 @@ export function PersonProfile({
                 <Input value={form.offer_title} onChange={(e) => setForm({ ...form, offer_title: e.target.value })} placeholder={t("pp.f.offerTitlePh")} />
               </div>
               <div className="space-y-1.5">
+                <Label>{t("pp.f.companyEmail")}</Label>
+                <Input type="email" value={form.company_email} onChange={(e) => setForm({ ...form, company_email: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("pp.f.personalEmail")}</Label>
+                <Input type="email" value={form.personal_email} onChange={(e) => setForm({ ...form, personal_email: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
                 <Label>{t("pp.f.workload")}</Label>
                 <Input type="number" min={0} max={100} value={form.workload_pct} onChange={(e) => setForm({ ...form, workload_pct: e.target.value })} />
               </div>
@@ -698,6 +714,8 @@ export function PersonProfile({
               <Fact label={t("pp.f.role")} value={person.appointed_role_title || role?.title || t("sheet.person.notAssigned")} />
               <Fact label={t("pp.f.offerTitle")} value={person.offer_title || "—"} />
               <Fact label={t("pp.f.supervisor")} value={supervisor?.name ?? "—"} tone={supervisor ? undefined : "warn"} />
+              <Fact label={t("pp.f.companyEmail")} value={person.company_email || "—"} />
+              <Fact label={t("pp.f.personalEmail")} value={person.personal_email || "—"} />
               <Fact label={t("pp.f.workload")} value={`${person.workload_pct ?? 100}%`} />
               <Fact label={t("sheet.person.tenure")} value={tenureLabel(t, tenure)} />
               <Fact
