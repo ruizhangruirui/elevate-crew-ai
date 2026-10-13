@@ -22,3 +22,4 @@
 - [ ] Verify letter settings save/readback with a real signed-in Owner/HRBP (blocked: app-owned login session unavailable; managed cloud session does not authenticate this app).
 - [x] Tighten Settings layout and organize Talent Configuration without changing permissions or data behavior.
 - [ ] Verify signed-in Talent Configuration navigation and editing (blocked: no app-owned login session is available; public-page browser check redirects to sign-in).
+- [ ] Create and visually validate a Chinese product report PowerPoint covering pain points, HRBP/manager/director value and future employee portal.
