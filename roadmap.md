@@ -25,3 +25,4 @@
 - [x] Create and visually validate a 14-slide Chinese product report PowerPoint with speaker notes covering pain points, HRBP/manager/director value and future employee portal; fixed cover residue and passed file validation.
 - [x] Create and validate an 18-slide English user onboarding PowerPoint for HRBP, Recruiter and Manager covering functions, actual permission boundaries, data/privacy and improvement feedback; fixed crowded text and verified every rendered slide.
 - [x] Move letter titles into type-specific template settings and format document dates as day month year.
+- [ ] Unify letter body/signature typography, add supervisor/HR/both signature choice, and remove sign-off/footer settings.
