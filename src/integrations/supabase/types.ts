@@ -658,6 +658,7 @@ export type Database = {
       }
       people: {
         Row: {
+          address: string | null
           archived: boolean
           archived_at: string | null
           assessed_at: string | null
@@ -690,6 +691,7 @@ export type Database = {
           workload_pct: number | null
         }
         Insert: {
+          address?: string | null
           archived?: boolean
           archived_at?: string | null
           assessed_at?: string | null
@@ -722,6 +724,7 @@ export type Database = {
           workload_pct?: number | null
         }
         Update: {
+          address?: string | null
           archived?: boolean
           archived_at?: string | null
           assessed_at?: string | null
