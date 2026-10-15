@@ -318,6 +318,21 @@ function RecruitingBody() {
                 <p className="text-xs text-muted-foreground">
                   Level {role.level_min}–{role.level_max} · {coverageOf(role, people).filled}/{role.target_count}
                 </p>
+                {(() => {
+                  const lab = labOf(role.org_node_id);
+                  const team = role.org_node_id && role.org_node_id !== lab?.id ? role.org_node_id : null;
+                  const live = people.filter((p) => p.status !== "left" && !p.archived);
+                  const inLab = (id: string | null | undefined) => { let n = orgNodes.find((x) => x.id === id); while (n) { if (n.id === lab?.id) return true; n = orgNodes.find((x) => x.id === n!.parent_id); } return false; };
+                  const dir = lab ? live.filter((p) => p.is_leader && p.org_node_id === lab.id) : [];
+                  const plr = lab ? live.filter((p) => p.is_plr && inLab(p.org_node_id)) : [];
+                  const lead = team ? live.filter((p) => p.is_leader && p.org_node_id === team) : [];
+                  const parts = [
+                    dir.length ? `${t("chart.labDirector")}: ${dir.map((p) => p.name).join(", ")}` : null,
+                    plr.length ? `PLR: ${plr.map((p) => p.name).join(", ")}` : null,
+                    lead.length ? `${t("chart.teamLead")}: ${lead.map((p) => p.name).join(", ")}` : null,
+                  ].filter(Boolean);
+                  return parts.length ? <p className="mt-0.5 text-[11px] text-muted-foreground">{t("rec.visibleTo")} {parts.join(" · ")}</p> : null;
+                })()}
               </div>
               <div className="flex items-center gap-2">
                 <div className="relative">

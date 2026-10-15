@@ -7,16 +7,17 @@ import { ConfirmAction } from "@/components/ConfirmAction";
 import { useI18n } from "@/lib/i18n";
 
 type Node = { id: string; parent_id: string | null; type: string; name: string };
-type P = { id: string; name: string; org_node_id: string | null; is_leader: boolean; status: string; archived: boolean };
+type P = { id: string; name: string; org_node_id: string | null; is_leader: boolean; is_plr?: boolean; status: string; archived: boolean };
 
 /** Assign the leader (Lab Director / Team Lead) of one org node. */
-export function LeaderPicker({ node, nodes }: { node: Node; nodes: Node[] }) {
+export function LeaderPicker({ node, nodes, kind = "leader" }: { node: Node; nodes: Node[]; kind?: "leader" | "plr" }) {
+  const plr = kind === "plr";
   const { t } = useI18n();
   const qc = useQueryClient();
   const people = useQuery({
     queryKey: ["people-leaders"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("people").select("id,name,org_node_id,is_leader,status,archived").order("name");
+      const { data, error } = await supabase.from("people").select("id,name,org_node_id,is_leader,is_plr,status,archived").order("name");
       if (error) throw error;
       return (data ?? []) as unknown as P[];
     },
@@ -26,7 +27,7 @@ export function LeaderPicker({ node, nodes }: { node: Node; nodes: Node[] }) {
   // Candidates: active people on this node or any node beneath it.
   // For Teams, widen to the whole parent Lab subtree: many people sit directly
   // on the Lab node, and assigning them as Team Lead moves them into the Team.
-  const rootId = node.type === "Team" && node.parent_id ? node.parent_id : node.id;
+  const rootId = !plr && node.type === "Team" && node.parent_id ? node.parent_id : node.id;
   const sub = new Set([rootId]);
   let grew = true;
   while (grew) {
@@ -35,21 +36,23 @@ export function LeaderPicker({ node, nodes }: { node: Node; nodes: Node[] }) {
   }
   const active = (people.data ?? []).filter((p) => !p.archived && p.status !== "left");
   const pool = active.filter((p) => p.org_node_id && sub.has(p.org_node_id));
-  const current = active.filter((p) => p.org_node_id === node.id && p.is_leader);
-  const label = node.type === "Lab" ? t("chart.labDirector") : t("chart.teamLead");
+  const current = plr
+    ? active.filter((p) => p.is_plr && p.org_node_id && sub.has(p.org_node_id))
+    : active.filter((p) => p.org_node_id === node.id && p.is_leader);
+  const label = plr ? "PLR" : node.type === "Lab" ? t("chart.labDirector") : t("chart.teamLead");
 
   const assign = useMutation({
     mutationFn: async (personId: string) => {
       for (const c of current) {
         if (c.id === personId) continue;
-        const { error } = await supabase.from("people").update({ is_leader: false } as never).eq("id", c.id);
+        const { error } = await supabase.from("people").update((plr ? { is_plr: false } : { is_leader: false }) as never).eq("id", c.id);
         if (error) throw error;
       }
       if (personId !== "__none") {
-        const { error } = await supabase.from("people").update({ is_leader: true, org_node_id: node.id } as never).eq("id", personId);
+        const { error } = await supabase.from("people").update((plr ? { is_plr: true } : { is_leader: true, org_node_id: node.id }) as never).eq("id", personId);
         if (error) throw error;
       }
-      await supabase.from("audit_log").insert({ action: "Assign leader", entity: node.name, detail: `${label}: ${pool.find((p) => p.id === personId)?.name ?? "—"}` } as never);
+      await supabase.from("audit_log").insert({ action: plr ? "Assign PLR" : "Assign leader", entity: node.name, detail: `${label}: ${pool.find((p) => p.id === personId)?.name ?? "—"}` } as never);
     },
     onSuccess: () => { toast.success(t("set.org.leaderSaved")); qc.invalidateQueries({ refetchType: "all" }); },
     onError: (e: Error) => toast.error(e.message),
