@@ -319,6 +319,7 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
               </div>
               <p className="mt-1 text-xs text-muted-foreground">{node.mission || "No mission"}</p>
               {node.type !== "Org" && node.parent_id && <LeaderPicker node={node} nodes={live} />}
+              {node.type === "Lab" && node.parent_id && <LeaderPicker node={node} nodes={live} kind="plr" />}
             </div>
             <div className="flex gap-1">
               <Button size="sm" variant="ghost" onClick={() => setEditing(node)}>

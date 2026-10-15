@@ -140,6 +140,9 @@ export function OrgChart({ nodes, people, roles, rolesByNode, onPerson, onRole }
       (a, b) => Number(!!b.is_leader) - Number(!!a.is_leader),
     );
     const leaders = direct.filter((p) => p.is_leader && p.status !== "left");
+    const plrs = node.type === "Lab"
+      ? members.filter((p) => (p as { is_plr?: boolean }).is_plr && p.status !== "left")
+      : [];
     const Icon = node.type === "Team" ? Users : Building2;
     const open = isOpen(node.id, depth);
     const teamOpen = openTeam === node.id;
@@ -201,6 +204,13 @@ export function OrgChart({ nodes, people, roles, rolesByNode, onPerson, onRole }
                 <span className="text-muted-foreground">
                   {node.type === "Lab" ? t("chart.labDirector") : node.type === "Team" ? t("chart.teamLead") : t("importance.leaderBadge")}
                 </span>
+                <span className="truncate">{p.name}</span>
+              </button>
+            ))}
+            {plrs.map((p) => (
+              <button key={`plr-${p.id}`} type="button" onClick={() => onPerson(p.id)}
+                className="inline-flex max-w-full items-center gap-1 rounded-full bg-brand/12 px-2 py-0.5 text-[10px] font-medium text-brand hover:bg-brand/20">
+                <span className="text-muted-foreground">PLR</span>
                 <span className="truncate">{p.name}</span>
               </button>
             ))}

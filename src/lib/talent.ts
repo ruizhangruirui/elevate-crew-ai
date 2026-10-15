@@ -63,6 +63,7 @@ export type Person = {
   contract_type?: string | null;
   importance?: string | null;
   is_leader?: boolean | null;
+  is_plr?: boolean | null;
   supervisor_id?: string | null;
   workload_pct?: number | null;
   company_email?: string | null;
