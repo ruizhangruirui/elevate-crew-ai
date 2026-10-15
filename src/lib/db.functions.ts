@@ -108,6 +108,23 @@ export const dbQuery = createServerFn({ method: "POST" })
 
     const denied = checkSection(user, spec, payload);
     if (denied) return fail(denied, "403");
+    if (spec.table === "reference_letters" && spec.op !== "select") {
+      const rows = Array.isArray(payload) ? payload : [payload];
+      for (const row of rows) {
+        if (row?.signature_mode !== undefined && !["hr", "supervisor", "both"].includes(row.signature_mode)) return fail("Invalid signature choice", "400");
+        if (row?.supervisor_signature !== undefined && (typeof row.supervisor_signature !== "string" || row.supervisor_signature.length > 1000)) return fail("Invalid supervisor signature", "400");
+      }
+      if (spec.op === "update") {
+        const { data: letters, error: readError } = await applyFilters(db.from("reference_letters").select("supervisor_person_id,status,signature_mode,supervisor_signature"), spec.filters);
+        if (readError) return fail("Could not verify letter permissions", "403");
+        if (user.role === "manager") {
+          const ids = [...new Set((letters ?? []).map((letter: any) => letter.supervisor_person_id).filter(Boolean))];
+          const { data: supervisors, error } = await db.from("people").select("id,name").in("id", ids);
+          if (error || (letters ?? []).some((letter: any) => letter.status !== "requested" || !(supervisors ?? []).some((person: any) => person.id === letter.supervisor_person_id && person.name === user.name))) return fail("Only the assigned supervisor can complete this request", "403");
+        }
+        if (payload?.status === "submitted" && (letters ?? []).some((letter: any) => (payload.signature_mode ?? letter.signature_mode ?? "hr") !== "hr" && !(payload.supervisor_signature ?? letter.supervisor_signature ?? "").trim())) return fail("Enter the supervisor signature text", "400");
+      }
+    }
 
     // Managers are always scoped; HRBPs are scoped when the Owner assigned Labs/Teams (empty = all data).
     const scoped = user.role === "manager" || (user.role === "hr" && user.scope_node_ids.length > 0);
@@ -193,13 +210,13 @@ function checkSection(user: AppUser, spec: DbSpec, payload: any): string | null 
   if (spec.op === "select" || user.role === "owner") return null;
   const rows: any[] = payload === undefined ? [] : Array.isArray(payload) ? payload : [payload];
   if (spec.table === "reference_letters") {
-    const MGR = new Set(["supervisor_text", "closing_text", "status", "submitted_by", "submitted_at"]);
+    const MGR = new Set(["supervisor_text", "closing_text", "signature_mode", "supervisor_signature", "status", "submitted_by", "submitted_at"]);
     if (user.role === "manager") {
       if (spec.op !== "update") return "Reference letters are requested by HR";
       if (rows.some((r) => Object.keys(r).some((k) => !MGR.has(k)) || (r.status && r.status !== "submitted")))
         return "Supervisors can only write and submit their section";
     } else if (user.role === "hr") {
-      if (rows.some((r) => r.supervisor_text !== undefined || r.status === "submitted"))
+      if (rows.some((r) => r.supervisor_text !== undefined || r.signature_mode !== undefined || r.supervisor_signature !== undefined || r.status === "submitted"))
         return "The supervisor section is written by the supervisor";
     } else return "Not allowed";
     return null;
