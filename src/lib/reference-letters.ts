@@ -319,7 +319,7 @@ export async function downloadPdf(d: LetterDoc) {
       pdf.addImage(lh.logo.url, "PNG", pageW - margin - size.width, 28, size.width, size.height);
       contentTop = Math.max(margin, 28 + size.height + 30);
     }
-    wrap(s.footer, 9).forEach((line, i, all) => drawText(line, pageW / 2, pageH - 28 - (all.length - 1 - i) * 12, 9, false, "center"));
+    footerLines.forEach((line, i, all) => drawRichLine(line, pageW / 2, pageH - 28 - (all.length - 1 - i) * 12, 9));
   };
   decorate();
   let y = contentTop;
