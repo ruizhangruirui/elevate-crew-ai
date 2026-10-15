@@ -67,6 +67,7 @@ export type Person = {
   workload_pct?: number | null;
   company_email?: string | null;
   personal_email?: string | null;
+  address?: string | null;
   tags?: string[];
   assessed_skills?: Skill[];
   performance?: string | null;

@@ -145,6 +145,7 @@ function RequestDialog({
       exit_reason: left && exit ? t(reasonLabelKey(exit.reason)) : "",
     };
     setFacts(f);
+    setAddress(p.address ?? "");
     setSupId(supervisorOf(p, people, nodes)?.id ?? "");
     const text = tpl.data?.text;
     if (text) setIntro(fillTemplate(f.exit_date ? text.left : text.current, f));

@@ -5,7 +5,7 @@ import { db as supabase } from "@/lib/db-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextarea } from "@/components/RichTextarea";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { useI18n } from "@/lib/i18n";
 import { CERT_KEY, CERT_PLACEHOLDERS, DEFAULT_CERT, fetchCertSettings, type CertSettings } from "@/lib/reference-letters";
@@ -49,7 +49,7 @@ export function CertificateTemplateEditor() {
       {(["body", "closing"] as const).map((k) => (
         <div key={k} className="space-y-1.5">
           <Label>{t(`cert.s.${k}`)}</Label>
-          <Textarea rows={k === "body" ? 4 : 2} value={form[k]} onChange={(e) => set(k, e.target.value)} />
+          <RichTextarea rows={k === "body" ? 4 : 2} value={form[k]} onChange={(v) => set(k, v)} />
         </div>
       ))}
       <div className="flex justify-end gap-2 border-t border-border/50 pt-3">

@@ -434,6 +434,7 @@ export function PersonProfile({
     workload_pct: "100",
     company_email: "",
     personal_email: "",
+    address: "",
     status: "onboard",
     tags: "",
     note: "",
@@ -459,6 +460,7 @@ export function PersonProfile({
       workload_pct: String(person.workload_pct ?? 100),
       company_email: person.company_email ?? "",
       personal_email: person.personal_email ?? "",
+      address: person.address ?? "",
       status: person.status ?? "onboard",
       tags: (person.tags ?? []).join(", "),
       note: person.note ?? "",
@@ -498,6 +500,7 @@ export function PersonProfile({
           supervisor_id: form.supervisor_id === "auto" ? null : form.supervisor_id,
           company_email: form.company_email.trim().toLowerCase() || null,
           personal_email: form.personal_email.trim().toLowerCase() || null,
+          address: form.address.trim() || null,
           workload_pct: form.workload_pct ? Math.max(0, Math.min(100, Number(form.workload_pct))) : null,
           status: form.status,
           tags: form.tags.split(/[,，\n]/).map((x) => x.trim()).filter(Boolean),
@@ -514,6 +517,7 @@ export function PersonProfile({
         cmp(t("pp.f.offerTitle"), person.offer_title ?? "", form.offer_title.trim());
         cmp(t("pp.f.companyEmail"), person.company_email ?? "", form.company_email.trim().toLowerCase());
         cmp(t("pp.f.personalEmail"), person.personal_email ?? "", form.personal_email.trim().toLowerCase());
+        cmp(t("pp.f.address"), person.address ?? "", form.address.trim());
         cmp(t("pp.f.workload"), String(person.workload_pct ?? 100), form.workload_pct);
         cmp(t("pp.f.supervisor"), people.find((x) => x.id === person.supervisor_id)?.name ?? "", people.find((x) => x.id === form.supervisor_id)?.name ?? "");
         cmp(t("sheet.person.status"), person.status ?? "", form.status);
@@ -695,6 +699,10 @@ export function PersonProfile({
               </div>
             </div>
             <div className="space-y-1.5">
+              <Label>{t("pp.f.address")} <span className="text-xs text-muted-foreground">· {t("pp.f.hrOnly")}</span></Label>
+              <Textarea rows={2} maxLength={500} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+            </div>
+            <div className="space-y-1.5">
               <Label>{t("sheet.person.noteLabel")}</Label>
               <Textarea rows={2} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
             </div>
@@ -716,6 +724,7 @@ export function PersonProfile({
               <Fact label={t("pp.f.supervisor")} value={supervisor?.name ?? "—"} tone={supervisor ? undefined : "warn"} />
               <Fact label={t("pp.f.companyEmail")} value={person.company_email || "—"} />
               <Fact label={t("pp.f.personalEmail")} value={person.personal_email || "—"} />
+              {canHr && <Fact label={t("pp.f.address")} value={person.address || "—"} />}
               <Fact label={t("pp.f.workload")} value={`${person.workload_pct ?? 100}%`} />
               <Fact label={t("sheet.person.tenure")} value={tenureLabel(t, tenure)} />
               <Fact

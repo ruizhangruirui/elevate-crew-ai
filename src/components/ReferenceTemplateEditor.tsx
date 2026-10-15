@@ -5,6 +5,7 @@ import { db as supabase } from "@/lib/db-client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextarea } from "@/components/RichTextarea";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { useI18n } from "@/lib/i18n";
 import { DEFAULT_TEMPLATES, PLACEHOLDERS, TEMPLATE_KEYS, fetchRefTemplates } from "@/lib/reference-letters";
@@ -46,7 +47,9 @@ export function ReferenceTemplateEditor() {
         <div key={k} className="space-y-1.5">
           <Label>{t(`ref.tpl.${k}`)}</Label>
           {k === "guide" && <p className="text-xs text-muted-foreground">{t("ref.tpl.guideHint")}</p>}
-          <Textarea rows={3} value={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} />
+          {k === "guide"
+            ? <Textarea rows={3} value={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} />
+            : <RichTextarea rows={3} value={form[k]} onChange={(v) => setForm({ ...form, [k]: v })} />}
         </div>
       ))}
       </div>

@@ -51,7 +51,7 @@ export function EmploymentCertificatePanel() {
       role: p.offer_title || p.appointed_role_title || "",
       workload: `${pct}%`,
       weekly_hours: String(Math.round(((full * pct) / 100) * 10) / 10),
-      employee_address: "",
+      employee_address: p.address ?? "",
     });
   };
 

@@ -96,4 +96,9 @@ export const referenceDict: Dict = {
   "chart.labDirector": { zh: "Lab Director", en: "Lab Director" },
   "chart.teamLead": { zh: "Team Lead", en: "Team Lead" },
   "chart.vacant": { zh: "空缺", en: "Vacant" },
+  "rt.bold": { zh: "加粗", en: "Bold" },
+  "rt.italic": { zh: "斜体", en: "Italic" },
+  "rt.underline": { zh: "下划线", en: "Underline" },
+  "rt.color": { zh: "文字颜色", en: "Text color" },
+  "rt.size": { zh: "字号", en: "Size" },
 };
