@@ -1,0 +1,1 @@
+ALTER TABLE public.people ADD COLUMN IF NOT EXISTS is_plr boolean NOT NULL DEFAULT false;

@@ -672,6 +672,7 @@ export type Database = {
           id: string
           importance: string
           is_leader: boolean
+          is_plr: boolean
           level: number | null
           name: string
           note: string | null
@@ -705,6 +706,7 @@ export type Database = {
           id?: string
           importance?: string
           is_leader?: boolean
+          is_plr?: boolean
           level?: number | null
           name: string
           note?: string | null
@@ -738,6 +740,7 @@ export type Database = {
           id?: string
           importance?: string
           is_leader?: boolean
+          is_plr?: boolean
           level?: number | null
           name?: string
           note?: string | null
