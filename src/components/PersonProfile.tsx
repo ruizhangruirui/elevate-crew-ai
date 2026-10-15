@@ -653,7 +653,10 @@ export function PersonProfile({
                 <Label>{t("pp.f.role")}</Label>
                 {sel(form.role_id === "none" && form.appointed_role_title ? "imported" : form.role_id, (v) => {
                   if (v === "imported") return;
-                  setForm({ ...form, role_id: v, appointed_role_title: "" });
+                  const prevJob = roles.find((r) => r.id === form.role_id)?.job_title ?? "";
+                  const nextJob = roles.find((r) => r.id === v)?.job_title ?? "";
+                  const keep = form.offer_title.trim() && form.offer_title.trim() !== prevJob;
+                  setForm({ ...form, role_id: v, appointed_role_title: "", offer_title: keep || !nextJob ? form.offer_title : nextJob });
                 }, [
                   ["none", t("sheet.person.notAssigned")],
                   ...(form.role_id === "none" && form.appointed_role_title ? [["imported", form.appointed_role_title] as [string, string]] : []),

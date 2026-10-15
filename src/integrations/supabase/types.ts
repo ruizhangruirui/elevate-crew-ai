@@ -1076,6 +1076,7 @@ export type Database = {
           domains: string[]
           experience: string[]
           id: string
+          job_title: string | null
           knowledge: string[]
           kpa: string | null
           leadership: string[]
@@ -1098,6 +1099,7 @@ export type Database = {
           domains?: string[]
           experience?: string[]
           id?: string
+          job_title?: string | null
           knowledge?: string[]
           kpa?: string | null
           leadership?: string[]
@@ -1120,6 +1122,7 @@ export type Database = {
           domains?: string[]
           experience?: string[]
           id?: string
+          job_title?: string | null
           knowledge?: string[]
           kpa?: string | null
           leadership?: string[]
