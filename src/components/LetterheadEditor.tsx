@@ -87,9 +87,8 @@ export function LetterheadEditor() {
           <Label htmlFor="letter-address">{t("ref.stationery.address")}</Label>
           <RichTextarea id="letter-address" rows={2} value={form.address} onChange={(v) => setForm({ ...form, address: v })} />
         </div>
-        <h4 className="border-t border-border/50 pt-3 text-sm font-medium">{t("ref.stationery.signature")}</h4>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {(["signoff", "signatureName", "signatureTitle"] as const).map((key) => (
+        <div className="grid gap-3 border-t border-border/50 pt-3 sm:grid-cols-2">
+          {(["signatureName", "signatureTitle"] as const).map((key) => (
             <div key={key} className="min-w-0 space-y-1.5">
               <Label htmlFor={`letter-${key}`}>{t(`ref.stationery.${key}`)}</Label>
               <Input id={`letter-${key}`} maxLength={200} placeholder={key === "signatureName" || key === "signatureTitle" ? t("ref.stationery.autoSupervisor") : undefined} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} />
@@ -99,10 +98,6 @@ export function LetterheadEditor() {
             <Label htmlFor="letter-signatureContact">{t("ref.stationery.signatureContact")}</Label>
             <RichTextarea id="letter-signatureContact" rows={2} value={form.signatureContact} onChange={(v) => setForm({ ...form, signatureContact: v })} />
           </div>
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="letter-footer">{t("ref.stationery.footer")}</Label>
-          <RichTextarea id="letter-footer" rows={2} value={form.footer} onChange={(v) => setForm({ ...form, footer: v })} />
         </div>
         <div className="flex justify-end gap-2 border-t border-border/50 pt-3">
           <Button variant="ghost" disabled={!dirty} onClick={() => q.data && setForm(q.data.stationery)}>{t("ui.cancel")}</Button>

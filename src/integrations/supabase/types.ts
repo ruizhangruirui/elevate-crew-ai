@@ -1006,10 +1006,12 @@ export type Database = {
           intro_text: string
           person_id: string
           requested_by: string | null
+          signature_mode: string
           status: string
           submitted_at: string | null
           submitted_by: string | null
           supervisor_person_id: string | null
+          supervisor_signature: string
           supervisor_text: string | null
           updated_at: string
         }
@@ -1024,10 +1026,12 @@ export type Database = {
           intro_text?: string
           person_id: string
           requested_by?: string | null
+          signature_mode?: string
           status?: string
           submitted_at?: string | null
           submitted_by?: string | null
           supervisor_person_id?: string | null
+          supervisor_signature?: string
           supervisor_text?: string | null
           updated_at?: string
         }
@@ -1042,10 +1046,12 @@ export type Database = {
           intro_text?: string
           person_id?: string
           requested_by?: string | null
+          signature_mode?: string
           status?: string
           submitted_at?: string | null
           submitted_by?: string | null
           supervisor_person_id?: string | null
+          supervisor_signature?: string
           supervisor_text?: string | null
           updated_at?: string
         }

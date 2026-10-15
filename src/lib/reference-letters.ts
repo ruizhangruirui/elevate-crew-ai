@@ -24,6 +24,8 @@ export type ReferenceLetter = {
   facts: RefFacts;
   intro_text: string;
   supervisor_text: string | null;
+  signature_mode?: "hr" | "supervisor" | "both";
+  supervisor_signature?: string;
   closing_text: string | null;
   hr_note: string | null;
   requested_by: string | null;
@@ -177,6 +179,7 @@ export type LetterDoc = {
   recipient: string[];
   paragraphs: string[];
   fileBase: string;
+  signature?: string[];
 };
 
 
@@ -192,12 +195,20 @@ export function referenceDoc(l: ReferenceLetter, s: LetterStationery, title = DE
     salutation: fillTemplate(s.salutation, l.facts),
     recipient: [l.facts.name, ...splitLines(l.facts.employee_address ?? "")],
     paragraphs: paragraphs(l),
+    signature: [
+      ...(l.signature_mode === "supervisor" || l.signature_mode === "both" ? splitLines(l.supervisor_signature ?? "") : []),
+      ...(l.signature_mode !== "supervisor" ? signatureLines(s) : []),
+    ],
     fileBase: `Reference_Letter_${l.facts.name.replace(/\s+/g, "_")}`,
   };
 }
 
 function signatureLines(s: LetterStationery) {
-  return [s.signoff, s.signatureName, s.signatureTitle, s.signatureContact].flatMap(splitLines);
+  return [s.signatureName, s.signatureTitle, s.signatureContact].flatMap(splitLines);
+}
+/** One size for body and all textual signatories, including legacy rich markup. */
+export function letterBodySize(d: LetterDoc): number {
+  return d.paragraphs.flatMap((text) => parseRich(text)).find((run) => run.size !== undefined)?.size ?? 11;
 }
 function companyLines(s: LetterStationery) {
   return [s.company, s.address].flatMap(splitLines);
@@ -213,7 +224,7 @@ function save(blob: Blob, filename: string) {
 }
 
 export async function downloadDocx(d: LetterDoc) {
-  const { Document, Packer, Paragraph, TextRun, AlignmentType, Header, Footer, ImageRun, HorizontalPositionRelativeFrom, VerticalPositionRelativeFrom, HorizontalPositionAlign, VerticalPositionAlign, TextWrappingType } = await import("docx");
+  const { Document, Packer, Paragraph, TextRun, AlignmentType, Header, ImageRun, HorizontalPositionRelativeFrom, VerticalPositionRelativeFrom, HorizontalPositionAlign, VerticalPositionAlign, TextWrappingType } = await import("docx");
   const lh = await letterhead();
   const s = lh.stationery;
   const headerKids: InstanceType<typeof Paragraph>[] = [];
@@ -231,26 +242,25 @@ export async function downloadDocx(d: LetterDoc) {
       }));
     headerKids.push(new Paragraph({ alignment: AlignmentType.RIGHT, children: runs }));
   }
-  const footerLines = splitLines(s.footer);
-  const signature = signatureLines(s);
+  const bodySize = letterBodySize(d);
+  const signature = d.signature ?? signatureLines(s);
   const company = companyLines(s);
   const today = formatLetterDate(new Date());
-  const runsOf = (text: string, base: Partial<Run> = {}) =>
-    parseRich(text, base).map((r) => new TextRun({ text: r.text, bold: r.bold, italics: r.italic, ...(r.underline ? { underline: {} } : {}), ...(r.color ? { color: r.color.slice(1) } : {}), ...(r.size ? { size: r.size * 2 } : {}) }));
+  const runsOf = (text: string, base: Partial<Run> = {}, uniform = false) =>
+    parseRich(text, base).map((r) => new TextRun({ text: r.text, font: "Arial", bold: r.bold, italics: r.italic, ...(r.underline ? { underline: {} } : {}), ...(r.color ? { color: r.color.slice(1) } : {}), size: (uniform ? bodySize : r.size ?? 11) * 2 }));
   const doc = new Document({
     styles: { default: { document: { run: { font: "Arial", size: 22 } } } },
     sections: [
       {
-        properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: lh.logo ? 2000 : 1440, right: 1440, bottom: Math.max(1440, 720 + footerLines.length * 240), left: 1440, header: 400, footer: 400 } } },
+        properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: lh.logo ? 2000 : 1440, right: 1440, bottom: 1440, left: 1440, header: 400, footer: 400 } } },
         ...(headerKids.length ? { headers: { default: new Header({ children: headerKids }) } } : {}),
-        ...(footerLines.length ? { footers: { default: new Footer({ children: footerLines.map((text) => new Paragraph({ alignment: AlignmentType.CENTER, children: runsOf(text, { size: 9 }) })) }) } } : {}),
         children: [
           ...d.recipient.map((text) => new Paragraph({ children: [new TextRun(text)] })),
           new Paragraph({ alignment: AlignmentType.RIGHT, spacing: { before: 240 }, children: [new TextRun([s.place, today].filter(Boolean).join(", "))] }),
           ...splitLines(d.title).map((text) => new Paragraph({ keepNext: true, spacing: { before: 400, after: 400 }, children: runsOf(text, { bold: true, size: 16 }) })),
           ...splitLines(d.salutation).map((text) => new Paragraph({ keepNext: true, spacing: { after: 240 }, children: runsOf(text) })),
-          ...d.paragraphs.map((p) => new Paragraph({ spacing: { after: 240 }, children: runsOf(p) })),
-          ...signature.map((text, i) => new Paragraph({ keepNext: true, spacing: { before: i === 0 ? 600 : 0, after: i === 0 && s.signoff ? 480 : 60 }, children: runsOf(text) })),
+          ...d.paragraphs.map((p) => new Paragraph({ spacing: { after: 240 }, children: runsOf(p, {}, true) })),
+          ...signature.map((text, i) => new Paragraph({ keepNext: true, spacing: { before: i === 0 ? 600 : 0, after: 60 }, children: runsOf(text, {}, true) })),
           ...company.map((text, i) => new Paragraph({ keepNext: i < company.length - 1, spacing: { before: i === 0 ? 240 : 0 }, children: runsOf(text, { size: 9, bold: text === s.company }) })),
         ],
       },
@@ -268,8 +278,8 @@ export async function downloadPdf(d: LetterDoc) {
   const pageH = pdf.internal.pageSize.getHeight();
   const lh = await letterhead();
   const s = lh.stationery;
-  const footerLines = splitLines(s.footer);
-  const bottom = pageH - Math.max(margin, footerLines.length * 12 + 32);
+  const bodySize = letterBodySize(d);
+  const bottom = pageH - margin;
   // Canvas fallback keeps non-Latin text readable without remote font requests.
   const fontStyle = (bold: boolean, italic: boolean) => (bold && italic ? "bolditalic" : bold ? "bold" : italic ? "italic" : "normal");
   const drawText = (text: string, x: number, y: number, size: number, bold = false, align: "left" | "right" | "center" = "left", italic = false, color = "#000000") => {
@@ -335,7 +345,6 @@ export async function downloadPdf(d: LetterDoc) {
       pdf.addImage(lh.logo.url, "PNG", pageW - margin - size.width, 28, size.width, size.height);
       contentTop = Math.max(margin, 28 + size.height + 30);
     }
-    footerLines.forEach((line, i, all) => drawRichLine(line, pageW / 2, pageH - 28 - (all.length - 1 - i) * 12, 9));
   };
   decorate();
   let y = contentTop;
@@ -347,7 +356,7 @@ export async function downloadPdf(d: LetterDoc) {
     }
     y += gap;
   };
-  const writeRich = (text: string, base: Partial<Run> = {}, gap = 10) => {
+  const writeRich = (text: string, base: Partial<Run> = {}, gap = 10, uniform = false) => {
     const pieces = parseRich(text, base).flatMap((r) =>
       r.text.split(/(\s+|[^\u0000-\u00ff])/).filter(Boolean).map((t) => ({ ...r, text: t })));
     let line: { r: Run; w: number; size: number }[] = [];
@@ -368,7 +377,7 @@ export async function downloadPdf(d: LetterDoc) {
       y += h + 5; line = []; lineW = 0;
     };
     for (const r of pieces) {
-      const size = r.size ?? 11;
+      const size = uniform ? bodySize : r.size ?? 11;
       const w = measure(r, size);
       if (lineW + w > width && line.length) { flush(); if (/^\s+$/.test(r.text)) continue; }
       line.push({ r, w, size }); lineW += w;
@@ -382,13 +391,13 @@ export async function downloadPdf(d: LetterDoc) {
   y += 40;
   for (const tl of splitLines(d.title)) writeRich(tl, { bold: true, size: 16 });
   for (const sl of splitLines(d.salutation)) writeRich(sl);
-  for (const p of d.paragraphs) writeRich(p);
-  const signature = signatureLines(s);
+  for (const p of d.paragraphs) writeRich(p, {}, 10, true);
+  const signature = d.signature ?? signatureLines(s);
   const company = companyLines(s);
-  const blockH = [...signature, ...company].reduce((h, text) => h + wrap(stripRich(text)).length * 16 + 4, 60) + (s.signoff ? 24 : 0);
+  const blockH = [...signature, ...company].reduce((h, text) => h + wrap(stripRich(text), bodySize).length * (bodySize + 5) + 4, 60);
   if (y + blockH > bottom && blockH < bottom - contentTop) { pdf.addPage(); decorate(); y = contentTop; }
   y += 24;
-  signature.forEach((text, i) => { writeRich(text, {}, 2); if (i === 0 && s.signoff) y += 24; });
+  signature.forEach((text) => writeRich(text, {}, 2, true));
   y += 12;
   company.forEach((text) => writeRich(text, { size: 9, bold: text === s.company }, 0));
   pdf.save(`${d.fileBase}.pdf`);

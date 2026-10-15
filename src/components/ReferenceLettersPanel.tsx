@@ -130,7 +130,8 @@ function RequestDialog({
 
   const pick = (id: string) => {
     setPersonId(id);
-    const p = people.find((x) => x.id === id)!;
+    const p = people.find((x) => x.id === id);
+    if (!p) return;
     const { lab, team } = labTeamOf(nodes, p.org_node_id);
     const exit = (events.data ?? []).find((e) => e.person_id === id && e.event_type === "exit");
     const left = p.status === "left" || !!p.archived || !!exit;
@@ -281,12 +282,16 @@ function LetterDialog({
   const growth = useQuery({ queryKey: ["growth-data"], queryFn: fetchGrowthData });
   const tpl = useQuery({ queryKey: ["ref-templates"], queryFn: fetchRefTemplates });
   const isHr = user?.role === "owner" || user?.role === "hr";
-  const canWrite = (user?.role === "owner" || user?.role === "manager") && letter.status === "requested";
+  const sup = people.get(letter.supervisor_person_id ?? "");
+  const canWrite = (user?.role === "owner" || (user?.role === "manager" && sup?.name === user.name)) && letter.status === "requested";
   const [body, setBody] = useState(letter.supervisor_text ?? "");
   const [closing, setClosing] = useState(letter.closing_text ?? "");
   const [intro, setIntro] = useState(letter.intro_text);
   const [hrNote, setHrNote] = useState(letter.hr_note ?? "");
-  const sup = people.get(letter.supervisor_person_id ?? "");
+  const [signatureMode, setSignatureMode] = useState<"hr" | "supervisor" | "both">(letter.signature_mode ?? "hr");
+  const [supervisorSignature, setSupervisorSignature] = useState(letter.supervisor_signature ?? "");
+  const signaturePatch = { signature_mode: signatureMode, supervisor_signature: supervisorSignature.trim() };
+  const signatureValid = signatureMode === "hr" || !!supervisorSignature.trim();
 
   const ms = (growth.data?.milestones ?? []).filter((m) => m.person_id === letter.person_id);
   const perf = (growth.data?.records ?? []).filter((r) => r.person_id === letter.person_id);
@@ -329,7 +334,7 @@ function LetterDialog({
     onError: (e: unknown) => toast.error(String((e as Error)?.message ?? e)),
   });
 
-  const current: ReferenceLetter = { ...letter, intro_text: intro, supervisor_text: body, closing_text: closing };
+  const current: ReferenceLetter = { ...letter, intro_text: intro, supervisor_text: body, closing_text: closing, ...signaturePatch };
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -393,6 +398,24 @@ function LetterDialog({
                 <p className="rounded-md bg-muted/40 p-3 text-sm">{closing || "—"}</p>
               )}
             </div>
+            <div className="space-y-1.5">
+              <Label>{t("ref.signature.choice")}</Label>
+              {canWrite ? (
+                <Select value={signatureMode} onValueChange={(value) => { if (value === "hr" || value === "supervisor" || value === "both") setSignatureMode(value); }}>
+                  <SelectTrigger aria-label={t("ref.signature.choice")}><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {(["hr", "supervisor", "both"] as const).map((mode) => <SelectItem key={mode} value={mode}>{t(`ref.signature.${mode}`)}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              ) : <p className="text-sm">{t(`ref.signature.${signatureMode}`)}</p>}
+              {signatureMode !== "hr" && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="supervisor-signature">{t("ref.signature.text")}</Label>
+                  {canWrite ? <Textarea id="supervisor-signature" rows={3} maxLength={1000} value={supervisorSignature} onChange={(e) => setSupervisorSignature(e.target.value)} placeholder={t("ref.signature.placeholder")} /> : <p className="whitespace-pre-wrap text-sm">{supervisorSignature || "—"}</p>}
+                  {canWrite && !signatureValid && <p className="text-xs text-destructive">{t("ref.signature.required")}</p>}
+                </div>
+              )}
+            </div>
             {isHr && (
               <div className="space-y-1.5">
                 <Label>{t("ref.hrNote")}</Label>
@@ -403,11 +426,11 @@ function LetterDialog({
             <div className="flex flex-wrap justify-end gap-2 border-t border-border/40 pt-3">
               {canWrite && (
                 <>
-                  <Button variant="ghost" onClick={() => update.mutate({ supervisor_text: body, closing_text: closing })}>
+                  <Button variant="ghost" disabled={update.isPending} onClick={() => update.mutate({ supervisor_text: body, closing_text: closing, ...signaturePatch })}>
                     {t("ref.save")}
                   </Button>
-                  <ConfirmAction title={t("ref.submit")} description={t("ref.submit")} onConfirm={() => update.mutate({ supervisor_text: body, closing_text: closing, status: "submitted" })}>
-                    <Button disabled={!body.trim() || update.isPending}>{t("ref.submit")}</Button>
+                  <ConfirmAction title={t("ref.submit")} description={t("ref.submit")} onConfirm={() => update.mutate({ supervisor_text: body, closing_text: closing, ...signaturePatch, status: "submitted" })}>
+                    <Button disabled={!body.trim() || !signatureValid || update.isPending}>{t("ref.submit")}</Button>
                   </ConfirmAction>
                 </>
               )}
