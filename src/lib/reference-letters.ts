@@ -1,4 +1,4 @@
-import { parseRich, type Run } from "@/lib/rich-text";
+import { parseRich, stripRich, type Run } from "@/lib/rich-text";
 import { db as supabase } from "@/lib/db-client";
 
 export type RefStatus = "requested" | "submitted" | "approved";
@@ -227,15 +227,15 @@ export async function downloadDocx(d: LetterDoc) {
       {
         properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: lh.logo ? 2000 : 1440, right: 1440, bottom: Math.max(1440, 720 + footerLines.length * 240), left: 1440, header: 400, footer: 400 } } },
         ...(headerKids.length ? { headers: { default: new Header({ children: headerKids }) } } : {}),
-        ...(footerLines.length ? { footers: { default: new Footer({ children: footerLines.map((text) => new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text, size: 18 })] })) }) } } : {}),
+        ...(footerLines.length ? { footers: { default: new Footer({ children: footerLines.map((text) => new Paragraph({ alignment: AlignmentType.CENTER, children: runsOf(text, { size: 9 }) })) }) } } : {}),
         children: [
           ...d.recipient.map((text) => new Paragraph({ children: [new TextRun(text)] })),
           new Paragraph({ alignment: AlignmentType.RIGHT, spacing: { before: 240 }, children: [new TextRun([s.place, today].filter(Boolean).join(", "))] }),
           ...splitLines(d.title).map((text) => new Paragraph({ keepNext: true, spacing: { before: 400, after: 400 }, children: runsOf(text, { bold: true, size: 16 }) })),
           ...splitLines(d.salutation).map((text) => new Paragraph({ keepNext: true, spacing: { after: 240 }, children: runsOf(text) })),
           ...d.paragraphs.map((p) => new Paragraph({ spacing: { after: 240 }, children: runsOf(p) })),
-          ...signature.map((text, i) => new Paragraph({ keepNext: true, spacing: { before: i === 0 ? 600 : 0, after: i === 0 && s.signoff ? 480 : 60 }, children: [new TextRun(text)] })),
-          ...company.map((text, i) => new Paragraph({ keepNext: i < company.length - 1, spacing: { before: i === 0 ? 240 : 0 }, children: [new TextRun({ text, size: 18, bold: text === s.company })] })),
+          ...signature.map((text, i) => new Paragraph({ keepNext: true, spacing: { before: i === 0 ? 600 : 0, after: i === 0 && s.signoff ? 480 : 60 }, children: runsOf(text) })),
+          ...company.map((text, i) => new Paragraph({ keepNext: i < company.length - 1, spacing: { before: i === 0 ? 240 : 0 }, children: runsOf(text, { size: 9, bold: text === s.company }) })),
         ],
       },
     ],
