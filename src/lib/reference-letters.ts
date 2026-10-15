@@ -252,7 +252,7 @@ export async function downloadPdf(d: LetterDoc) {
   const pageH = pdf.internal.pageSize.getHeight();
   const lh = await letterhead();
   const s = lh.stationery;
-  const footerLines = pdf.splitTextToSize(s.footer, width) as string[];
+  const footerLines = splitLines(s.footer);
   const bottom = pageH - Math.max(margin, footerLines.length * 12 + 32);
   // Canvas fallback keeps non-Latin text readable without remote font requests.
   const fontStyle = (bold: boolean, italic: boolean) => (bold && italic ? "bolditalic" : bold ? "bold" : italic ? "italic" : "normal");
@@ -286,6 +286,25 @@ export async function downloadPdf(d: LetterDoc) {
         line += char;
       }
       result.push(line); return result;
+    });
+  };
+  const measure = (r: Run, size: number) => {
+    if (!/[^ -ÿ]/.test(r.text)) { pdf.setFont("helvetica", fontStyle(r.bold, r.italic)).setFontSize(size); return pdf.getTextWidth(r.text); }
+    const ctx = document.createElement("canvas").getContext("2d");
+    if (!ctx) return r.text.length * size;
+    ctx.font = `${r.italic ? "italic " : ""}${r.bold ? "bold " : ""}${size}px Arial, sans-serif`;
+    return ctx.measureText(r.text).width;
+  };
+  /** Centered rich-text line (used for the footer). */
+  const drawRichLine = (text: string, cx: number, yy: number, size: number) => {
+    const runs = parseRich(text, { size });
+    const ws = runs.map((r) => measure(r, r.size ?? size));
+    let x = cx - ws.reduce((a, b) => a + b, 0) / 2;
+    runs.forEach((r, i) => {
+      const w = ws[i] ?? 0;
+      drawText(r.text, x, yy, r.size ?? size, r.bold, "left", r.italic, r.color ?? "#000000");
+      if (r.underline) { pdf.setLineWidth(0.5).setDrawColor(r.color ?? "#000000").line(x, yy + 1.5, x + w, yy + 1.5); }
+      x += w;
     });
   };
   let contentTop = margin;
