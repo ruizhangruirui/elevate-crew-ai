@@ -84,6 +84,8 @@ export const peopleDict: Dict = {
   "imp.err.email": { zh: "邮箱格式不正确", en: "Invalid email address" },
   "pp.f.companyEmail": { zh: "公司邮箱", en: "Company email" },
   "pp.f.personalEmail": { zh: "私人邮箱", en: "Personal email" },
+  "pp.f.address": { zh: "住址", en: "Address" },
+  "pp.f.hrOnly": { zh: "仅 HR 可见", en: "HR only" },
   "ref.logo.title": { zh: "公司 Logo / 信头", en: "Company logo / letterhead" },
   "ref.logo.desc": { zh: "上传后，下载的 Word 和 PDF 文档页眉会带上公司 Logo，并在页面中央加淡色水印。", en: "Downloaded Word and PDF documents get this logo in the header and as a faint centered watermark." },
   "ref.logo.upload": { zh: "上传 Logo（PNG/JPG，≤ 1MB）", en: "Upload logo (PNG/JPG, ≤ 1MB)" },

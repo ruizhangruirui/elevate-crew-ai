@@ -173,6 +173,11 @@ export const dbQuery = createServerFn({ method: "POST" })
       const visible = await actionVisibility(db, user, scope);
       out = Array.isArray(out) ? out.filter(visible) : visible(out) ? out : null;
     }
+    // Home address is HR-only: strip it for every other role.
+    if (spec.table === "people" && out && user.role !== "owner" && user.role !== "hr") {
+      const strip = (r: any) => { if (r && typeof r === "object") delete r.address; return r; };
+      out = Array.isArray(out) ? out.map(strip) : strip(out);
+    }
     return { data: out, error: error ? { message: error.message, code: error.code } : null, count: count ?? null };
   });
 
