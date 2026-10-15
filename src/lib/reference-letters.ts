@@ -331,14 +331,6 @@ export async function downloadPdf(d: LetterDoc) {
     }
     y += gap;
   };
-  const measure = (r: Run, size: number) => {
-    if (!/[^\u0020-\u00ff]/.test(r.text)) { pdf.setFont("helvetica", fontStyle(r.bold, r.italic)).setFontSize(size); return pdf.getTextWidth(r.text); }
-    const ctx = document.createElement("canvas").getContext("2d");
-    if (!ctx) return r.text.length * size;
-    ctx.font = `${r.italic ? "italic " : ""}${r.bold ? "bold " : ""}${size}px Arial, sans-serif`;
-    return ctx.measureText(r.text).width;
-  };
-  /** Formatted paragraph: greedy word/char layout across styled runs. */
   const writeRich = (text: string, base: Partial<Run> = {}, gap = 10) => {
     const pieces = parseRich(text, base).flatMap((r) =>
       r.text.split(/(\s+|[^\u0000-\u00ff])/).filter(Boolean).map((t) => ({ ...r, text: t })));
