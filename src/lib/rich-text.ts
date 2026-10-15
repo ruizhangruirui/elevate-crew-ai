@@ -4,7 +4,7 @@
  *   [b]bold[/b]  [i]italic[/i]  [u]underline[/u]
  *   [color=#c00000]red[/color]  [size=14]14pt[/size]
  */
-export type Run = { text: string; bold: boolean; italic: boolean; underline: boolean; color?: string; size?: number };
+export type Run = { text: string; bold: boolean; italic: boolean; underline: boolean; color?: string | undefined; size?: number | undefined };
 
 const TAG = /\[(\/?)(b|i|u|color|size)(?:=([#\w.]+))?\]/gi;
 
@@ -29,7 +29,7 @@ export function parseRich(line: string, base: Partial<Run> = {}): Run[] {
     push(line.slice(last, m.index));
     last = (m.index ?? 0) + m[0].length;
     const close = m[1] === "/";
-    const tag = m[2].toLowerCase();
+    const tag = (m[2] ?? "").toLowerCase();
     if (tag === "b" || tag === "i" || tag === "u") st[tag] = Math.max(0, st[tag] + (close ? -1 : 1));
     else if (tag === "color") {
       if (close) colors.pop();

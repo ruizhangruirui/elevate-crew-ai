@@ -220,7 +220,7 @@ export async function downloadDocx(d: LetterDoc) {
   const company = companyLines(s);
   const today = new Date().toISOString().slice(0, 10);
   const runsOf = (text: string, base: Partial<Run> = {}) =>
-    parseRich(text, base).map((r) => new TextRun({ text: r.text, bold: r.bold, italics: r.italic, underline: r.underline ? {} : undefined, color: r.color?.slice(1), size: r.size ? r.size * 2 : undefined }));
+    parseRich(text, base).map((r) => new TextRun({ text: r.text, bold: r.bold, italics: r.italic, ...(r.underline ? { underline: {} } : {}), ...(r.color ? { color: r.color.slice(1) } : {}), ...(r.size ? { size: r.size * 2 } : {}) }));
   const doc = new Document({
     styles: { default: { document: { run: { font: "Arial", size: 22 } } } },
     sections: [
@@ -326,7 +326,7 @@ export async function downloadPdf(d: LetterDoc) {
     let line: { r: Run; w: number; size: number }[] = [];
     let lineW = 0;
     const flush = () => {
-      while (line.length && /^\s+$/.test(line[line.length - 1].r.text)) line.pop();
+      while (line.length && /^\s+$/.test(line[line.length - 1]?.r.text ?? "x")) line.pop();
       if (!line.length) return;
       const h = Math.max(...line.map((p) => p.size));
       if (y > bottom) { pdf.addPage(); decorate(); y = contentTop; }
