@@ -11,7 +11,7 @@ import { useI18n } from "@/lib/i18n";
 import { DEFAULT_TEMPLATES, PLACEHOLDERS, TEMPLATE_KEYS, fetchRefTemplates } from "@/lib/reference-letters";
 
 type K = keyof typeof TEMPLATE_KEYS;
-const KEYS: K[] = ["current", "left", "closing", "guide"];
+const KEYS: K[] = ["title", "current", "left", "closing", "guide"];
 
 export function ReferenceTemplateEditor() {
   const { t } = useI18n();
@@ -45,11 +45,11 @@ export function ReferenceTemplateEditor() {
       <div className="grid gap-3 lg:grid-cols-2">
       {KEYS.map((k) => (
         <div key={k} className="space-y-1.5">
-          <Label>{t(`ref.tpl.${k}`)}</Label>
+          <Label>{t(k === "title" ? "ref.stationery.title" : `ref.tpl.${k}`)}</Label>
           {k === "guide" && <p className="text-xs text-muted-foreground">{t("ref.tpl.guideHint")}</p>}
           {k === "guide"
             ? <Textarea rows={3} value={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} />
-            : <RichTextarea rows={3} value={form[k]} onChange={(v) => setForm({ ...form, [k]: v })} />}
+            : <RichTextarea rows={k === "title" ? 1 : 3} value={form[k]} onChange={(v) => setForm({ ...form, [k]: v })} />}
         </div>
       ))}
       </div>

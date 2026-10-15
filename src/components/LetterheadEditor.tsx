@@ -76,7 +76,7 @@ export function LetterheadEditor() {
       {q.isError ? <p role="alert" className="text-sm text-destructive">{t("ref.stationery.loadError")}</p> : null}
       <fieldset disabled={!q.data || upsert.isPending} className="space-y-3 pt-1">
         <div className="grid gap-3 sm:grid-cols-2">
-          {(["company", "title", "place", "salutation"] as const).map((key) => (
+          {(["company", "place", "salutation"] as const).map((key) => (
             <div key={key} className="min-w-0 space-y-1.5">
               <Label htmlFor={`letter-${key}`}>{t(`ref.stationery.${key}`)}</Label>
               <Input id={`letter-${key}`} maxLength={200} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} />
