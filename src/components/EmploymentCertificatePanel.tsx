@@ -58,8 +58,12 @@ export function EmploymentCertificatePanel() {
   };
 
   const doc = facts && cfg.data ? certDoc(facts, cfg.data.settings) : null;
+  // Editable body: seeded from the template, HR can adjust before downloading.
+  const docKey = doc ? doc.paragraphs.join("\n") : "";
+  useEffect(() => { setBody(docKey); }, [docKey]);
+  const finalDoc = doc ? { ...doc, paragraphs: body.split(/\r?\n/).map((s) => s.trim()).filter(Boolean) } : null;
   const run = async (kind: "docx" | "pdf") => {
-    if (!doc || !facts) return;
+    if (!finalDoc || !facts) return;
     setBusy(true);
     try {
       await (kind === "docx" ? downloadDocx(doc) : downloadPdf(doc));
