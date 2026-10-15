@@ -2,6 +2,7 @@ import type { Dict } from "../i18n-types";
 
 export const recruitingDict: Dict = {
   "rec.title": { zh: "招聘", en: "Recruiting" },
+  "rec.visibleTo": { zh: "可见负责人：", en: "Visible to:" },
   "rec.roles": { zh: "岗位", en: "Roles" },
   "rec.removeRole": { zh: "删除岗位（归档）", en: "Remove role (archive)" },
   "rec.roleRemoved": { zh: "岗位已归档，可撤销或在岗位的归档区恢复", en: "Role archived; undo or restore it from Positions archives" },
