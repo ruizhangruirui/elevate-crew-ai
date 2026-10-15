@@ -37,6 +37,7 @@ export function EmploymentCertificatePanel() {
   const [personId, setPersonId] = useState("");
   const [facts, setFacts] = useState<CertFacts | null>(null);
   const [busy, setBusy] = useState(false);
+  const [body, setBody] = useState("");
 
   if (!isHr) return null;
 
