@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Download } from "lucide-react";
 import { toast } from "sonner";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextarea } from "@/components/RichTextarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/hooks/useAuth";
@@ -36,6 +37,7 @@ export function EmploymentCertificatePanel() {
   const [personId, setPersonId] = useState("");
   const [facts, setFacts] = useState<CertFacts | null>(null);
   const [busy, setBusy] = useState(false);
+  const [body, setBody] = useState("");
 
   if (!isHr) return null;
 
@@ -56,11 +58,15 @@ export function EmploymentCertificatePanel() {
   };
 
   const doc = facts && cfg.data ? certDoc(facts, cfg.data.settings) : null;
+  // Editable body: seeded from the template, HR can adjust before downloading.
+  const docKey = doc ? doc.paragraphs.join("\n") : "";
+  useEffect(() => { setBody(docKey); }, [docKey]);
+  const finalDoc = doc ? { ...doc, paragraphs: body.split(/\r?\n/).map((s) => s.trim()).filter(Boolean) } : null;
   const run = async (kind: "docx" | "pdf") => {
-    if (!doc || !facts) return;
+    if (!finalDoc || !facts) return;
     setBusy(true);
     try {
-      await (kind === "docx" ? downloadDocx(doc) : downloadPdf(doc));
+      await (kind === "docx" ? downloadDocx(finalDoc) : downloadPdf(finalDoc));
       await supabase.from("audit_log").insert({ person_id: personId, action: "Employment certificate issued", entity: facts.name, detail: kind.toUpperCase() } as never);
       toast.success(t("cert.downloaded"));
     } catch (e) {
@@ -102,11 +108,8 @@ export function EmploymentCertificatePanel() {
             {doc && (
               <div className="space-y-1.5">
                 <Label>{t("cert.preview")}</Label>
-                <div className="space-y-2 rounded-md bg-muted/40 p-3 text-sm">
-                  <p className="font-semibold">{doc.title}</p>
-                  {doc.salutation && <p>{doc.salutation}</p>}
-                  {doc.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
-                </div>
+                <p className="text-xs text-muted-foreground">{t("cert.previewHint")}</p>
+                <RichTextarea rows={5} value={body} onChange={setBody} />
               </div>
             )}
             <div className="flex justify-end gap-2">
