@@ -118,7 +118,7 @@ export const dbQuery = createServerFn({ method: "POST" })
         const { data: letters, error: readError } = await applyFilters(db.from("reference_letters").select("supervisor_person_id,status,signature_mode,supervisor_signature"), spec.filters);
         if (readError) return fail("Could not verify letter permissions", "403");
         if (user.role === "manager") {
-          const ids = [...new Set((letters ?? []).map((letter: any) => letter.supervisor_person_id).filter(Boolean))];
+          const ids = [...new Set<string>((letters ?? []).map((letter: any) => letter.supervisor_person_id).filter((id: unknown): id is string => typeof id === "string"))];
           const { data: supervisors, error } = await db.from("people").select("id,name").in("id", ids);
           if (error || (letters ?? []).some((letter: any) => letter.status !== "requested" || !(supervisors ?? []).some((person: any) => person.id === letter.supervisor_person_id && person.name === user.name))) return fail("Only the assigned supervisor can complete this request", "403");
         }
