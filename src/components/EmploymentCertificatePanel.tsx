@@ -66,7 +66,7 @@ export function EmploymentCertificatePanel() {
     if (!finalDoc || !facts) return;
     setBusy(true);
     try {
-      await (kind === "docx" ? downloadDocx(doc) : downloadPdf(doc));
+      await (kind === "docx" ? downloadDocx(finalDoc) : downloadPdf(finalDoc));
       await supabase.from("audit_log").insert({ person_id: personId, action: "Employment certificate issued", entity: facts.name, detail: kind.toUpperCase() } as never);
       toast.success(t("cert.downloaded"));
     } catch (e) {
