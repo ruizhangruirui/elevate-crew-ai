@@ -162,6 +162,8 @@ export type LetterDoc = {
   fileBase: string;
 };
 
+import { parseRich, type Run } from "@/lib/rich-text";
+
 const splitLines = (text: string) => text.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
 
 function paragraphs(l: ReferenceLetter) {
@@ -217,6 +219,8 @@ export async function downloadDocx(d: LetterDoc) {
   const signature = signatureLines(s);
   const company = companyLines(s);
   const today = new Date().toISOString().slice(0, 10);
+  const runsOf = (text: string, base: Partial<Run> = {}) =>
+    parseRich(text, base).map((r) => new TextRun({ text: r.text, bold: r.bold, italics: r.italic, underline: r.underline ? {} : undefined, color: r.color?.slice(1), size: r.size ? r.size * 2 : undefined }));
   const doc = new Document({
     styles: { default: { document: { run: { font: "Arial", size: 22 } } } },
     sections: [
@@ -227,9 +231,9 @@ export async function downloadDocx(d: LetterDoc) {
         children: [
           ...d.recipient.map((text) => new Paragraph({ children: [new TextRun(text)] })),
           new Paragraph({ alignment: AlignmentType.RIGHT, spacing: { before: 240 }, children: [new TextRun([s.place, today].filter(Boolean).join(", "))] }),
-          ...splitLines(d.title).map((text) => new Paragraph({ keepNext: true, spacing: { before: 400, after: 400 }, children: [new TextRun({ text, bold: true, size: 32 })] })),
-          ...splitLines(d.salutation).map((text) => new Paragraph({ keepNext: true, spacing: { after: 240 }, children: [new TextRun(text)] })),
-          ...d.paragraphs.map((p) => new Paragraph({ spacing: { after: 240 }, children: [new TextRun(p)] })),
+          ...splitLines(d.title).map((text) => new Paragraph({ keepNext: true, spacing: { before: 400, after: 400 }, children: runsOf(text, { bold: true, size: 16 }) })),
+          ...splitLines(d.salutation).map((text) => new Paragraph({ keepNext: true, spacing: { after: 240 }, children: runsOf(text) })),
+          ...d.paragraphs.map((p) => new Paragraph({ spacing: { after: 240 }, children: runsOf(p) })),
           ...signature.map((text, i) => new Paragraph({ keepNext: true, spacing: { before: i === 0 ? 600 : 0, after: i === 0 && s.signoff ? 480 : 60 }, children: [new TextRun(text)] })),
           ...company.map((text, i) => new Paragraph({ keepNext: i < company.length - 1, spacing: { before: i === 0 ? 240 : 0 }, children: [new TextRun({ text, size: 18, bold: text === s.company })] })),
         ],
@@ -251,18 +255,20 @@ export async function downloadPdf(d: LetterDoc) {
   const footerLines = pdf.splitTextToSize(s.footer, width) as string[];
   const bottom = pageH - Math.max(margin, footerLines.length * 12 + 32);
   // Canvas fallback keeps non-Latin text readable without remote font requests.
-  const drawText = (text: string, x: number, y: number, size: number, bold = false, align: "left" | "right" | "center" = "left") => {
-    pdf.setFont("helvetica", bold ? "bold" : "normal").setFontSize(size);
-    if (!/[^\u0020-\u00ff]/.test(text)) { pdf.text(text, x, y, { align }); return; }
+  const fontStyle = (bold: boolean, italic: boolean) => (bold && italic ? "bolditalic" : bold ? "bold" : italic ? "italic" : "normal");
+  const drawText = (text: string, x: number, y: number, size: number, bold = false, align: "left" | "right" | "center" = "left", italic = false, color = "#000000") => {
+    pdf.setFont("helvetica", fontStyle(bold, italic)).setFontSize(size).setTextColor(color);
+    if (!/[^\u0020-\u00ff]/.test(text)) { pdf.text(text, x, y, { align }); pdf.setTextColor("#000000"); return; }
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("Cannot render letter text");
-    const font = `${bold ? "bold " : ""}${size * 3}px Arial, sans-serif`;
+    const font = `${italic ? "italic " : ""}${bold ? "bold " : ""}${size * 3}px Arial, sans-serif`;
     ctx.font = font;
     canvas.width = Math.ceil(ctx.measureText(text).width) + 6;
     canvas.height = Math.ceil(size * 4.5);
     ctx.font = font;
     ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = color;
     ctx.fillText(text, 0, size * 3);
     const w = canvas.width / 3;
     pdf.addImage(canvas.toDataURL("image/png"), "PNG", x - (align === "right" ? w : align === "center" ? w / 2 : 0), y - size, w, canvas.height / 3);
@@ -306,13 +312,50 @@ export async function downloadPdf(d: LetterDoc) {
     }
     y += gap;
   };
+  const measure = (r: Run, size: number) => {
+    if (!/[^\u0020-\u00ff]/.test(r.text)) { pdf.setFont("helvetica", fontStyle(r.bold, r.italic)).setFontSize(size); return pdf.getTextWidth(r.text); }
+    const ctx = document.createElement("canvas").getContext("2d");
+    if (!ctx) return r.text.length * size;
+    ctx.font = `${r.italic ? "italic " : ""}${r.bold ? "bold " : ""}${size}px Arial, sans-serif`;
+    return ctx.measureText(r.text).width;
+  };
+  /** Formatted paragraph: greedy word/char layout across styled runs. */
+  const writeRich = (text: string, base: Partial<Run> = {}, gap = 10) => {
+    const pieces = parseRich(text, base).flatMap((r) =>
+      r.text.split(/(\s+|[^\u0000-\u00ff])/).filter(Boolean).map((t) => ({ ...r, text: t })));
+    let line: { r: Run; w: number; size: number }[] = [];
+    let lineW = 0;
+    const flush = () => {
+      while (line.length && /^\s+$/.test(line[line.length - 1].r.text)) line.pop();
+      if (!line.length) return;
+      const h = Math.max(...line.map((p) => p.size));
+      if (y > bottom) { pdf.addPage(); decorate(); y = contentTop; }
+      let x = margin;
+      for (const p of line) {
+        if (!/^\s+$/.test(p.r.text)) {
+          drawText(p.r.text, x, y, p.size, p.r.bold, "left", p.r.italic, p.r.color ?? "#000000");
+          if (p.r.underline) { pdf.setLineWidth(0.5).setDrawColor(p.r.color ?? "#000000").line(x, y + 1.5, x + p.w, y + 1.5); }
+        }
+        x += p.w;
+      }
+      y += h + 5; line = []; lineW = 0;
+    };
+    for (const r of pieces) {
+      const size = r.size ?? 11;
+      const w = measure(r, size);
+      if (lineW + w > width && line.length) { flush(); if (/^\s+$/.test(r.text)) continue; }
+      line.push({ r, w, size }); lineW += w;
+    }
+    flush();
+    y += gap;
+  };
   for (const line of d.recipient) write(line, 11, false, 0);
   y += 14;
   drawText([s.place, new Date().toISOString().slice(0, 10)].filter(Boolean).join(", "), margin + width, y, 10, false, "right");
   y += 40;
-  if (d.title) write(d.title, 16, true);
-  if (d.salutation) write(d.salutation);
-  for (const p of d.paragraphs) write(p);
+  for (const tl of splitLines(d.title)) writeRich(tl, { bold: true, size: 16 });
+  for (const sl of splitLines(d.salutation)) writeRich(sl);
+  for (const p of d.paragraphs) writeRich(p);
   const signature = signatureLines(s);
   const company = companyLines(s);
   const blockH = [...signature, ...company].reduce((h, text) => h + wrap(text).length * 16 + 4, 60) + (s.signoff ? 24 : 0);
