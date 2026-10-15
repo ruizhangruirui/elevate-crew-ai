@@ -35,6 +35,7 @@ export type ReferenceLetter = {
 };
 
 export const TEMPLATE_KEYS = {
+  title: "ref_template_title",
   current: "ref_template_current",
   left: "ref_template_left",
   closing: "ref_template_closing",
@@ -42,6 +43,7 @@ export const TEMPLATE_KEYS = {
 } as const;
 
 export const DEFAULT_TEMPLATES: Record<keyof typeof TEMPLATE_KEYS, string> = {
+  title: "Reference Letter",
   current:
     "This is to confirm that {name} has been employed with us since {hire_date} as {job_title} in {lab} / {team}, with a workload of {workload}.",
   left:
@@ -54,8 +56,21 @@ export const PLACEHOLDERS = Object.keys({
   name: 1, lab: 1, team: 1, hire_date: 1, job_title: 1, workload: 1, exit_date: 1, exit_reason: 1,
 } satisfies Record<Exclude<keyof RefFacts, "employee_address">, 1>);
 
+export function formatLetterDate(value: string | Date): string {
+  const date = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(date.getTime())) return String(value);
+  return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(date);
+}
+
+function formatLetterDates(text: string): string {
+  return text.replace(/\b\d{4}-\d{2}-\d{2}\b/g, (date) => formatLetterDate(date));
+}
+
 export function fillTemplate(tpl: string, f: RefFacts) {
-  return tpl.replace(/\{(\w+)\}/g, (m, k: string) => ((f as Record<string, string>)[k] || (k in f ? "—" : m)));
+  return tpl.replace(/\{(\w+)\}/g, (m, k: string) => {
+    const value = (f as Record<string, string>)[k];
+    return value ? (k === "hire_date" || k === "exit_date" ? formatLetterDate(value) : value) : (k in f ? "—" : m);
+  });
 }
 
 export async function fetchReferenceLetters() {
@@ -70,14 +85,15 @@ export async function fetchRefTemplates() {
   const { data, error } = await supabase
     .from("config_items")
     .select("*")
-    .in("category", Object.values(TEMPLATE_KEYS));
+    .in("category", [...Object.values(TEMPLATE_KEYS), STATIONERY_KEY]);
   if (error) throw error;
   const rows = (data ?? []) as unknown as RefTemplateRow[];
   const get = (k: keyof typeof TEMPLATE_KEYS) =>
     rows.find((r) => r.category === TEMPLATE_KEYS[k]) ?? null;
   return {
-    rows: { current: get("current"), left: get("left"), closing: get("closing"), guide: get("guide") },
+    rows: { title: get("title"), current: get("current"), left: get("left"), closing: get("closing"), guide: get("guide") },
     text: {
+      title: get("title")?.name ?? parseStationery(rows.find((r) => r.category === STATIONERY_KEY)?.name).title,
       guide: get("guide")?.name || DEFAULT_TEMPLATES.guide,
       current: get("current")?.name || DEFAULT_TEMPLATES.current,
       left: get("left")?.name || DEFAULT_TEMPLATES.left,
@@ -167,12 +183,12 @@ export type LetterDoc = {
 const splitLines = (text: string) => text.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
 
 function paragraphs(l: ReferenceLetter) {
-  return [l.intro_text, l.supervisor_text ?? "", l.closing_text ?? ""].flatMap(splitLines);
+  return [l.intro_text, l.supervisor_text ?? "", l.closing_text ?? ""].flatMap(splitLines).map(formatLetterDates);
 }
 
-export function referenceDoc(l: ReferenceLetter, s: LetterStationery): LetterDoc {
+export function referenceDoc(l: ReferenceLetter, s: LetterStationery, title = DEFAULT_TEMPLATES.title): LetterDoc {
   return {
-    title: fillTemplate(s.title, l.facts),
+    title: fillTemplate(title, l.facts),
     salutation: fillTemplate(s.salutation, l.facts),
     recipient: [l.facts.name, ...splitLines(l.facts.employee_address ?? "")],
     paragraphs: paragraphs(l),
@@ -218,7 +234,7 @@ export async function downloadDocx(d: LetterDoc) {
   const footerLines = splitLines(s.footer);
   const signature = signatureLines(s);
   const company = companyLines(s);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = formatLetterDate(new Date());
   const runsOf = (text: string, base: Partial<Run> = {}) =>
     parseRich(text, base).map((r) => new TextRun({ text: r.text, bold: r.bold, italics: r.italic, ...(r.underline ? { underline: {} } : {}), ...(r.color ? { color: r.color.slice(1) } : {}), ...(r.size ? { size: r.size * 2 } : {}) }));
   const doc = new Document({
@@ -362,7 +378,7 @@ export async function downloadPdf(d: LetterDoc) {
   };
   for (const line of d.recipient) write(line, 11, false, 0);
   y += 14;
-  drawText([s.place, new Date().toISOString().slice(0, 10)].filter(Boolean).join(", "), margin + width, y, 10, false, "right");
+  drawText([s.place, formatLetterDate(new Date())].filter(Boolean).join(", "), margin + width, y, 10, false, "right");
   y += 40;
   for (const tl of splitLines(d.title)) writeRich(tl, { bold: true, size: 16 });
   for (const sl of splitLines(d.salutation)) writeRich(sl);
@@ -405,7 +421,10 @@ export async function fetchCertSettings() {
 }
 
 export function certDoc(f: CertFacts, c: CertSettings): LetterDoc {
-  const fill = (s: string) => s.replace(/\{(\w+)\}/g, (m, k: string) => (k in f ? (f as Record<string, string>)[k] || "—" : m));
+  const fill = (s: string) => s.replace(/\{(\w+)\}/g, (m, k: string) => {
+    const value = (f as Record<string, string>)[k];
+    return k in f ? (value ? (k === "hire_date" ? formatLetterDate(value) : value) : "—") : m;
+  });
   return {
     title: fill(c.title),
     salutation: fill(c.salutation),

@@ -426,10 +426,10 @@ function LetterDialog({
               )}
               {isHr && (letter.status === "approved" || letter.status === "submitted") && (
                 <>
-                  <Button variant="outline" className="gap-1.5" onClick={() => fetchLetterhead().then((lh) => downloadDocx(referenceDoc(current, lh.stationery))).catch((e: unknown) => toast.error(String((e as Error)?.message ?? e)))}>
+                  <Button variant="outline" className="gap-1.5" onClick={() => Promise.all([fetchLetterhead(), fetchRefTemplates()]).then(([lh, templates]) => downloadDocx(referenceDoc(current, lh.stationery, templates.text.title))).catch((e: unknown) => toast.error(String((e as Error)?.message ?? e)))}>
                     <Download className="size-4" /> {t("ref.word")}
                   </Button>
-                  <Button variant="outline" className="gap-1.5" onClick={() => fetchLetterhead().then((lh) => downloadPdf(referenceDoc(current, lh.stationery))).catch((e: unknown) => toast.error(String((e as Error)?.message ?? e)))}>
+                  <Button variant="outline" className="gap-1.5" onClick={() => Promise.all([fetchLetterhead(), fetchRefTemplates()]).then(([lh, templates]) => downloadPdf(referenceDoc(current, lh.stationery, templates.text.title))).catch((e: unknown) => toast.error(String((e as Error)?.message ?? e)))}>
                     <Download className="size-4" /> {t("ref.pdf")}
                   </Button>
                 </>
