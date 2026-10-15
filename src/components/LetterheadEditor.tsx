@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextarea } from "@/components/RichTextarea";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { useI18n } from "@/lib/i18n";
 import { DEFAULT_STATIONERY, LOGO_KEY, WATERMARK_KEY, STATIONERY_KEY, fetchLetterhead, type LetterStationery } from "@/lib/reference-letters";
@@ -85,7 +85,7 @@ export function LetterheadEditor() {
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="letter-address">{t("ref.stationery.address")}</Label>
-          <Textarea id="letter-address" rows={2} maxLength={500} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+          <RichTextarea id="letter-address" rows={2} value={form.address} onChange={(v) => setForm({ ...form, address: v })} />
         </div>
         <h4 className="border-t border-border/50 pt-3 text-sm font-medium">{t("ref.stationery.signature")}</h4>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -97,12 +97,12 @@ export function LetterheadEditor() {
           ))}
           <div className="space-y-1.5">
             <Label htmlFor="letter-signatureContact">{t("ref.stationery.signatureContact")}</Label>
-            <Textarea id="letter-signatureContact" rows={2} maxLength={500} value={form.signatureContact} onChange={(e) => setForm({ ...form, signatureContact: e.target.value })} />
+            <RichTextarea id="letter-signatureContact" rows={2} value={form.signatureContact} onChange={(v) => setForm({ ...form, signatureContact: v })} />
           </div>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="letter-footer">{t("ref.stationery.footer")}</Label>
-          <Textarea id="letter-footer" rows={2} maxLength={400} value={form.footer} onChange={(e) => setForm({ ...form, footer: e.target.value })} />
+          <RichTextarea id="letter-footer" rows={2} value={form.footer} onChange={(v) => setForm({ ...form, footer: v })} />
         </div>
         <div className="flex justify-end gap-2 border-t border-border/50 pt-3">
           <Button variant="ghost" disabled={!dirty} onClick={() => q.data && setForm(q.data.stationery)}>{t("ui.cancel")}</Button>
