@@ -131,15 +131,8 @@ function StrategyBoard() {
 
   const dirStats = (dirId: string) => {
     const rs = roles.filter((r) => r.direction_id === dirId);
-    const roleIds = new Set(rs.map((role) => role.id));
-    const seats = rs.reduce((n, role) => n + role.target_count, 0);
-    const filled = people.filter(
-      (person) =>
-        person.status === "onboard" &&
-        person.role_id !== null &&
-        roleIds.has(person.role_id),
-    ).length;
-    const gap = Math.max(0, seats - filled);
+    // Per-role gaps: an over-staffed position must not hide a vacant one.
+    const gap = rs.reduce((n, role) => n + coverageOf(role, people).gap, 0);
     return { count: rs.length, gap };
   };
 
