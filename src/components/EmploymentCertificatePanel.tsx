@@ -108,11 +108,8 @@ export function EmploymentCertificatePanel() {
             {doc && (
               <div className="space-y-1.5">
                 <Label>{t("cert.preview")}</Label>
-                <div className="space-y-2 rounded-md bg-muted/40 p-3 text-sm">
-                  <p className="font-semibold">{doc.title}</p>
-                  {doc.salutation && <p>{doc.salutation}</p>}
-                  {doc.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
-                </div>
+                <p className="text-xs text-muted-foreground">{t("cert.previewHint")}</p>
+                <RichTextarea rows={5} value={body} onChange={setBody} />
               </div>
             )}
             <div className="flex justify-end gap-2">
