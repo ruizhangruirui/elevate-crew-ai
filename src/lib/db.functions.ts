@@ -146,7 +146,17 @@ export const dbQuery = createServerFn({ method: "POST" })
     q = applyFilters(q, spec.filters);
     if (scope && spec.op === "select") {
       if (spec.table === "people") q = q.in("id", [...scope.personIds]);
-      else if (spec.table === "roles") q = q.in("org_node_id", [...scope.nodeIds]);
+      else if (spec.table === "roles") {
+        // Positions in scope = positions placed in the manager's teams + positions held by their people.
+        const { data: held } = scope.personIds.size
+          ? await db.from("people").select("role_id").in("id", [...scope.personIds])
+          : { data: [] };
+        const ids: string[] = [...new Set<string>([
+          ...(await scopedRoleIds(db, scope.nodeIds)),
+          ...((held ?? []) as { role_id: string | null }[]).map((p) => p.role_id).filter((x): x is string => !!x),
+        ])];
+        q = q.in("id", ids);
+      }
       else if (spec.table === "org_nodes") q = q.in("id", [...(await withAncestors(db, scope.nodeIds))]);
       else if (spec.table === "org_activities") {
         const { data: ps } = scope.personIds.size
