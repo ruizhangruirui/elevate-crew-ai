@@ -1,3 +1,4 @@
+import { parseRich, type Run } from "@/lib/rich-text";
 import { db as supabase } from "@/lib/db-client";
 
 export type RefStatus = "requested" | "submitted" | "approved";
@@ -162,7 +163,6 @@ export type LetterDoc = {
   fileBase: string;
 };
 
-import { parseRich, type Run } from "@/lib/rich-text";
 
 const splitLines = (text: string) => text.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
 
