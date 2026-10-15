@@ -369,12 +369,12 @@ export async function downloadPdf(d: LetterDoc) {
   for (const p of d.paragraphs) writeRich(p);
   const signature = signatureLines(s);
   const company = companyLines(s);
-  const blockH = [...signature, ...company].reduce((h, text) => h + wrap(text).length * 16 + 4, 60) + (s.signoff ? 24 : 0);
+  const blockH = [...signature, ...company].reduce((h, text) => h + wrap(stripRich(text)).length * 16 + 4, 60) + (s.signoff ? 24 : 0);
   if (y + blockH > bottom && blockH < bottom - contentTop) { pdf.addPage(); decorate(); y = contentTop; }
   y += 24;
-  signature.forEach((text, i) => { write(text, 11, false, 2); if (i === 0 && s.signoff) y += 24; });
+  signature.forEach((text, i) => { writeRich(text, {}, 2); if (i === 0 && s.signoff) y += 24; });
   y += 12;
-  company.forEach((text) => write(text, 9, text === s.company, 0));
+  company.forEach((text) => writeRich(text, { size: 9, bold: text === s.company }, 0));
   pdf.save(`${d.fileBase}.pdf`);
 }
 
