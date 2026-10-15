@@ -26,6 +26,7 @@ export type Role = {
   direction_id: string;
   org_node_id?: string | null;
   title: string;
+  job_title?: string | null;
   description: string | null;
   level_min: number;
   level_max: number;

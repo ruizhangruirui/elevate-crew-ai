@@ -142,7 +142,7 @@ export function RoleDetailSheet({
     mutationFn: async (personId: string) => {
       const { error } = await supabase
         .from("people")
-        .update({ role_id: role!.id, status: "onboard" })
+        .update({ role_id: role!.id, status: "onboard", ...(role!.job_title && !people.find((p) => p.id === personId)?.offer_title ? { offer_title: role!.job_title } : {}) })
         .eq("id", personId);
       if (error) throw error;
     },
@@ -239,6 +239,7 @@ export function RoleDetailSheet({
                 </p>
                 <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
                   <Fact label={t("sheet.role.direction")} value={directionTitle} />
+                  <Fact label={t("pp.f.offerTitle")} value={role.job_title || "—"} />
                   <Fact label={t("sheet.role.targetLevel")} value={`${role.level_min}–${role.level_max}`} />
                   <Fact label={t("sheet.role.targetCount")} value={role.target_count} />
                   <Fact label={t("sheet.role.currentCoverage")} value={`${cov.filled}/${role.target_count}`} />
@@ -495,6 +496,7 @@ function EditRoleForm({ role, onDone }: { role: Role; onDone: () => void }) {
   const { t } = useI18n();
   const [form, setForm] = useState({
     title: role.title,
+    job_title: role.job_title ?? "",
     description: role.description ?? "",
     level_min: String(role.level_min),
     level_max: String(role.level_max),
@@ -519,6 +521,7 @@ function EditRoleForm({ role, onDone }: { role: Role; onDone: () => void }) {
         .from("roles")
         .update({
           title: form.title,
+          job_title: form.job_title.trim() || null,
           description: form.description,
           level_min: Number(form.level_min),
           level_max: Number(form.level_max),
@@ -547,6 +550,10 @@ function EditRoleForm({ role, onDone }: { role: Role; onDone: () => void }) {
       <div className="space-y-2">
         <Label>{t("sheet.role.editRoleName")}</Label>
         <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+      </div>
+      <div className="space-y-2">
+        <Label>{t("pp.f.offerTitle")}</Label>
+        <Input value={form.job_title} placeholder={t("pp.f.offerTitlePh")} onChange={(e) => setForm({ ...form, job_title: e.target.value })} />
       </div>
       <div className="space-y-2">
         <Label>{t("sheet.role.editRoleDesc")}</Label>

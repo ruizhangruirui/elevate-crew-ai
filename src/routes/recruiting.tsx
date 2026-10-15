@@ -315,6 +315,7 @@ function RecruitingBody() {
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-5 py-4">
               <div>
                 <h2 className="font-display text-lg font-semibold">{role.title}</h2>
+                {role.job_title && <p className="text-xs text-muted-foreground">{t("pp.f.offerTitle")}: {role.job_title}</p>}
                 <p className="text-xs text-muted-foreground">
                   Level {role.level_min}–{role.level_max} · {coverageOf(role, people).filled}/{role.target_count}
                 </p>
