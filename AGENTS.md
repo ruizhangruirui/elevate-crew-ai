@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Architecture rules
+- Organization creation derives parent choices from current node types, never fixed IDs or child counts; Labs support multiple Teams and each Lab has a direct Team creation action.
 - Recruiting reuses the strategic RoleMenu for role edits and archives the same role record; this keeps cross-page changes consistent and preserves candidate history.
 - Auth is app-owned (`app_users`/`app_sessions`, PBKDF2 hashes, token in localStorage sent as `x-app-session`); do not use Supabase Auth — the app must run on-prem without it.
 - All browser data access goes through `db` from `src/lib/db-client.ts` → `dbQuery` server fn, which enforces session, role (owner/hr/manager) and manager scope; tables are not granted to anon/authenticated.
