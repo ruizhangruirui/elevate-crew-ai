@@ -23,11 +23,13 @@ type JsonApiResource = {
 
 export type TeamTailorCandidate = {
   jobTitle: string;
+  stageName: string | null;
   name: string;
   email: string | null;
   phone: string | null;
+  location: string | null;
   linkedin: string | null;
-  cvUrl: string | null;
+  profileUrl: string | null;
 };
 
 async function ttGet(base: string, apiKey: string, path: string) {
@@ -51,7 +53,8 @@ async function listAll(base: string, apiKey: string, path: string) {
   const included: JsonApiResource[] = [];
   let next: string | null = path;
   for (let page = 0; next && page < MAX_PAGES; page++) {
-    const url = next.startsWith("http") ? next.replace(/^https?:\/\/[^/]+/, "") : next;
+    // links.next is a full URL including the /v1 prefix; strip the base to avoid doubling it.
+    const url = next.startsWith("http") ? next.replace(/^https?:\/\/[^/]+\/v1/, "") : next;
     const res = await ttGet(base, apiKey, url);
     data.push(...(res.data ?? []));
     included.push(...(res.included ?? []));
@@ -71,21 +74,30 @@ export async function fetchTeamTailorCandidates(apiKey: string, region: string):
   const base = BASE_URLS[region] ?? BASE_URLS["eu"]!;
   const [jobs, applications] = await Promise.all([
     listAll(base, apiKey, "/jobs?page%5Bsize%5D=30"),
-    listAll(base, apiKey, "/job-applications?include=candidate&page%5Bsize%5D=30"),
+    listAll(base, apiKey, "/job-applications?include=candidate,job,stage&page%5Bsize%5D=30"),
   ]);
 
   const jobTitleById = new Map<string, string>();
-  for (const j of jobs.data) {
+  for (const j of [...jobs.data, ...applications.included]) {
+    if (j.type !== "jobs") continue;
     const title = str(j.attributes?.["title"]);
     if (title) jobTitleById.set(j.id, title);
   }
   const candidateById = new Map<string, JsonApiResource>();
-  for (const c of applications.included) if (c.type === "candidates") candidateById.set(c.id, c);
+  const stageNameById = new Map<string, string>();
+  for (const c of applications.included) {
+    if (c.type === "candidates") candidateById.set(c.id, c);
+    if (c.type === "stages") {
+      const name = str(c.attributes?.["name"]);
+      if (name) stageNameById.set(c.id, name);
+    }
+  }
 
   const out: TeamTailorCandidate[] = [];
   for (const app of applications.data) {
     const jobId = app.relationships?.["job"]?.data?.id;
     const candId = app.relationships?.["candidate"]?.data?.id;
+    const stageId = app.relationships?.["stage"]?.data?.id;
     const jobTitle = jobId ? jobTitleById.get(jobId) : undefined;
     const cand = candId ? candidateById.get(candId) : undefined;
     if (!jobTitle || !cand) continue;
@@ -94,13 +106,18 @@ export async function fetchTeamTailorCandidates(apiKey: string, region: string):
     const last = str(a["last-name"]) ?? "";
     const name = `${first} ${last}`.trim();
     if (!name) continue;
+    const location = [str(a["city"]), str(a["country"])].filter(Boolean).join(", ") || null;
     out.push({
       jobTitle,
+      stageName: stageId ? (stageNameById.get(stageId) ?? null) : null,
       name,
       email: str(a["email"]),
       phone: str(a["phone"]),
-      linkedin: str(a["linkedin-profile-url"]),
-      cvUrl: str(a["resume"]),
+      location,
+      linkedin: str(a["linkedin-url"]),
+      // The resume URL is a signed link that expires within a minute; the
+      // profile URL is the stable link back to the candidate in TeamTailor.
+      profileUrl: str(a["profile-url"]),
     });
   }
   return out;

@@ -63,15 +63,19 @@ export const syncTeamTailor = createServerFn({ method: "POST" }).handler(async (
       continue;
     }
     seen.add(key);
+    const stage = item.stageName ?? "";
+    const outcome = /reject/i.test(stage) ? "rejected" : /hired/i.test(stage) ? "hired" : "active";
     rows.push({
       role_id: roleId,
       name: item.name,
       email: item.email,
       phone: item.phone,
+      location: item.location,
       linkedin_url: item.linkedin,
-      cv_url: item.cvUrl,
       source: "TeamTailor",
-      outcome: "active",
+      outcome,
+      stage: item.stageName,
+      notes: item.profileUrl ? `TeamTailor profile: ${item.profileUrl}` : null,
     });
   }
 
