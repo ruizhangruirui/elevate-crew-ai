@@ -27,3 +27,4 @@
 - [x] Move letter titles into type-specific template settings and format document dates as day month year.
 - [x] Unify letter body/signature typography, add supervisor/HR/both signature choice, and remove sign-off/footer settings; all eight sample exports visually checked with no clipping or overlap, four Word packages validated.
 - [ ] Verify supervisor signature save → HR review → real download (blocked: no app-owned signed-in session available); company deployment must apply migration 0018.
+- [ ] TeamTailor integration: sync candidates into Recruiting roles (API key via secret, server-side sync function, sync button in Recruiting).
