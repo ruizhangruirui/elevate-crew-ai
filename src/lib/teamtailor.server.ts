@@ -84,12 +84,20 @@ export async function fetchTeamTailorCandidates(apiKey: string, region: string):
     if (title) jobTitleById.set(j.id, title);
   }
   const candidateById = new Map<string, JsonApiResource>();
-  for (const c of applications.included) if (c.type === "candidates") candidateById.set(c.id, c);
+  const stageNameById = new Map<string, string>();
+  for (const c of applications.included) {
+    if (c.type === "candidates") candidateById.set(c.id, c);
+    if (c.type === "stages") {
+      const name = str(c.attributes?.["name"]);
+      if (name) stageNameById.set(c.id, name);
+    }
+  }
 
   const out: TeamTailorCandidate[] = [];
   for (const app of applications.data) {
     const jobId = app.relationships?.["job"]?.data?.id;
     const candId = app.relationships?.["candidate"]?.data?.id;
+    const stageId = app.relationships?.["stage"]?.data?.id;
     const jobTitle = jobId ? jobTitleById.get(jobId) : undefined;
     const cand = candId ? candidateById.get(candId) : undefined;
     if (!jobTitle || !cand) continue;
@@ -101,12 +109,15 @@ export async function fetchTeamTailorCandidates(apiKey: string, region: string):
     const location = [str(a["city"]), str(a["country"])].filter(Boolean).join(", ") || null;
     out.push({
       jobTitle,
+      stageName: stageId ? (stageNameById.get(stageId) ?? null) : null,
       name,
       email: str(a["email"]),
       phone: str(a["phone"]),
       location,
       linkedin: str(a["linkedin-url"]),
-      cvUrl: str(a["resume"]),
+      // The resume URL is a signed link that expires within a minute; the
+      // profile URL is the stable link back to the candidate in TeamTailor.
+      profileUrl: str(a["profile-url"]),
     });
   }
   return out;
