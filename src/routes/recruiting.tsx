@@ -143,6 +143,17 @@ function RecruitingBody() {
 
   const { data: ws } = useQuery({ queryKey: ["workspace", "recruiting"], queryFn: fetchRecruitingWorkspace });
   const { data: orgNodes = [] } = useQuery({ queryKey: ["orgNodes"], queryFn: fetchOrgNodes });
+  const syncTt = useMutation({
+    mutationFn: () => syncTeamTailor(),
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: ["candidates"] });
+      const parts = [t("rec.syncDone").replace("{n}", String(r.imported))];
+      if (r.skippedDuplicates) parts.push(t("rec.syncSkipped").replace("{n}", String(r.skippedDuplicates)));
+      if (r.unmatched) parts.push(t("rec.syncUnmatched").replace("{n}", String(r.unmatched)).replace("{jobs}", r.unmatchedJobs.join(", ")));
+      toast.success(parts.join(" · "));
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
   const removeRole = useMutation({
     // Strategic roles are only hidden from Recruiting; recruiting-only roles are archived outright.
     mutationFn: async (id: string) => {
@@ -341,6 +352,11 @@ function RecruitingBody() {
                   <Search className="pointer-events-none absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
                   <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("rec.search")} className="h-9 w-56 pl-8 text-sm" />
                 </div>
+                {canEdit && (
+                  <Button size="sm" variant="outline" className="gap-1.5" disabled={syncTt.isPending} onClick={() => syncTt.mutate()}>
+                    <RefreshCw className={`size-4 ${syncTt.isPending ? "animate-spin" : ""}`} /> {syncTt.isPending ? t("rec.syncing") : t("rec.sync")}
+                  </Button>
+                )}
                 {canEdit && (
                   <Button size="sm" className="gap-1.5" onClick={() => setEditing("new")}>
                     <Plus className="size-4" /> {t("rec.add")}
