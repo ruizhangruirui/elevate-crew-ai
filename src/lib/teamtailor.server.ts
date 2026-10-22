@@ -52,7 +52,8 @@ async function listAll(base: string, apiKey: string, path: string) {
   const included: JsonApiResource[] = [];
   let next: string | null = path;
   for (let page = 0; next && page < MAX_PAGES; page++) {
-    const url = next.startsWith("http") ? next.replace(/^https?:\/\/[^/]+/, "") : next;
+    // links.next is a full URL including the /v1 prefix; strip the base to avoid doubling it.
+    const url = next.startsWith("http") ? next.replace(/^https?:\/\/[^/]+\/v1/, "") : next;
     const res = await ttGet(base, apiKey, url);
     data.push(...(res.data ?? []));
     included.push(...(res.included ?? []));
