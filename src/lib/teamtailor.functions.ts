@@ -68,6 +68,7 @@ export const syncTeamTailor = createServerFn({ method: "POST" }).handler(async (
       name: item.name,
       email: item.email,
       phone: item.phone,
+      location: item.location,
       linkedin_url: item.linkedin,
       cv_url: item.cvUrl,
       source: "TeamTailor",

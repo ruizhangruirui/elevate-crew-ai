@@ -26,6 +26,7 @@ export type TeamTailorCandidate = {
   name: string;
   email: string | null;
   phone: string | null;
+  location: string | null;
   linkedin: string | null;
   cvUrl: string | null;
 };
@@ -94,12 +95,14 @@ export async function fetchTeamTailorCandidates(apiKey: string, region: string):
     const last = str(a["last-name"]) ?? "";
     const name = `${first} ${last}`.trim();
     if (!name) continue;
+    const location = [str(a["city"]), str(a["country"])].filter(Boolean).join(", ") || null;
     out.push({
       jobTitle,
       name,
       email: str(a["email"]),
       phone: str(a["phone"]),
-      linkedin: str(a["linkedin-profile-url"]),
+      location,
+      linkedin: str(a["linkedin-url"]),
       cvUrl: str(a["resume"]),
     });
   }
