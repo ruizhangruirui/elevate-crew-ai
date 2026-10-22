@@ -78,4 +78,9 @@ export const recruitingDict: Dict = {
   "rec.roleCount": { zh: "招聘人数", en: "Headcount" },
   "rec.roleAdded": { zh: "已添加招聘岗位", en: "Hiring role added" },
   "rec.needDirection": { zh: "请先在 Settings 中创建至少一个方向", en: "Create at least one direction in Settings first" },
+  "rec.sync": { zh: "从 TeamTailor 同步", en: "Sync from TeamTailor" },
+  "rec.syncing": { zh: "同步中…", en: "Syncing…" },
+  "rec.syncDone": { zh: "已导入 {n} 位候选人", en: "Imported {n} candidates" },
+  "rec.syncSkipped": { zh: "跳过 {n} 位重复", en: "skipped {n} duplicates" },
+  "rec.syncUnmatched": { zh: "{n} 位未匹配岗位（{jobs}）", en: "{n} unmatched to a role ({jobs})" },
 };
