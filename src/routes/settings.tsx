@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/lib/i18n";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { LeaderPicker } from "@/components/LeaderPicker";
+import { organizationParents } from "@/lib/org-hierarchy";
 import { db as supabase } from "@/lib/db-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -250,6 +251,9 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<Partial<OrgNode> | null>(null);
   const live = nodes.filter((n) => !n.archived);
+  const parents = organizationParents(nodes, editing?.type ?? "Team", editing?.id);
+  const labs = live.filter((node) => node.type === "Lab");
+  const root = live.find((node) => node.type === "Org" && !node.parent_id);
 
   const save = useMutation({
     mutationFn: async (node: Partial<OrgNode>) => {
@@ -265,13 +269,15 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
         if (error) throw error;
         await logAudit("Edit", "组织结构", `更新 ${node.name}`);
       } else {
-        const id = `node-${Date.now()}`;
+        const parent = organizationParents(nodes, node.type ?? "Team").find((p) => p.id === node.parent_id);
+        if (!parent || !node.name?.trim()) throw new Error(t("set.org.parentOrg"));
+        const id = `node-${crypto.randomUUID()}`;
         const { error } = await supabase.from("org_nodes").insert({
           id,
-          name: node.name!,
+          name: node.name.trim(),
           type: node.type ?? "Team",
           mission: node.mission ?? null,
-          parent_id: node.parent_id ?? "vnrc",
+          parent_id: parent.id,
           sort_order: 99,
         });
         if (error) throw error;
@@ -322,6 +328,11 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
               {node.type === "Lab" && node.parent_id && <LeaderPicker node={node} nodes={live} kind="plr" />}
             </div>
             <div className="flex gap-1">
+              {node.type === "Lab" && (
+                <Button size="sm" variant="secondary" onClick={() => setEditing({ type: "Team", parent_id: node.id })}>
+                  <Plus className="size-3.5" /> {t("set.org.addTeam")}
+                </Button>
+              )}
               <Button size="sm" variant="ghost" onClick={() => setEditing(node)}>
                 <Pencil className="size-3.5" /> {t("set.org.edit")}
               </Button>
@@ -353,14 +364,16 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
         <Button
           size="sm"
           variant="secondary"
-          onClick={() => setEditing({ type: "Lab", parent_id: "vnrc" })}
+          disabled={!root}
+          onClick={() => setEditing({ type: "Lab", parent_id: root?.id })}
         >
           <Plus className="size-3.5" /> {t("set.org.addLab")}
         </Button>
         <Button
           size="sm"
           variant="secondary"
-          onClick={() => setEditing({ type: "Team", parent_id: "lab-network" })}
+          disabled={labs.length === 0}
+          onClick={() => setEditing({ type: "Team", parent_id: labs[0]?.id })}
         >
           <Plus className="size-3.5" /> {t("set.org.addTeam")}
         </Button>
@@ -382,21 +395,20 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
               <Label>{t("set.org.name")}</Label>
               <Input
                 value={editing?.name ?? ""}
-                onChange={(e) => setEditing((p) => ({ ...p!, name: e.target.value }))}
+                onChange={(e) => setEditing((p) => p ? { ...p, name: e.target.value } : p)}
               />
             </div>
             <div className="space-y-2">
               <Label>{t("set.org.parentOrg")}</Label>
               <Select
-                value={editing?.parent_id ?? "vnrc"}
-                onValueChange={(v) => setEditing((p) => ({ ...p!, parent_id: v }))}
+                value={editing?.parent_id ?? ""}
+                onValueChange={(v) => setEditing((p) => p ? { ...p, parent_id: v } : p)}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {live
-                    .filter((n) => n.id !== editing?.id)
+                  {parents
                     .map((n) => (
                       <SelectItem key={n.id} value={n.id}>
                         {n.name}
@@ -410,14 +422,14 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
               <Textarea
                 rows={3}
                 value={editing?.mission ?? ""}
-                onChange={(e) => setEditing((p) => ({ ...p!, mission: e.target.value }))}
+                onChange={(e) => setEditing((p) => p ? { ...p, mission: e.target.value } : p)}
               />
             </div>
           </div>
           <DialogFooter>
             <Button
               onClick={() => editing?.name && save.mutate(editing)}
-              disabled={save.isPending}
+              disabled={save.isPending || !editing?.name?.trim() || (editing.type !== "Org" && !parents.some((parent) => parent.id === editing.parent_id))}
             >
               {t("set.org.save")}
             </Button>
