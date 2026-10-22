@@ -23,12 +23,13 @@ type JsonApiResource = {
 
 export type TeamTailorCandidate = {
   jobTitle: string;
+  stageName: string | null;
   name: string;
   email: string | null;
   phone: string | null;
   location: string | null;
   linkedin: string | null;
-  cvUrl: string | null;
+  profileUrl: string | null;
 };
 
 async function ttGet(base: string, apiKey: string, path: string) {
@@ -73,7 +74,7 @@ export async function fetchTeamTailorCandidates(apiKey: string, region: string):
   const base = BASE_URLS[region] ?? BASE_URLS["eu"]!;
   const [jobs, applications] = await Promise.all([
     listAll(base, apiKey, "/jobs?page%5Bsize%5D=30"),
-    listAll(base, apiKey, "/job-applications?include=candidate,job&page%5Bsize%5D=30"),
+    listAll(base, apiKey, "/job-applications?include=candidate,job,stage&page%5Bsize%5D=30"),
   ]);
 
   const jobTitleById = new Map<string, string>();
