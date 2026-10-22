@@ -73,11 +73,12 @@ export async function fetchTeamTailorCandidates(apiKey: string, region: string):
   const base = BASE_URLS[region] ?? BASE_URLS["eu"]!;
   const [jobs, applications] = await Promise.all([
     listAll(base, apiKey, "/jobs?page%5Bsize%5D=30"),
-    listAll(base, apiKey, "/job-applications?include=candidate&page%5Bsize%5D=30"),
+    listAll(base, apiKey, "/job-applications?include=candidate,job&page%5Bsize%5D=30"),
   ]);
 
   const jobTitleById = new Map<string, string>();
-  for (const j of jobs.data) {
+  for (const j of [...jobs.data, ...applications.included]) {
+    if (j.type !== "jobs") continue;
     const title = str(j.attributes?.["title"]);
     if (title) jobTitleById.set(j.id, title);
   }
