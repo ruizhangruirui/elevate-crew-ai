@@ -365,7 +365,7 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
           size="sm"
           variant="secondary"
           disabled={!root}
-          onClick={() => setEditing({ type: "Lab", parent_id: root?.id })}
+          onClick={() => { if (root) setEditing({ type: "Lab", parent_id: root.id }); }}
         >
           <Plus className="size-3.5" /> {t("set.org.addLab")}
         </Button>
@@ -373,7 +373,7 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
           size="sm"
           variant="secondary"
           disabled={labs.length === 0}
-          onClick={() => setEditing({ type: "Team", parent_id: labs[0]?.id })}
+          onClick={() => { const lab = labs[0]; if (lab) setEditing({ type: "Team", parent_id: lab.id }); }}
         >
           <Plus className="size-3.5" /> {t("set.org.addTeam")}
         </Button>
