@@ -1,4 +1,5 @@
-import { describe, expect, test } from "bun:test";
+import { describe, it as test } from "node:test";
+import { deepStrictEqual } from "node:assert/strict";
 import { organizationParents } from "./org-hierarchy";
 
 describe("Lab and Team hierarchy", () => {
@@ -8,7 +9,7 @@ describe("Lab and Team hierarchy", () => {
       { id: "team-1", parent_id: lab.id, type: "Team", archived: false },
       { id: "team-2", parent_id: lab.id, type: "Team", archived: false },
       { id: "team-3", parent_id: lab.id, type: "Team", archived: false }];
-    expect(organizationParents(nodes, "Team")).toEqual([lab]);
-    expect(organizationParents(nodes, "Team", "team-2")).toEqual([lab]);
+    deepStrictEqual(organizationParents(nodes, "Team"), [lab]);
+    deepStrictEqual(organizationParents(nodes, "Team", "team-2"), [lab]);
   });
 });
