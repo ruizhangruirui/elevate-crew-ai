@@ -1075,6 +1075,7 @@ export type Database = {
       roles: {
         Row: {
           archived: boolean
+          contract_type: string
           created_at: string
           criticality: string
           description: string | null
@@ -1098,6 +1099,7 @@ export type Database = {
         }
         Insert: {
           archived?: boolean
+          contract_type?: string
           created_at?: string
           criticality?: string
           description?: string | null
@@ -1121,6 +1123,7 @@ export type Database = {
         }
         Update: {
           archived?: boolean
+          contract_type?: string
           created_at?: string
           criticality?: string
           description?: string | null

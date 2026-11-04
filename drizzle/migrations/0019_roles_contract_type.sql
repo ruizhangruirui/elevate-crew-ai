@@ -1,0 +1,1 @@
+ALTER TABLE public.roles ADD COLUMN IF NOT EXISTS contract_type text NOT NULL DEFAULT 'employee';
