@@ -28,6 +28,6 @@ describe("Cross-role recruiting overview", () => {
     deepStrictEqual(overviewCandidates(candidates, roles, nodes, "all", "to_onboard").map((c) => c.id), ["2"]);
   });
   it("never includes candidates whose roles are outside the supplied scope", () => {
-    deepStrictEqual(overviewCandidates(candidates, [roles[0]], nodes).map((c) => c.id), ["1"]);
+    deepStrictEqual(overviewCandidates(candidates, roles.filter((r) => r.id === "ra"), nodes).map((c) => c.id), ["1"]);
   });
 });

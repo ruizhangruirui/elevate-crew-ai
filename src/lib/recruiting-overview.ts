@@ -1,8 +1,8 @@
-type OverviewRole = { id: string; org_node_id: string | null };
+type OverviewRole = { id: string; org_node_id?: string | null };
 type OverviewCandidate = { role_id: string; outcome: string };
 type OverviewNode = { id: string; parent_id: string | null; type: string };
 
-export function teamForRole(nodeId: string | null, nodes: readonly OverviewNode[]) {
+export function teamForRole(nodeId: string | null | undefined, nodes: readonly OverviewNode[]) {
   const byId = new Map(nodes.map((node) => [node.id, node]));
   const visited = new Set<string>();
   let node = nodeId ? byId.get(nodeId) : undefined;
