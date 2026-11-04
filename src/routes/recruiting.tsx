@@ -440,7 +440,9 @@ function RecruitingBody() {
                             value={c.outcome}
                             disabled={!canEdit}
                             onValueChange={(v) => {
-                              if (v === "to_onboard") setEditing({ ...c, outcome: "to_onboard" });
+                              if (v === "to_onboard") quickUpdate.mutate({ c, patch: { outcome: v } }, {
+                                onSuccess: () => setEditing({ ...c, outcome: v }),
+                              });
                               else quickUpdate.mutate({ c, patch: { outcome: v } });
                             }}
                           >
