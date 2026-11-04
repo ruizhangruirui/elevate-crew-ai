@@ -294,6 +294,7 @@ export type Database = {
           next_step: string | null
           next_step_on: string | null
           notes: string | null
+          onboarding_on: string | null
           outcome: string
           person_id: string | null
           phone: string | null
@@ -319,6 +320,7 @@ export type Database = {
           next_step?: string | null
           next_step_on?: string | null
           notes?: string | null
+          onboarding_on?: string | null
           outcome?: string
           person_id?: string | null
           phone?: string | null
@@ -344,6 +346,7 @@ export type Database = {
           next_step?: string | null
           next_step_on?: string | null
           notes?: string | null
+          onboarding_on?: string | null
           outcome?: string
           person_id?: string | null
           phone?: string | null

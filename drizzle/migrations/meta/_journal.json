@@ -148,6 +148,13 @@
       "when": 1793801655428,
       "tag": "0020_resync_skipped_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793805351173,
+      "tag": "0021_candidate_onboarding_date",
+      "breakpoints": true
     }
   ]
 }

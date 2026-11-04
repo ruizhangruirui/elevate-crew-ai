@@ -1,0 +1,2 @@
+ALTER TABLE public.candidates ADD COLUMN IF NOT EXISTS onboarding_on date;
+COMMENT ON COLUMN public.candidates.onboarding_on IS 'Planned start date maintained in Recruiting; separate from the actual employee hire date.';
