@@ -31,3 +31,5 @@
 - [x] Remove fixed Team-parent defaults and allow repeated Team creation directly under each Lab; add a multiple-Team regression test.
 - [x] Allow To onboard candidates to maintain a planned start date in Recruiting; date validation tests passed.
 - [ ] Verify signed-in candidate status/date save and readback (blocked: no app-owned login session available).
+- [x] Add a cross-role Offered / To onboard candidate overview with Team filtering in Recruiting; filtering regression tests passed.
+- [ ] Verify signed-in cross-role overview, Team selection and candidate editing (blocked: no app-owned test session available).
