@@ -40,6 +40,7 @@ export const recruitingDict: Dict = {
   "rec.c.contract": { zh: "合同类型", en: "Contract" },
   "rec.ct.Employee": { zh: "正式员工", en: "Employee" },
   "rec.ct.Leased Employee": { zh: "外包员工", en: "Leased Employee" },
+  "rec.ct.Intern": { zh: "实习生", en: "Intern" },
   "rec.c.priority": { zh: "重要性", en: "Priority" },
   "rec.pr.high": { zh: "高", en: "High" },
   "rec.pr.medium": { zh: "中", en: "Medium" },

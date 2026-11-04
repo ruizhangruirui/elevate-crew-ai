@@ -773,7 +773,8 @@ function CandidateDialog({
               <SelectContent>
                 <SelectItem value={CONTRACT_TYPE_EMPLOYEE}>{ctLabel(t, CONTRACT_TYPE_EMPLOYEE)}</SelectItem>
                 <SelectItem value={CONTRACT_TYPE_LEASED}>{ctLabel(t, CONTRACT_TYPE_LEASED)}</SelectItem>
-                {f.contract_type && ![CONTRACT_TYPE_EMPLOYEE, CONTRACT_TYPE_LEASED].includes(f.contract_type) && (
+                <SelectItem value={CONTRACT_TYPE_INTERN}>{ctLabel(t, CONTRACT_TYPE_INTERN)}</SelectItem>
+                {f.contract_type && ![CONTRACT_TYPE_EMPLOYEE, CONTRACT_TYPE_LEASED, CONTRACT_TYPE_INTERN].includes(f.contract_type) && (
                   <SelectItem value={f.contract_type}>{f.contract_type}</SelectItem>
                 )}
               </SelectContent>
