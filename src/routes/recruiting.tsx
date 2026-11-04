@@ -74,7 +74,8 @@ const OUTCOME_TONE: Record<string, string> = {
 
 const CONTRACT_TYPE_EMPLOYEE = "Employee";
 const CONTRACT_TYPE_LEASED = "Leased Employee";
-const CONTRACT_TYPES = [CONTRACT_TYPE_EMPLOYEE, CONTRACT_TYPE_LEASED] as const;
+const CONTRACT_TYPE_INTERN = "Intern";
+const CONTRACT_TYPES = [CONTRACT_TYPE_EMPLOYEE, CONTRACT_TYPE_LEASED, CONTRACT_TYPE_INTERN] as const;
 function ctLabel(t: (k: string) => string, v: string | null): string {
   if (!v) return "—";
   return (CONTRACT_TYPES as readonly string[]).includes(v) ? t(`rec.ct.${v}`) : v;
@@ -772,7 +773,8 @@ function CandidateDialog({
               <SelectContent>
                 <SelectItem value={CONTRACT_TYPE_EMPLOYEE}>{ctLabel(t, CONTRACT_TYPE_EMPLOYEE)}</SelectItem>
                 <SelectItem value={CONTRACT_TYPE_LEASED}>{ctLabel(t, CONTRACT_TYPE_LEASED)}</SelectItem>
-                {f.contract_type && ![CONTRACT_TYPE_EMPLOYEE, CONTRACT_TYPE_LEASED].includes(f.contract_type) && (
+                <SelectItem value={CONTRACT_TYPE_INTERN}>{ctLabel(t, CONTRACT_TYPE_INTERN)}</SelectItem>
+                {f.contract_type && ![CONTRACT_TYPE_EMPLOYEE, CONTRACT_TYPE_LEASED, CONTRACT_TYPE_INTERN].includes(f.contract_type) && (
                   <SelectItem value={f.contract_type}>{f.contract_type}</SelectItem>
                 )}
               </SelectContent>
