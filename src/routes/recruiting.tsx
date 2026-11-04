@@ -14,6 +14,7 @@ import { toastUndoable } from "@/lib/ui-feedback";
 import { db } from "@/lib/db-client";
 import { syncTeamTailor } from "@/lib/teamtailor.functions";
 import { onboardingDate } from "@/lib/candidate-onboarding";
+import { processDueOnboardings } from "@/lib/candidate-autohire.functions";
 import { overviewCandidates, teamForRole } from "@/lib/recruiting-overview";
 import { coverageOf, fetchRecruitingWorkspace } from "@/lib/talent";
 import { Button } from "@/components/ui/button";
@@ -196,6 +197,10 @@ function RecruitingBody() {
   const { data: candidates } = useQuery({
     queryKey: ["candidates"],
     queryFn: async () => {
+      try {
+        const r = await processDueOnboardings();
+        if (r.moved) qc.invalidateQueries({ queryKey: ["workspace"] });
+      } catch { /* non-blocking */ }
       const { data, error } = await db.from("candidates").select("*").order("updated_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Candidate[];
