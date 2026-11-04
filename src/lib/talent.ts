@@ -42,6 +42,7 @@ export type Role = {
   kpa: string | null;
   recommended_action: string[];
   employment_mode?: string | null;
+  contract_type?: string | null;
   recruiting_only?: boolean;
   recruiting_archived?: boolean;
   location?: string | null;
@@ -134,3 +135,7 @@ export function coverageOf(role: Role, people: Person[]) {
   const state = gap === 0 ? "full" : filled === 0 ? "empty" : "partial";
   return { filled, gap, state } as const;
 }
+export const ROLE_CONTRACT_TYPES = ["employee", "leased", "intern"] as const;
+export type RoleContractType = (typeof ROLE_CONTRACT_TYPES)[number];
+export const roleContractOf = (r: { contract_type?: string | null }): RoleContractType =>
+  (ROLE_CONTRACT_TYPES as readonly string[]).includes(r.contract_type ?? "") ? (r.contract_type as RoleContractType) : "employee";

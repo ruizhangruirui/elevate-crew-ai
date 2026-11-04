@@ -130,7 +130,7 @@ function RecruitingBody() {
   const { t } = useI18n();
   const { user } = useAuth();
   const canEdit = user?.role === "owner" || user?.role === "hr" || user?.role === "recruiter";
-  const canEditRole = user?.role === "owner" || user?.role === "hr";
+  const canEditRole = user?.role === "owner" || user?.role === "hr" || user?.role === "recruiter";
   const qc = useQueryClient();
   const navigate = useNavigate({ from: "/recruiting" });
   const { role: roleId } = Route.useSearch();

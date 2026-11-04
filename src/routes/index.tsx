@@ -24,6 +24,8 @@ import {
   type Direction,
   type Org,
   type Role,
+  ROLE_CONTRACT_TYPES,
+  roleContractOf,
 } from "@/lib/talent";
 import { db as supabase } from "@/lib/db-client";
 import { fetchOrgNodes, type OrgNode } from "@/lib/org-tree";
@@ -165,7 +167,7 @@ function StrategyBoard() {
           </div>
         </div>
 
-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-3 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {directions.map((d) => {
             const s = dirStats(d.id);
             const selected = d.id === active?.id;
@@ -178,22 +180,22 @@ function StrategyBoard() {
               >
                 <button
                   onClick={() => setActiveId(d.id)}
-                  className="block h-full w-full p-5 text-left"
+                  className="block h-full w-full p-3 text-left"
                 >
-                  <div className="flex items-center gap-2 text-[11px]">
-                    <span className="rounded-md bg-surface-raised px-2 py-1 text-muted-foreground">
+                  <div className="flex items-center gap-1.5 text-[10px]">
+                    <span className="rounded bg-surface-raised px-1.5 py-0.5 text-muted-foreground">
                       {t("idx.roleTypesCount").replace("{count}", String(s.count))}
                     </span>
                     <span
-                      className={`rounded-md px-2 py-1 font-medium ${
+                      className={`rounded px-1.5 py-0.5 font-medium ${
                         s.gap ? "bg-danger/12 text-danger" : "bg-ok/12 text-ok"
                       }`}
                     >
                       {s.gap ? t("idx.criticalGapCount").replace("{count}", String(s.gap)) : t("idx.fullCoverage")}
                     </span>
                   </div>
-                  <h3 className="mt-3 pr-7 font-display text-base font-semibold">{d.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  <h3 className="mt-2 font-display text-sm font-semibold leading-snug">{d.title}</h3>
+                  <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                     {d.description}
                   </p>
                 </button>
@@ -216,8 +218,18 @@ function StrategyBoard() {
             <OwnerOnly><NewRoleDialog directionId={active.id} onDone={invalidate} /></OwnerOnly>
           </div>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-            {activeRoles.map((role) => (
+          <div className="mt-5 space-y-6">
+          {ROLE_CONTRACT_TYPES.map((ct) => {
+            const group = activeRoles.filter((r) => roleContractOf(r) === ct);
+            return (
+          <div key={ct}>
+            <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+              {t(`idx.ct.${ct}`)}
+              <span className="rounded bg-surface-raised px-1.5 py-0.5 text-[10px] font-normal text-muted-foreground">{group.length}</span>
+            </h3>
+            {group.length === 0 ? <p className="text-xs text-muted-foreground">{t("idx.ct.none")}</p> : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+            {group.map((role) => (
               <RoleCard
                 key={role.id}
                 role={role}
@@ -243,10 +255,11 @@ function StrategyBoard() {
                 onSaved={invalidate}
               />
             ))}
-
-            {activeRoles.length === 0 && (
-              <p className="text-sm text-muted-foreground">{t("idx.noRolesInDirection")}</p>
+          </div>
             )}
+          </div>
+            );
+          })}
           </div>
         </section>
       )}
@@ -458,6 +471,7 @@ export function RoleMenu({
   const [mode, setMode] = useState(role.employment_mode ?? "__none");
   const [location, setLocation] = useState(role.location ?? "__none");
   const [directionId, setDirectionId] = useState(role.direction_id);
+  const [contract, setContract] = useState<string>(roleContractOf(role));
   const dirs = useQuery({
     queryKey: ["directions-active"],
     queryFn: async () => {
@@ -482,6 +496,7 @@ export function RoleMenu({
     setMode(role.employment_mode ?? "__none");
     setLocation(role.location ?? "__none");
     setDirectionId(role.direction_id);
+    setContract(roleContractOf(role));
   };
 
   const move = useMutation({
@@ -516,6 +531,7 @@ export function RoleMenu({
           org_node_id: nodeId === "__none" ? null : nodeId,
           employment_mode: mode === "__none" ? null : mode,
           location: location === "__none" ? null : location,
+          contract_type: contract,
         })
         .eq("id", role.id);
       if (error) throw error;
@@ -630,6 +646,15 @@ export function RoleMenu({
                   onChange={(e) => setTargetCount(e.target.value)}
                 />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label>{t("idx.ct.field")}</Label>
+              <Select value={contract} onValueChange={setContract}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ROLE_CONTRACT_TYPES.map((c) => <SelectItem key={c} value={c}>{t(`idx.ct.${c}`)}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>{t("idx.directionField")}</Label>
@@ -931,6 +956,7 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
     criticality: "important",
     employment_mode: "__none",
     location: "__none",
+    contract_type: "employee",
   };
   const [form, setForm] = useState(empty);
 
@@ -946,6 +972,7 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
         criticality: form.criticality,
         employment_mode: form.employment_mode === "__none" ? null : form.employment_mode,
         location: form.location === "__none" ? null : form.location,
+        contract_type: form.contract_type,
       });
       if (error) throw error;
     },
@@ -977,6 +1004,15 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
               onChange={(e) => setForm({ ...form, title: e.target.value })}
             />
           </div>
+            <div className="space-y-2">
+              <Label>{t("idx.ct.field")}</Label>
+              <Select value={form.contract_type} onValueChange={(v) => setForm({ ...form, contract_type: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ROLE_CONTRACT_TYPES.map((c) => <SelectItem key={c} value={c}>{t(`idx.ct.${c}`)}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
           <div className="space-y-2">
             <Label>{t("idx.roleDescription")}</Label>
             <Textarea

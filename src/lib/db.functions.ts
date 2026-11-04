@@ -96,14 +96,20 @@ export const dbQuery = createServerFn({ method: "POST" })
       return fail("Only the Owner can bulk import people", "403");
 
     const recruitingOnlyInsert = (Array.isArray(payload) ? payload : [payload]).every((r: any) => r?.recruiting_only === true);
-    if (spec.table === "roles" && spec.op === "insert" && user.role !== "owner" && !(user.role === "hr" && recruitingOnlyInsert))
+    if (spec.table === "roles" && spec.op === "insert" && user.role !== "owner" && !((user.role === "hr" || user.role === "recruiter") && recruitingOnlyInsert))
       return fail("Only the Owner can add strategic roles", "403");
     if (spec.table === "directions" && spec.op !== "select" && user.role !== "owner")
       return fail("Only the Owner can change strategy directions", "403");
     if (user.role === "recruiter") {
       if (!RECRUITER_READ.has(spec.table)) return fail("Recruiters can only access Positions and Recruiting", "403");
-      if (spec.op !== "select" && spec.table !== "candidates" && spec.table !== "candidate_events")
-        return fail("Recruiters can only maintain candidates", "403");
+      const roleWrite = spec.table === "roles" && (spec.op === "insert" || spec.op === "update");
+      if (spec.op !== "select" && spec.table !== "candidates" && spec.table !== "candidate_events" && !roleWrite)
+        return fail("Recruiters can only maintain candidates and hiring roles", "403");
+      // Recruiters may only fully archive recruiting-only roles; strategic positions are hidden from Recruiting instead.
+      if (spec.table === "roles" && spec.op === "update" && payload && "archived" in payload) {
+        const { data: targets, error } = await applyFilters(db.from("roles").select("recruiting_only"), spec.filters);
+        if (error || (targets ?? []).some((r: any) => !r.recruiting_only)) return fail("Recruiters cannot archive Positions", "403");
+      }
     }
 
     const denied = checkSection(user, spec, payload);

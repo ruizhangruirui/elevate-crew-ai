@@ -297,6 +297,7 @@ export type Database = {
           outcome: string
           person_id: string | null
           phone: string | null
+          priority: string
           rating: number | null
           recruiter: string | null
           role_id: string
@@ -321,6 +322,7 @@ export type Database = {
           outcome?: string
           person_id?: string | null
           phone?: string | null
+          priority?: string
           rating?: number | null
           recruiter?: string | null
           role_id: string
@@ -345,6 +347,7 @@ export type Database = {
           outcome?: string
           person_id?: string | null
           phone?: string | null
+          priority?: string
           rating?: number | null
           recruiter?: string | null
           role_id?: string
@@ -659,6 +662,7 @@ export type Database = {
       people: {
         Row: {
           address: string | null
+          appointed_role_title: string | null
           archived: boolean
           archived_at: string | null
           assessed_at: string | null
@@ -674,8 +678,10 @@ export type Database = {
           is_leader: boolean
           is_plr: boolean
           level: number | null
+          location: string | null
           name: string
           note: string | null
+          offer_title: string | null
           org_id: string
           org_node_id: string | null
           performance: string | null
@@ -693,6 +699,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          appointed_role_title?: string | null
           archived?: boolean
           archived_at?: string | null
           assessed_at?: string | null
@@ -708,8 +715,10 @@ export type Database = {
           is_leader?: boolean
           is_plr?: boolean
           level?: number | null
+          location?: string | null
           name: string
           note?: string | null
+          offer_title?: string | null
           org_id: string
           org_node_id?: string | null
           performance?: string | null
@@ -727,6 +736,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          appointed_role_title?: string | null
           archived?: boolean
           archived_at?: string | null
           assessed_at?: string | null
@@ -742,8 +752,10 @@ export type Database = {
           is_leader?: boolean
           is_plr?: boolean
           level?: number | null
+          location?: string | null
           name?: string
           note?: string | null
+          offer_title?: string | null
           org_id?: string
           org_node_id?: string | null
           performance?: string | null
@@ -1075,11 +1087,13 @@ export type Database = {
       roles: {
         Row: {
           archived: boolean
+          contract_type: string
           created_at: string
           criticality: string
           description: string | null
           direction_id: string
           domains: string[]
+          employment_mode: string | null
           experience: string[]
           id: string
           job_title: string | null
@@ -1088,8 +1102,11 @@ export type Database = {
           leadership: string[]
           level_max: number
           level_min: number
+          location: string | null
           org_node_id: string | null
           recommended_action: string[]
+          recruiting_archived: boolean
+          recruiting_only: boolean
           skills: Json
           sort_order: number
           target_count: number
@@ -1098,11 +1115,13 @@ export type Database = {
         }
         Insert: {
           archived?: boolean
+          contract_type?: string
           created_at?: string
           criticality?: string
           description?: string | null
           direction_id: string
           domains?: string[]
+          employment_mode?: string | null
           experience?: string[]
           id?: string
           job_title?: string | null
@@ -1111,8 +1130,11 @@ export type Database = {
           leadership?: string[]
           level_max?: number
           level_min?: number
+          location?: string | null
           org_node_id?: string | null
           recommended_action?: string[]
+          recruiting_archived?: boolean
+          recruiting_only?: boolean
           skills?: Json
           sort_order?: number
           target_count?: number
@@ -1121,11 +1143,13 @@ export type Database = {
         }
         Update: {
           archived?: boolean
+          contract_type?: string
           created_at?: string
           criticality?: string
           description?: string | null
           direction_id?: string
           domains?: string[]
+          employment_mode?: string | null
           experience?: string[]
           id?: string
           job_title?: string | null
@@ -1134,8 +1158,11 @@ export type Database = {
           leadership?: string[]
           level_max?: number
           level_min?: number
+          location?: string | null
           org_node_id?: string | null
           recommended_action?: string[]
+          recruiting_archived?: boolean
+          recruiting_only?: boolean
           skills?: Json
           sort_order?: number
           target_count?: number
@@ -1152,6 +1179,89 @@ export type Database = {
           },
           {
             foreignKeyName: "roles_org_node_id_fkey"
+            columns: ["org_node_id"]
+            isOneToOne: false
+            referencedRelation: "org_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_achievement_contributors: {
+        Row: {
+          achievement_id: string
+          created_at: string
+          id: string
+          person_id: string
+        }
+        Insert: {
+          achievement_id: string
+          created_at?: string
+          id?: string
+          person_id: string
+        }
+        Update: {
+          achievement_id?: string
+          created_at?: string
+          id?: string
+          person_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_achievement_contributors_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "team_achievements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_achievement_contributors_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_achievements: {
+        Row: {
+          achieved_on: string
+          achievement_type: string
+          created_at: string
+          created_by: string | null
+          id: string
+          link: string | null
+          note: string | null
+          org_node_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          achieved_on: string
+          achievement_type: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          link?: string | null
+          note?: string | null
+          org_node_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          achieved_on?: string
+          achievement_type?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          link?: string | null
+          note?: string | null
+          org_node_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_achievements_org_node_id_fkey"
             columns: ["org_node_id"]
             isOneToOne: false
             referencedRelation: "org_nodes"
