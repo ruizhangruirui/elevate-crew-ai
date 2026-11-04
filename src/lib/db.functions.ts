@@ -105,6 +105,11 @@ export const dbQuery = createServerFn({ method: "POST" })
       const roleWrite = spec.table === "roles" && (spec.op === "insert" || spec.op === "update");
       if (spec.op !== "select" && spec.table !== "candidates" && spec.table !== "candidate_events" && !roleWrite)
         return fail("Recruiters can only maintain candidates and hiring roles", "403");
+      // Recruiters may only fully archive recruiting-only roles; strategic positions are hidden from Recruiting instead.
+      if (spec.table === "roles" && spec.op === "update" && payload && "archived" in payload) {
+        const { data: targets, error } = await applyFilters(db.from("roles").select("recruiting_only"), spec.filters);
+        if (error || (targets ?? []).some((r: any) => !r.recruiting_only)) return fail("Recruiters cannot archive Positions", "403");
+      }
     }
 
     const denied = checkSection(user, spec, payload);
