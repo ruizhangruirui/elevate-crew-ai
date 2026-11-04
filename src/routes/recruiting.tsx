@@ -74,7 +74,8 @@ const OUTCOME_TONE: Record<string, string> = {
 
 const CONTRACT_TYPE_EMPLOYEE = "Employee";
 const CONTRACT_TYPE_LEASED = "Leased Employee";
-const CONTRACT_TYPES = [CONTRACT_TYPE_EMPLOYEE, CONTRACT_TYPE_LEASED] as const;
+const CONTRACT_TYPE_INTERN = "Intern";
+const CONTRACT_TYPES = [CONTRACT_TYPE_EMPLOYEE, CONTRACT_TYPE_LEASED, CONTRACT_TYPE_INTERN] as const;
 function ctLabel(t: (k: string) => string, v: string | null): string {
   if (!v) return "—";
   return (CONTRACT_TYPES as readonly string[]).includes(v) ? t(`rec.ct.${v}`) : v;
