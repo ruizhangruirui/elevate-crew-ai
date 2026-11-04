@@ -14,6 +14,7 @@ import { toastUndoable } from "@/lib/ui-feedback";
 import { db } from "@/lib/db-client";
 import { syncTeamTailor } from "@/lib/teamtailor.functions";
 import { onboardingDate } from "@/lib/candidate-onboarding";
+import { overviewCandidates, teamForRole } from "@/lib/recruiting-overview";
 import { coverageOf, fetchRecruitingWorkspace } from "@/lib/talent";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -142,6 +143,9 @@ function RecruitingBody() {
   const [editing, setEditing] = useState<Candidate | "new" | null>(null);
   const [rolesOpen, setRolesOpen] = useState(true);
   const [lab, setLab] = useState<string>("all");
+  const [overviewTeam, setOverviewTeam] = useState("all");
+  const [overviewStatus, setOverviewStatus] = useState("all");
+  const [overviewQuery, setOverviewQuery] = useState("");
 
   const { data: ws } = useQuery({ queryKey: ["workspace", "recruiting"], queryFn: fetchRecruitingWorkspace });
   const { data: orgNodes = [] } = useQuery({ queryKey: ["orgNodes"], queryFn: fetchOrgNodes });
@@ -225,6 +229,15 @@ function RecruitingBody() {
     .map((r) => ({ r, cov: coverageOf(r, people) }))
     .filter(({ r, cov }) => !openOnly || cov.gap > 0 || r.id === roleId || activeByRole.has(r.id));
   const role = scopedRoles.find((r) => r.id === roleId) ?? null;
+  const editingRole = editing && editing !== "new" ? scopedRoles.find((r) => r.id === editing.role_id) : role;
+  const overviewTeams = orgNodes.filter((n) => n.type.toLowerCase() === "team" && scopedRoles.some((r) => teamForRole(r.org_node_id, orgNodes) === n.id));
+  const overviewBase = overviewCandidates(candidates ?? [], scopedRoles, orgNodes, overviewTeam);
+  const overviewRows = overviewCandidates(overviewBase, scopedRoles, orgNodes, overviewTeam, overviewStatus)
+    .filter((c) => {
+      const position = scopedRoles.find((r) => r.id === c.role_id);
+      const q = overviewQuery.trim().toLowerCase();
+      return !q || [c.name, c.email, position?.title, position?.job_title].some((v) => v?.toLowerCase().includes(q));
+    });
 
   const rows = (candidates ?? [])
     .filter((c) => c.role_id === roleId)
@@ -260,6 +273,54 @@ function RecruitingBody() {
 
   return (
     <div className="space-y-4">
+      <section className="card-glass min-w-0 overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 px-4 py-3">
+          <h2 className="font-display text-sm font-semibold">{t("rec.overview")}</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={overviewTeam} onValueChange={setOverviewTeam}>
+              <SelectTrigger className="h-8 w-44 text-xs" aria-label={t("rec.team")}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("rec.allTeams")}</SelectItem>
+                {overviewTeams.map((team) => <SelectItem key={team.id} value={team.id}>{labOf(team.id)?.name} · {team.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2.5 top-2 size-3.5 text-muted-foreground" />
+              <Input value={overviewQuery} onChange={(e) => setOverviewQuery(e.target.value)} aria-label={t("rec.overview.search")} placeholder={t("rec.overview.search")} className="h-8 w-48 pl-8 text-xs" />
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-1 border-b border-border/60 px-4 py-2">
+          {["all", "offer", "to_onboard"].map((status) => <Button key={status} size="sm" variant="ghost" aria-pressed={overviewStatus === status} onClick={() => setOverviewStatus(status)} className={`h-7 gap-2 px-2.5 text-xs ${overviewStatus === status ? "bg-brand/12 text-brand" : "text-muted-foreground"}`}>
+            {t(`rec.overview.${status}`)}<span className="tabular-nums">{overviewBase.filter((c) => status === "all" || c.outcome === status).length}</span>
+          </Button>)}
+        </div>
+        <div className="max-h-80 overflow-auto">
+          <table className="w-full min-w-[760px] text-left text-xs">
+            <thead className="sticky top-0 z-10 bg-background/95 text-muted-foreground backdrop-blur">
+              <tr>
+                {["rec.c.name", "rec.roleTitle", "rec.team", "rec.c.outcome", "rec.f.startDate", "rec.c.next", "rec.c.recruiter"].map((key) => <th key={key} className="px-4 py-2 font-medium">{t(key)}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {overviewRows.map((candidate) => {
+                const position = scopedRoles.find((r) => r.id === candidate.role_id);
+                const teamId = teamForRole(position?.org_node_id ?? null, orgNodes);
+                return <tr key={candidate.id} className="border-t border-border/40 hover:bg-surface-raised/40">
+                  <td className="px-4 py-2"><Button variant="link" onClick={() => setEditing(candidate)} className="h-auto whitespace-normal p-0 text-left text-xs font-medium">{candidate.name}</Button></td>
+                  <td className="max-w-56 px-4 py-2"><Button variant="link" className="h-auto whitespace-normal p-0 text-left text-xs" onClick={() => navigate({ search: { role: candidate.role_id } })}>{position?.title}</Button>{position?.job_title && <p className="mt-0.5 text-muted-foreground">{position.job_title}</p>}</td>
+                  <td className="px-4 py-2">{teamId ? nodeById.get(teamId)?.name : "—"}<p className="text-muted-foreground">{labOf(position?.org_node_id)?.name}</p></td>
+                  <td className="px-4 py-2"><span className={`whitespace-nowrap rounded px-1.5 py-0.5 ${OUTCOME_TONE[candidate.outcome] ?? ""}`}>{t(`rec.overview.${candidate.outcome}`)}</span></td>
+                  <td className="whitespace-nowrap px-4 py-2 tabular-nums">{candidate.onboarding_on || "—"}</td>
+                  <td className="max-w-48 px-4 py-2">{candidate.next_step || "—"}{candidate.next_step_on && <p className="text-muted-foreground tabular-nums">{candidate.next_step_on}</p>}</td>
+                  <td className="px-4 py-2">{candidate.recruiter || "—"}</td>
+                </tr>;
+              })}
+              {overviewRows.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">{t("rec.overview.empty")}</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </section>
       <section className="card-glass p-3">
         <div className="flex flex-wrap items-center justify-between gap-2 px-1">
           <button type="button" onClick={() => setRolesOpen(!rolesOpen)} className="flex items-center gap-1.5">
@@ -489,11 +550,11 @@ function RecruitingBody() {
         )}
       </section>
 
-      {editing && role && (
+      {editing && editingRole && (
         <CandidateDialog
           key={editing === "new" ? "new" : editing.id}
           candidate={editing === "new" ? null : editing}
-          roleId={role.id}
+          roleId={editingRole.id}
           orgId={ws.org?.id ?? null}
           stages={stages}
           canEdit={canEdit}
