@@ -52,6 +52,7 @@ export const recruitingDict: Dict = {
   "rec.f.linkedin": { zh: "LinkedIn 链接", en: "LinkedIn URL" },
   "rec.f.rating": { zh: "评分 (1-5)", en: "Rating (1-5)" },
   "rec.f.nextDate": { zh: "下一步日期", en: "Next step date" },
+  "rec.f.startDate": { zh: "入职日期", en: "Start date" },
   "rec.f.notes": { zh: "备注", en: "Notes" },
   "rec.save": { zh: "保存", en: "Save" },
   "rec.saved": { zh: "已保存", en: "Saved" },

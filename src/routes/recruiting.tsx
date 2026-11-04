@@ -13,6 +13,7 @@ import { fetchOrgNodes, subtreeIds } from "@/lib/org-tree";
 import { toastUndoable } from "@/lib/ui-feedback";
 import { db } from "@/lib/db-client";
 import { syncTeamTailor } from "@/lib/teamtailor.functions";
+import { onboardingDate } from "@/lib/candidate-onboarding";
 import { coverageOf, fetchRecruitingWorkspace } from "@/lib/talent";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -96,6 +97,7 @@ export type Candidate = {
   recruiter: string | null;
   next_step: string | null;
   next_step_on: string | null;
+  onboarding_on: string | null;
   notes: string | null;
   contract_type: string | null;
   priority: string;
@@ -455,6 +457,9 @@ function RecruitingBody() {
                         <td className="max-w-48 px-3 py-1.5 text-xs">
                           <p className="truncate">{c.next_step || "—"}</p>
                           {c.next_step_on && <p className="text-muted-foreground tabular-nums">{c.next_step_on}</p>}
+                          {c.outcome === "to_onboard" && c.onboarding_on && (
+                            <p className="whitespace-nowrap text-ok tabular-nums">{t("rec.f.startDate")}: {c.onboarding_on}</p>
+                          )}
                         </td>
                         <td className="px-3 py-1.5">
                           <span className="flex gap-1.5 text-muted-foreground">
@@ -530,6 +535,7 @@ function CandidateDialog({
     recruiter: candidate?.recruiter ?? "",
     next_step: candidate?.next_step ?? "",
     next_step_on: candidate?.next_step_on ?? "",
+    onboarding_on: candidate?.onboarding_on ?? "",
     notes: candidate?.notes ?? "",
     contract_type: candidate?.contract_type ?? "",
     priority: candidate?.priority ?? "medium",
@@ -571,6 +577,7 @@ function CandidateDialog({
       recruiter: n(f.recruiter),
       next_step: n(f.next_step),
       next_step_on: n(f.next_step_on),
+      onboarding_on: onboardingDate(f.onboarding_on),
       notes: n(f.notes),
       contract_type: n(f.contract_type),
       priority: f.priority || "medium",
@@ -733,6 +740,7 @@ function CandidateDialog({
             </Select>
           </div>
           {field("next_step_on", t("rec.f.nextDate"), "date")}
+          {candidate && field("onboarding_on", t("rec.f.startDate"), "date")}
           <div className="sm:col-span-3">{field("next_step", t("rec.c.next"))}</div>
           <div className="sm:col-span-3 grid gap-3 sm:grid-cols-2">
             {field("cv_url", t("rec.f.cv"))}
