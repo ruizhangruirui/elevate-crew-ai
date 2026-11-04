@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { admin, getSessionUser, managerScope, type AppUser } from "./auth.server";
+import { onboardingDateSchema } from "./candidate-onboarding";
 
 const TABLES = [
   "actions",
@@ -90,6 +91,13 @@ export const dbQuery = createServerFn({ method: "POST" })
     };
     let payload = spec.payload;
     if (payload !== undefined) payload = Array.isArray(payload) ? payload.map(stamp) : stamp(payload);
+
+    if (spec.table === "candidates" && spec.op !== "select" && payload !== undefined) {
+      for (const row of Array.isArray(payload) ? payload : [payload]) {
+        if (row?.onboarding_on !== undefined && !onboardingDateSchema.safeParse(row.onboarding_on).success)
+          return fail("Invalid start date", "400");
+      }
+    }
 
     if (spec.table === "access_users" && spec.op !== "select") return fail("access_users is deprecated", "403");
     if (spec.table === "people" && spec.op === "insert" && Array.isArray(payload) && user.role !== "owner")

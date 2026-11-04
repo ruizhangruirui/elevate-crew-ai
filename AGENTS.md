@@ -19,6 +19,7 @@
 - Excel role values are preserved in people.appointed_role_title even without a catalog match; role_id links strategic roles and offer_title stores the separate job title, preventing silent loss or invented strategic roles.
 - Person data has section ownership enforced in `dbQuery` (`checkSection`): basic info + Career Profile are HR-edited, manager assessment (performance records, skill assessment) is manager-edited, Owner may edit both — because UI-only gating can be bypassed.
 - Recruiter role is enforced in `dbQuery` (read allowlist, writes candidates/candidate_events plus hiring-role add/edit; full archive only for recruiting-only roles) and AppShell redirects; managers' candidate reads are filtered to roles in their org scope — UI hiding alone is bypassable.
+- Recruiting planned start dates live on candidates and are validated by dbQuery; they do not overwrite HR-owned actual hire dates on people.
 - Team achievements use dedicated achievement and contributor tables with server-enforced manager scope; achievement types remain configurable in Settings.
 
 - Bulk role imports use a dedicated owner-only server function (upsert by direction + title, auto-creating directions, optional owner linked via people.role_id) for the same reason as people imports.
