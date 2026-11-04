@@ -440,7 +440,7 @@ function RecruitingBody() {
                             value={c.outcome}
                             disabled={!canEdit}
                             onValueChange={(v) => {
-                              if (v === "to_onboard") setEditing(c);
+                              if (v === "to_onboard") setEditing({ ...c, outcome: "to_onboard" });
                               else quickUpdate.mutate({ c, patch: { outcome: v } });
                             }}
                           >
@@ -733,7 +733,7 @@ function CandidateDialog({
             <Select value={f.outcome} onValueChange={(v) => setF({ ...f, outcome: v })} disabled={!canEdit}>
               <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {OUTCOMES.filter((o) => o !== "to_onboard" || f.outcome === "to_onboard").map((o) => (
+                {OUTCOMES.map((o) => (
                   <SelectItem key={o} value={o}>{t(`rec.out.${o}`)}</SelectItem>
                 ))}
               </SelectContent>

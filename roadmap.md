@@ -29,4 +29,5 @@
 - [ ] Verify supervisor signature save → HR review → real download (blocked: no app-owned signed-in session available); company deployment must apply migration 0018.
 - [x] TeamTailor integration: sync candidates into Recruiting roles (API key via secret, server-side sync function, sync button in Recruiting). Tested live: 746 applications, 68 jobs fetched; matching requires role Job Title = TeamTailor job title.
 - [x] Remove fixed Team-parent defaults and allow repeated Team creation directly under each Lab; add a multiple-Team regression test.
-- [ ] Allow To onboard candidates to maintain a planned start date in Recruiting.
+- [x] Allow To onboard candidates to maintain a planned start date in Recruiting; date validation tests passed.
+- [ ] Verify signed-in candidate status/date save and readback (blocked: no app-owned login session available).
