@@ -24,6 +24,8 @@ import {
   type Direction,
   type Org,
   type Role,
+  ROLE_CONTRACT_TYPES,
+  roleContractOf,
 } from "@/lib/talent";
 import { db as supabase } from "@/lib/db-client";
 import { fetchOrgNodes, type OrgNode } from "@/lib/org-tree";
