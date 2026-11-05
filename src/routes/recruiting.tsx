@@ -150,6 +150,7 @@ function RecruitingBody() {
   const [overviewTeam, setOverviewTeam] = useState("all");
   const [overviewStatus, setOverviewStatus] = useState("all");
   const [overviewQuery, setOverviewQuery] = useState("");
+  const [overviewOpen, setOverviewOpen] = useState(true);
 
   const { data: ws } = useQuery({ queryKey: ["workspace", "recruiting"], queryFn: fetchRecruitingWorkspace });
   const { data: orgNodes = [] } = useQuery({ queryKey: ["orgNodes"], queryFn: fetchOrgNodes });
@@ -241,9 +242,12 @@ function RecruitingBody() {
     .filter(({ r, cov }) => !openOnly || cov.gap > 0 || r.id === roleId || activeByRole.has(r.id));
   const role = scopedRoles.find((r) => r.id === roleId) ?? null;
   const editingRole = editing && editing !== "new" ? scopedRoles.find((r) => r.id === editing.role_id) : role;
-  const overviewTeams = orgNodes.filter((n) => n.type.toLowerCase() === "team" && scopedRoles.some((r) => teamForRole(r.org_node_id, orgNodes) === n.id));
-  const overviewBase = overviewCandidates(candidates ?? [], scopedRoles, orgNodes, overviewTeam);
-  const overviewRows = overviewCandidates(overviewBase, scopedRoles, orgNodes, overviewTeam, overviewStatus)
+  // The Lab filter also scopes the cross-role candidate overview below.
+  const labRoles = scopedRoles.filter((r) => lab === "all" || labOf(r.org_node_id)?.id === lab);
+  const overviewTeams = orgNodes.filter((n) => n.type.toLowerCase() === "team" && labRoles.some((r) => teamForRole(r.org_node_id, orgNodes) === n.id));
+  const effectiveOverviewTeam = lab !== "all" && overviewTeam !== "all" && !overviewTeams.some((tm) => tm.id === overviewTeam) ? "all" : overviewTeam;
+  const overviewBase = overviewCandidates(candidates ?? [], labRoles, orgNodes, effectiveOverviewTeam);
+  const overviewRows = overviewCandidates(overviewBase, labRoles, orgNodes, effectiveOverviewTeam, overviewStatus)
     .filter((c) => {
       const position = scopedRoles.find((r) => r.id === c.role_id);
       const q = overviewQuery.trim().toLowerCase();
