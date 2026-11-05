@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { admin, getSessionUser, managerScope, type AppUser } from "./auth.server";
 import { onboardingDateSchema } from "./candidate-onboarding";
-import { missingRoleOwners } from "./role-owners";
+import { missingRoleOwners, missingRoleOwnersOnUpdate } from "./role-owners";
 
 const TABLES = [
   "actions",
@@ -112,6 +112,12 @@ export const dbQuery = createServerFn({ method: "POST" })
     // Every hiring position must name its recruiter and hiring supervisor at creation time.
     if (spec.table === "roles" && spec.op === "insert" && missingRoleOwners(payload))
       return fail("Each position needs a recruiter and a supervisor", "400");
+    // A position re-entering Recruiting must still name its recruiter and hiring supervisor.
+    if (spec.table === "roles" && spec.op === "update" && !Array.isArray(payload) && payload && "recruiting_archived" in payload && (payload as any).recruiting_archived === false) {
+      const { data: targets, error } = await applyFilters(db.from("roles").select("recruiter_person_id,supervisor_person_id"), spec.filters);
+      if (error) return fail("Could not verify position owners", "400");
+      if (missingRoleOwnersOnUpdate(payload, targets ?? [])) return fail("Each position needs a recruiter and a supervisor", "400");
+    }
     if (spec.table === "directions" && spec.op !== "select" && user.role !== "owner")
       return fail("Only the Owner can change strategy directions", "403");
     if (user.role === "recruiter") {

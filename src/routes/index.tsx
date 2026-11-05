@@ -457,8 +457,10 @@ export function RoleMenu({
   removalLabel,
   removalDescription,
   withVisibility,
+  showOwners,
 }: {
   withVisibility?: boolean;
+  showOwners?: boolean;
   role: Role;
   orgNodes: OrgNode[];
   onArchive: () => void;
@@ -545,8 +547,9 @@ export function RoleMenu({
           employment_mode: mode === "__none" ? null : mode,
           location: location === "__none" ? null : location,
           contract_type: contract,
-          recruiter_person_id: recruiterId,
-          supervisor_person_id: supervisorId,
+          ...(showOwners
+            ? { recruiter_person_id: recruiterId, supervisor_person_id: supervisorId }
+            : {}),
           ...(withVisibility ? { visible_to_person_ids: visibleTo } : {}),
         })
         .eq("id", role.id);
@@ -720,10 +723,12 @@ export function RoleMenu({
               </Select>
             </div>
             <ModeLocationFields mode={mode} location={location} onMode={setMode} onLocation={setLocation} />
-            <div className="grid gap-3 sm:grid-cols-2">
-              <PersonPicker label={t("idx.roleRecruiter")} value={recruiterId} onChange={setRecruiterId} clearLabel={t("ui.clear")} scope="hr" />
-              <PersonPicker label={t("idx.roleSupervisor")} value={supervisorId} onChange={setSupervisorId} clearLabel={t("ui.clear")} />
-            </div>
+            {showOwners && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <PersonPicker label={t("idx.roleRecruiter")} value={recruiterId} onChange={setRecruiterId} clearLabel={t("ui.clear")} scope="hr" />
+                <PersonPicker label={t("idx.roleSupervisor")} value={supervisorId} onChange={setSupervisorId} clearLabel={t("ui.clear")} />
+              </div>
+            )}
             {withVisibility && <VisibleToPicker value={visibleTo} onChange={setVisibleTo} orgNodeId={nodeId === "__none" ? null : nodeId} />}
 
             <p className="text-xs text-muted-foreground">
