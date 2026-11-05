@@ -477,6 +477,8 @@ export function RoleMenu({
   const [directionId, setDirectionId] = useState(role.direction_id);
   const [contract, setContract] = useState<string>(roleContractOf(role));
   const [visibleTo, setVisibleTo] = useState<string[]>((role as any).visible_to_person_ids ?? []);
+  const [recruiterId, setRecruiterId] = useState<string | null>((role as any).recruiter_person_id ?? null);
+  const [supervisorId, setSupervisorId] = useState<string | null>((role as any).supervisor_person_id ?? null);
   const dirs = useQuery({
     queryKey: ["directions-active"],
     queryFn: async () => {
@@ -503,6 +505,8 @@ export function RoleMenu({
     setDirectionId(role.direction_id);
     setContract(roleContractOf(role));
     setVisibleTo((role as any).visible_to_person_ids ?? []);
+    setRecruiterId((role as any).recruiter_person_id ?? null);
+    setSupervisorId((role as any).supervisor_person_id ?? null);
   };
 
   const move = useMutation({
@@ -538,6 +542,8 @@ export function RoleMenu({
           employment_mode: mode === "__none" ? null : mode,
           location: location === "__none" ? null : location,
           contract_type: contract,
+          recruiter_person_id: recruiterId,
+          supervisor_person_id: supervisorId,
           ...(withVisibility ? { visible_to_person_ids: visibleTo } : {}),
         })
         .eq("id", role.id);
@@ -711,6 +717,10 @@ export function RoleMenu({
               </Select>
             </div>
             <ModeLocationFields mode={mode} location={location} onMode={setMode} onLocation={setLocation} />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <PersonPicker label={t("idx.roleRecruiter")} value={recruiterId} onChange={setRecruiterId} clearLabel={t("ui.clear")} />
+              <PersonPicker label={t("idx.roleSupervisor")} value={supervisorId} onChange={setSupervisorId} clearLabel={t("ui.clear")} />
+            </div>
             {withVisibility && <VisibleToPicker value={visibleTo} onChange={setVisibleTo} />}
 
             <p className="text-xs text-muted-foreground">
