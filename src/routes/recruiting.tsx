@@ -975,10 +975,10 @@ function AddHiringRole({ directionId, orgNodes, onCreated }: { directionId: stri
             </div>
             <div className="space-y-1.5"><Label>{t("rec.roleCount")}</Label><Input type="number" min={1} value={count} onChange={(e) => setCount(e.target.value)} /></div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <PersonPicker label={t("rec.roleRecruiter")} value={recruiter} onChange={setRecruiter} clearLabel={t("ui.clear")} />
+              <PersonPicker label={t("rec.roleRecruiter")} value={recruiter} onChange={setRecruiter} clearLabel={t("ui.clear")} scope="hr" />
               <PersonPicker label={t("rec.roleSupervisor")} value={supervisor} onChange={setSupervisor} clearLabel={t("ui.clear")} />
             </div>
-            <VisibleToPicker value={visibleTo} onChange={setVisibleTo} />
+            <VisibleToPicker value={visibleTo} onChange={setVisibleTo} orgNodeId={node === "none" ? null : node} />
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setOpen(false)}>{t("ui.cancel")}</Button>
