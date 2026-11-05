@@ -20,6 +20,7 @@ export type SyncResult = {
   updated: number;
   unchanged: number;
   skippedDuplicates: number;
+  skippedRejected: number;
   unmatched: number;
   unmatchedJobs: string[];
   capped: boolean;
@@ -123,7 +124,7 @@ export const syncTeamTailor = createServerFn({ method: "POST" }).handler(async (
 
   const { data: existing, error: existingError } = await db
     .from("candidates")
-    .select("id,role_id,email,name,stage,outcome,teamtailor_application_id");
+    .select("id,role_id,email,name,stage,outcome,cv_url,teamtailor_application_id");
   if (existingError) throw new Error(existingError.message);
   const byAppId = new Map((existing ?? []).filter((c) => c.teamtailor_application_id).map((c) => [c.teamtailor_application_id as string, c]));
   const byKey = new Map((existing ?? []).map((c) => [`${c.role_id}|${dedupeKey(c)}`, c]));
@@ -133,6 +134,7 @@ export const syncTeamTailor = createServerFn({ method: "POST" }).handler(async (
   let unchanged = 0;
   let skippedDuplicates = 0;
   let unmatched = 0;
+  let skippedRejected = 0;
   const unmatchedJobs = new Set<string>();
   const jobTitleById = new Map(tt.jobs.map((j) => [j.id, j.title]));
   const batchSeen = new Set<string>();
@@ -145,10 +147,16 @@ export const syncTeamTailor = createServerFn({ method: "POST" }).handler(async (
       continue;
     }
     const stage = a.stageName ?? null;
-    const outcome = /reject/i.test(stage ?? "") ? "rejected" : /hired/i.test(stage ?? "") ? "hired" : "active";
+    const isRejected = a.rejected || /reject/i.test(stage ?? "");
+    const outcome = isRejected ? "rejected" : /hired/i.test(stage ?? "") ? "hired" : "active";
 
     const existingRow = byAppId.get(a.applicationId) ?? byKey.get(`${roleId}|${dedupeKey(a)}`);
+    // Only active TeamTailor candidates (Inbox and later stages) are imported.
+    if (isRejected && !existingRow) { skippedRejected++; continue; }
     if (existingRow) {
+      if (!existingRow.cv_url && a.profileUrl) {
+        await db.from("candidates").update({ cv_url: a.profileUrl } as never).eq("id", existingRow.id);
+      }
       const patch: { id: string; stage: string | null; outcome: string } = { id: existingRow.id, stage, outcome };
       if (existingRow.stage !== stage || existingRow.outcome !== outcome) updates.push(patch);
       else unchanged++;
@@ -175,7 +183,9 @@ export const syncTeamTailor = createServerFn({ method: "POST" }).handler(async (
       outcome,
       stage,
       teamtailor_application_id: a.applicationId,
-      notes: a.profileUrl ? `TeamTailor profile: ${a.profileUrl}` : null,
+      // TeamTailor's direct resume link expires within minutes, so the CV link
+      // points to the candidate's TeamTailor profile where the CV is shown.
+      cv_url: a.profileUrl,
     });
   }
 
@@ -191,7 +201,7 @@ export const syncTeamTailor = createServerFn({ method: "POST" }).handler(async (
     actor: user.name,
     action: "teamtailor_sync",
     entity: "candidates",
-    detail: `imported ${rows.length}, updated ${updates.length}, unchanged ${unchanged}, skipped ${skippedDuplicates} duplicates, ${unmatched} unmatched`,
+    detail: `imported ${rows.length}, updated ${updates.length}, unchanged ${unchanged}, skipped ${skippedDuplicates} duplicates, ${skippedRejected} rejected, ${unmatched} unmatched`,
   } as never);
 
   return {
@@ -199,6 +209,7 @@ export const syncTeamTailor = createServerFn({ method: "POST" }).handler(async (
     updated: updates.length,
     unchanged,
     skippedDuplicates,
+    skippedRejected,
     unmatched,
     unmatchedJobs: [...unmatchedJobs].slice(0, 10),
     capped: tt.capped,

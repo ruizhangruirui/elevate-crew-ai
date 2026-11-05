@@ -36,6 +36,8 @@ export type TeamTailorApplication = {
   location: string | null;
   linkedin: string | null;
   profileUrl: string | null;
+  /** True when TeamTailor marks the application as rejected (not an active candidate). */
+  rejected: boolean;
 };
 
 export type TeamTailorData = {
@@ -165,6 +167,7 @@ export async function fetchTeamTailorData(apiKey: string, region: string, matche
       // The resume URL is a signed link that expires within a minute; the
       // profile URL is the stable link back to the candidate in TeamTailor.
       profileUrl: str(a["profile-url"]),
+      rejected: Boolean(app.attributes?.["rejected-at"]),
     });
   }
   return { jobs: [...jobById.values()], applications: out, capped: applications.capped };
