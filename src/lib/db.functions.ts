@@ -105,7 +105,9 @@ export const dbQuery = createServerFn({ method: "POST" })
       return fail("Only the Owner can bulk import people", "403");
 
     const recruitingOnlyInsert = (Array.isArray(payload) ? payload : [payload]).every((r: any) => r?.recruiting_only === true);
-    if (spec.table === "roles" && spec.op === "insert" && user.role !== "owner" && !((user.role === "hr" || user.role === "recruiter") && recruitingOnlyInsert))
+    // HR/Recruiters add hiring positions from Positions: single row, recruiter + supervisor named.
+    const hiringPositionInsert = !Array.isArray(payload) && !!(payload as any)?.recruiter_person_id && !!(payload as any)?.supervisor_person_id;
+    if (spec.table === "roles" && spec.op === "insert" && user.role !== "owner" && !((user.role === "hr" || user.role === "recruiter") && (recruitingOnlyInsert || hiringPositionInsert)))
       return fail("Only the Owner can add strategic roles", "403");
     // Every hiring position must name its recruiter and hiring supervisor at creation time.
     if (spec.table === "roles" && spec.op === "insert" && missingRoleOwners(payload))

@@ -32,6 +32,7 @@ import { fetchOrgNodes, type OrgNode } from "@/lib/org-tree";
 import { FormActions } from "@/components/FormActions";
 import { VisibleToPicker } from "@/components/VisibleToPicker";
 import { PersonPicker } from "@/components/PersonPicker";
+import { AddHiringRole } from "@/components/AddHiringRole";
 import { toastError, toastSaved, toastUndoable } from "@/lib/ui-feedback";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,6 +91,12 @@ function Index() {
       <StrategyBoard />
     </AppShell>
   );
+}
+
+function HiringRoleButton({ directionId, orgNodes }: { directionId: string; orgNodes: { id: string; name: string; type: string }[] }) {
+  const { user } = useAuth();
+  if (!(user?.role === "owner" || user?.role === "hr" || user?.role === "recruiter")) return null;
+  return <AddHiringRole directionId={directionId} orgNodes={orgNodes} />;
 }
 
 function StrategyBoard() {
@@ -217,7 +224,10 @@ function StrategyBoard() {
                 {active.title} · {active.description}
               </p>
             </div>
-            <OwnerOnly><NewRoleDialog directionId={active.id} onDone={invalidate} /></OwnerOnly>
+            <div className="flex items-center gap-2">
+              <HiringRoleButton directionId={active.id} orgNodes={orgNodes.data ?? []} />
+              <OwnerOnly><NewRoleDialog directionId={active.id} onDone={invalidate} /></OwnerOnly>
+            </div>
           </div>
 
           <div className="mt-5 space-y-6">
