@@ -457,8 +457,10 @@ export function RoleMenu({
   removalLabel,
   removalDescription,
   withVisibility,
+  showOwners,
 }: {
   withVisibility?: boolean;
+  showOwners?: boolean;
   role: Role;
   orgNodes: OrgNode[];
   onArchive: () => void;
