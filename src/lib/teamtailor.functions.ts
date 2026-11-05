@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { admin, requireUser } from "./auth.server";
 import { matchJobs, type JobMatch } from "./teamtailor-match";
+import { inboxDefaultPriority } from "./teamtailor-priority";
 
 const SYNC_ROLES = ["owner", "hr", "recruiter"] as const;
 
@@ -124,13 +125,13 @@ export const syncTeamTailor = createServerFn({ method: "POST" }).handler(async (
 
   const { data: existing, error: existingError } = await db
     .from("candidates")
-    .select("id,role_id,email,name,stage,outcome,cv_url,teamtailor_application_id");
+    .select("id,role_id,email,name,stage,outcome,priority,cv_url,teamtailor_application_id");
   if (existingError) throw new Error(existingError.message);
   const byAppId = new Map((existing ?? []).filter((c) => c.teamtailor_application_id).map((c) => [c.teamtailor_application_id as string, c]));
   const byKey = new Map((existing ?? []).map((c) => [`${c.role_id}|${dedupeKey(c)}`, c]));
 
   const rows: Record<string, unknown>[] = [];
-  const updates: { id: string; stage: string | null; outcome: string }[] = [];
+  const updates: { id: string; stage: string | null; outcome: string; priority?: string }[] = [];
   let unchanged = 0;
   let skippedDuplicates = 0;
   let unmatched = 0;
@@ -157,8 +158,10 @@ export const syncTeamTailor = createServerFn({ method: "POST" }).handler(async (
       if (!existingRow.cv_url && a.profileUrl) {
         await db.from("candidates").update({ cv_url: a.profileUrl } as never).eq("id", existingRow.id);
       }
-      const patch: { id: string; stage: string | null; outcome: string } = { id: existingRow.id, stage, outcome };
-      if (existingRow.stage !== stage || existingRow.outcome !== outcome) updates.push(patch);
+      const priority = inboxDefaultPriority(stage, existingRow.priority);
+      const patch: { id: string; stage: string | null; outcome: string; priority?: string } = { id: existingRow.id, stage, outcome };
+      if (priority) patch.priority = priority;
+      if (existingRow.stage !== stage || existingRow.outcome !== outcome || patch.priority) updates.push(patch);
       else unchanged++;
       // Backfill the stable ID on rows matched via the email/name fallback.
       if (!existingRow.teamtailor_application_id) {
@@ -182,6 +185,7 @@ export const syncTeamTailor = createServerFn({ method: "POST" }).handler(async (
       source: "TeamTailor",
       outcome,
       stage,
+      priority: inboxDefaultPriority(stage) ?? "medium",
       teamtailor_application_id: a.applicationId,
       // TeamTailor's direct resume link expires within minutes, so the CV link
       // points to the candidate's TeamTailor profile where the CV is shown.
@@ -194,7 +198,11 @@ export const syncTeamTailor = createServerFn({ method: "POST" }).handler(async (
     if (error) throw new Error(error.message);
   }
   for (const u of updates) {
-    const { error } = await db.from("candidates").update({ stage: u.stage, outcome: u.outcome } as never).eq("id", u.id);
+    const { error } = await db.from("candidates").update({
+      stage: u.stage,
+      outcome: u.outcome,
+      ...(u.priority ? { priority: u.priority } : {}),
+    } as never).eq("id", u.id);
     if (error) throw new Error(error.message);
   }
   await db.from("audit_log").insert({
