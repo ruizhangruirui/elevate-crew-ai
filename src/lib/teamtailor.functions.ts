@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { admin, requireUser, managerScope } from "./auth.server";
+import { admin, requireUser } from "./auth.server";
 import { matchJobs, type JobMatch } from "./teamtailor-match";
 
 const SYNC_ROLES = ["owner", "hr", "recruiter"] as const;
@@ -145,13 +145,10 @@ export const syncTeamTailor = createServerFn({ method: "POST" }).handler(async (
       continue;
     }
     const stage = a.stageName ?? null;
-    const outcome = a.rejected || /reject/i.test(stage ?? "") ? "rejected" : /hired/i.test(stage ?? "") ? "hired" : "active";
+    const outcome = /reject/i.test(stage ?? "") ? "rejected" : /hired/i.test(stage ?? "") ? "hired" : "active";
 
-    const legacy = byKey.get(`${roleId}|${dedupeKey(a)}`);
-    const existingRow = byAppId.get(a.applicationId) ?? (legacy && !legacy.teamtailor_application_id ? legacy : undefined);
+    const existingRow = byAppId.get(a.applicationId) ?? byKey.get(`${roleId}|${dedupeKey(a)}`);
     if (existingRow) {
-      // Do not mutate another position's record after a mapping changes.
-      if (existingRow.role_id !== roleId) { skippedDuplicates++; continue; }
       const patch: { id: string; stage: string | null; outcome: string } = { id: existingRow.id, stage, outcome };
       if (existingRow.stage !== stage || existingRow.outcome !== outcome) updates.push(patch);
       else unchanged++;
@@ -207,23 +204,3 @@ export const syncTeamTailor = createServerFn({ method: "POST" }).handler(async (
     capped: tt.capped,
   };
 });
-
-export const getTeamTailorCv = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ candidateId: z.string().uuid() }))
-  .handler(async ({ data }) => {
-    const user = await requireUser(["owner", "hr", "recruiter", "manager"]);
-    const db = await admin();
-    const { data: candidate, error } = await db.from("candidates").select("role_id,teamtailor_application_id").eq("id", data.candidateId).maybeSingle();
-    if (error || !candidate?.teamtailor_application_id) throw new Error("TeamTailor CV unavailable");
-    if (user.role === "manager" || (user.role === "hr" && user.scope_node_ids.length > 0)) {
-      const scope = await managerScope(user);
-      const { data: role, error: roleError } = await db.from("roles").select("org_node_id").eq("id", candidate.role_id).maybeSingle();
-      if (roleError || !role?.org_node_id || !scope.nodeIds.has(role.org_node_id)) throw new Error("Forbidden: candidate is outside your scope");
-    }
-    const key = process.env["TEAMTAILOR_API_KEY"];
-    if (!key) throw new Error("TeamTailor API key is not configured on the server");
-    const { fetchTeamTailorResume } = await import("./teamtailor.server");
-    const url = await fetchTeamTailorResume(key, (process.env["TEAMTAILOR_REGION"] ?? "eu").trim().toLowerCase(), candidate.teamtailor_application_id);
-    if (!url) throw new Error("No CV is available for this candidate in TeamTailor");
-    return { url };
-  });

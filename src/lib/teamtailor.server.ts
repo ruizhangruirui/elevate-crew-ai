@@ -36,7 +36,6 @@ export type TeamTailorApplication = {
   location: string | null;
   linkedin: string | null;
   profileUrl: string | null;
-  rejected?: boolean;
 };
 
 export type TeamTailorData = {
@@ -119,8 +118,7 @@ export async function fetchTeamTailorData(apiKey: string, region: string, matche
       listAll(base, apiKey, `/job-applications?filter%5Bjob%5D=${encodeURIComponent(job.id)}&include=candidate,job,stage&page%5Bsize%5D=30`),
     ));
     for (const result of batch) {
-      const job = jobs[offset + batch.indexOf(result)];
-      applications.data.push(...result.data.filter((app) => app.relationships?.["job"]?.data?.id === job?.id));
+      applications.data.push(...result.data);
       applications.included.push(...result.included);
       applications.capped ||= result.capped;
     }
@@ -158,7 +156,6 @@ export async function fetchTeamTailorData(apiKey: string, region: string, matche
     out.push({
       applicationId: app.id,
       jobId,
-      rejected: Boolean(app.attributes?.["rejected-at"]),
       stageName: stageId ? (stageNameById.get(stageId) ?? null) : null,
       name,
       email: str(a["email"]),
@@ -171,14 +168,4 @@ export async function fetchTeamTailorData(apiKey: string, region: string, matche
     });
   }
   return { jobs: [...jobById.values()], applications: out, capped: applications.capped };
-}
-
-/** Resolve a fresh signed CV URL only when requested, never persist it. */
-export async function fetchTeamTailorResume(apiKey: string, region: string, applicationId: string): Promise<string | null> {
-  const base = BASE_URLS[region] ?? "https://api.teamtailor.com/v1";
-  const result = await ttGet(base, apiKey, `/job-applications/${encodeURIComponent(applicationId)}?include=candidate`);
-  const candidate = result.included?.find((resource) => resource.type === "candidates");
-  const url = str(candidate?.attributes?.["resume"]) ?? str(candidate?.attributes?.["original-resume"]);
-  if (!url) return null;
-  try { return new URL(url).protocol === "https:" ? url : null; } catch { return null; }
 }

@@ -36,4 +36,3 @@
 - [x] Add a cross-role Offered / To onboard candidate overview with Team filtering in Recruiting; filtering regression tests passed.
 - [ ] Verify signed-in cross-role overview, Team selection and candidate editing (blocked: no app-owned test session available).
 - [x] Fix TeamTailor zero applications by fetching applications per matched job; 11 tests passed, and live API readback recovered 8 applicants for a job absent from the first 1,200 global applications.
-- [ ] Prevent cross-job TeamTailor imports and preserve rejected outcomes; provide fresh TeamTailor resumes through CV links without saving expiring URLs.
