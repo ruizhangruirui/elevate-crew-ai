@@ -92,7 +92,7 @@ export const recruitingDict: Dict = {
   "rec.syncing": { zh: "同步中…", en: "Syncing…" },
   "rec.syncDone": { zh: "已导入 {n} 位候选人", en: "Imported {n} candidates" },
   "rec.syncSkipped": { zh: "跳过 {n} 位重复", en: "skipped {n} duplicates" },
-  "rec.syncUnmatched": { zh: "{n} 位未匹配岗位（{jobs}）", en: "{n} unmatched to a role ({jobs})" },
+  "rec.syncUnmatched": { zh: "已跳过 {n} 份未匹配招聘岗位的申请", en: "Skipped {n} applications without a matching recruiting role" },
   "rec.syncUpdated": { zh: "更新 {n} 位", en: "updated {n}" },
   "rec.syncUnchanged": { zh: "{n} 位无变化", en: "{n} unchanged" },
   "rec.syncCapped": { zh: "注意：TeamTailor 返回的数据达到分页上限，可能有部分记录未读取。", en: "Note: TeamTailor data hit the pagination limit; some records may be missing." },
