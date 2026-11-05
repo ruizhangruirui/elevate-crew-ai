@@ -959,7 +959,7 @@ function AddHiringRole({ directionId, orgNodes, onCreated }: { directionId: stri
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setOpen(false)}>{t("ui.cancel")}</Button>
-            <Button disabled={!title.trim() || create.isPending} onClick={() => create.mutate()}>{t("ui.save")}</Button>
+            <Button disabled={!title.trim() || !recruiter || !supervisor || create.isPending} onClick={() => create.mutate()}>{t("ui.save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
