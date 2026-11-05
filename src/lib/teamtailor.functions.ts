@@ -43,8 +43,13 @@ async function loadContext() {
   const { data: mappings, error: mapError } = await db.from("teamtailor_job_mappings").select("tt_job_id,role_id");
   if (mapError) throw new Error(mapError.message);
 
-  const { fetchTeamTailorData } = await import("./teamtailor.server");
-  const tt = await fetchTeamTailorData(apiKey, region);
+  const { fetchTeamTailorJobs, fetchTeamTailorData } = await import("./teamtailor.server");
+  const discovered = await fetchTeamTailorJobs(apiKey, region);
+  const activeRoles = (roles ?? []) as RoleRow[];
+  const matches = matchJobs(activeRoles, mappings ?? [], { ...discovered, applications: [] });
+  const matchedIds = new Set(matches.filter((job) => job.roleId).map((job) => job.ttJobId));
+  const pipelines = await fetchTeamTailorData(apiKey, region, discovered.jobs.filter((job) => matchedIds.has(job.id)));
+  const tt = { jobs: discovered.jobs, applications: pipelines.applications, capped: discovered.capped || pipelines.capped };
   return { db, roles: (roles ?? []) as RoleRow[], mappings: mappings ?? [], tt };
 }
 
