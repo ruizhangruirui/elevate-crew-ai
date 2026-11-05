@@ -913,6 +913,8 @@ function AddHiringRole({ directionId, orgNodes, onCreated }: { directionId: stri
           recruiting_only: true,
           criticality: "important",
           visible_to_person_ids: visibleTo,
+          recruiter_person_id: recruiter,
+          supervisor_person_id: supervisor,
         })
         .select("id")
         .single();
@@ -927,6 +929,8 @@ function AddHiringRole({ directionId, orgNodes, onCreated }: { directionId: stri
       setNode("none");
       setCount("1");
       setVisibleTo([]);
+      setRecruiter(null);
+      setSupervisor(null);
       onCreated(id);
     },
     onError: (e: Error) => toast.error(e.message),
@@ -947,6 +951,10 @@ function AddHiringRole({ directionId, orgNodes, onCreated }: { directionId: stri
               </Select>
             </div>
             <div className="space-y-1.5"><Label>{t("rec.roleCount")}</Label><Input type="number" min={1} value={count} onChange={(e) => setCount(e.target.value)} /></div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <PersonPicker label={t("rec.roleRecruiter")} value={recruiter} onChange={setRecruiter} clearLabel={t("ui.clear")} />
+              <PersonPicker label={t("rec.roleSupervisor")} value={supervisor} onChange={setSupervisor} clearLabel={t("ui.clear")} />
+            </div>
             <VisibleToPicker value={visibleTo} onChange={setVisibleTo} />
           </div>
           <DialogFooter>
