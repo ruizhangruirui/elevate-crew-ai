@@ -6,7 +6,8 @@ export function missingRoleOwners(payload: unknown): boolean {
 
 /** On update, a position re-entering Recruiting keeps existing owners unless the payload changes them. */
 export function missingRoleOwnersOnUpdate(payload: unknown, targets: Array<Record<string, unknown>>): boolean {
+  const patch = (payload ?? {}) as Record<string, unknown>;
   return targets.some(
-    (r) => !((payload as any)?.recruiter_person_id ?? r?.recruiter_person_id) || !((payload as any)?.supervisor_person_id ?? r?.supervisor_person_id),
+    (r) => !(patch["recruiter_person_id"] ?? r?.["recruiter_person_id"]) || !(patch["supervisor_person_id"] ?? r?.["supervisor_person_id"]),
   );
 }
