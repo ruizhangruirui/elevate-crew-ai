@@ -240,7 +240,7 @@ function RecruitingBody() {
     .filter((r) => lab === "all" || labOf(r.org_node_id)?.id === lab)
     .map((r) => ({ r, cov: coverageOf(r, people) }))
     .filter(({ r, cov }) => !openOnly || cov.gap > 0 || r.id === roleId || activeByRole.has(r.id));
-  const role = scopedRoles.find((r) => r.id === roleId) ?? null;
+  const role = scopedRoles.find((r) => r.id === roleId && (lab === "all" || labOf(r.org_node_id)?.id === lab)) ?? null;
   const editingRole = editing && editing !== "new" ? scopedRoles.find((r) => r.id === editing.role_id) : role;
   // The Lab filter also scopes the cross-role candidate overview below.
   const labRoles = scopedRoles.filter((r) => lab === "all" || labOf(r.org_node_id)?.id === lab);
@@ -353,11 +353,11 @@ function RecruitingBody() {
           <div className="flex flex-wrap items-center gap-1.5">
             {labs.length > 1 && (
               <>
-                <button type="button" onClick={() => setLab("all")} className={`rounded-full border px-2.5 py-0.5 text-[11px] ${lab === "all" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
+                <button type="button" onClick={() => { setLab("all"); navigate({ search: {} }); }} className={`rounded-full border px-2.5 py-0.5 text-[11px] ${lab === "all" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
                   {t("rec.allLabs")}
                 </button>
                 {labs.map((l) => (
-                  <button key={l.id} type="button" onClick={() => setLab(l.id)} className={`rounded-full border px-2.5 py-0.5 text-[11px] ${lab === l.id ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
+                  <button key={l.id} type="button" onClick={() => { setLab(l.id); if (lab !== l.id) navigate({ search: {} }); }} className={`rounded-full border px-2.5 py-0.5 text-[11px] ${lab === l.id ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
                     {l.name}
                   </button>
                 ))}
