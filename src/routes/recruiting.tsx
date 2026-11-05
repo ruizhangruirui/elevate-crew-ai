@@ -12,7 +12,7 @@ import { RoleMenu } from "@/routes/index";
 import { fetchOrgNodes, subtreeIds } from "@/lib/org-tree";
 import { toastUndoable } from "@/lib/ui-feedback";
 import { db } from "@/lib/db-client";
-import { previewTeamTailorSync, saveTeamTailorMapping, syncTeamTailor, type SyncPreview } from "@/lib/teamtailor.functions";
+import { syncTeamTailor } from "@/lib/teamtailor.functions";
 import { onboardingDate } from "@/lib/candidate-onboarding";
 import { processDueOnboardings } from "@/lib/candidate-autohire.functions";
 import { overviewCandidates, teamForRole } from "@/lib/recruiting-overview";
@@ -151,31 +151,15 @@ function RecruitingBody() {
 
   const { data: ws } = useQuery({ queryKey: ["workspace", "recruiting"], queryFn: fetchRecruitingWorkspace });
   const { data: orgNodes = [] } = useQuery({ queryKey: ["orgNodes"], queryFn: fetchOrgNodes });
-  const [ttPreviewOpen, setTtPreviewOpen] = useState(false);
-  const [ttPreview, setTtPreview] = useState<SyncPreview | null>(null);
-  const previewTt = useMutation({
-    mutationFn: () => previewTeamTailorSync(),
-    onSuccess: (r) => {
-      setTtPreview(r);
-      setTtPreviewOpen(true);
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-  const mapTtJob = useMutation({
-    mutationFn: (input: { ttJobId: string; ttJobTitle: string; roleId: string }) => saveTeamTailorMapping({ data: input }),
-    onSuccess: () => previewTt.mutate(),
-    onError: (e: Error) => toast.error(e.message),
-  });
   const syncTt = useMutation({
     mutationFn: () => syncTeamTailor(),
     onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ["candidates"] });
-      setTtPreviewOpen(false);
       const parts = [t("rec.syncDone").replace("{n}", String(r.imported))];
       if (r.updated) parts.push(t("rec.syncUpdated").replace("{n}", String(r.updated)));
       if (r.unchanged) parts.push(t("rec.syncUnchanged").replace("{n}", String(r.unchanged)));
       if (r.skippedDuplicates) parts.push(t("rec.syncSkipped").replace("{n}", String(r.skippedDuplicates)));
-      if (r.unmatched) parts.push(t("rec.syncUnmatched").replace("{n}", String(r.unmatched)).replace("{jobs}", r.unmatchedJobs.join(", ")));
+      if (r.unmatched) parts.push(t("rec.syncUnmatched").replace("{n}", String(r.unmatched)));
       if (r.capped) parts.push(t("rec.syncCapped"));
       toast.success(parts.join(" · "));
     },
@@ -441,8 +425,8 @@ function RecruitingBody() {
                   <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("rec.search")} className="h-9 w-56 pl-8 text-sm" />
                 </div>
                 {canEdit && (
-                  <Button size="sm" variant="outline" className="gap-1.5" disabled={previewTt.isPending || syncTt.isPending} onClick={() => previewTt.mutate()}>
-                    <RefreshCw className={`size-4 ${previewTt.isPending || syncTt.isPending ? "animate-spin" : ""}`} /> {previewTt.isPending || syncTt.isPending ? t("rec.syncing") : t("rec.sync")}
+                  <Button size="sm" variant="outline" className="gap-1.5" disabled={syncTt.isPending || syncTt.isPending} onClick={() => syncTt.mutate()}>
+                    <RefreshCw className={`size-4 ${syncTt.isPending || syncTt.isPending ? "animate-spin" : ""}`} /> {syncTt.isPending || syncTt.isPending ? t("rec.syncing") : t("rec.sync")}
                   </Button>
                 )}
                 {canEdit && (
@@ -587,80 +571,7 @@ function RecruitingBody() {
         />
       )}
 
-      <Dialog open={ttPreviewOpen} onOpenChange={(v) => !v && setTtPreviewOpen(false)}>
-        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{t("rec.syncPreviewTitle")}</DialogTitle>
-          </DialogHeader>
-          <p className="text-xs text-muted-foreground">{t("rec.syncPreviewDesc")}</p>
-          {ttPreview && (
-            <>
-              <p className="text-sm font-medium">
-                {t("rec.syncPreviewSummary")
-                  .replace("{matched}", String(ttPreview.matchedJobs))
-                  .replace("{total}", String(ttPreview.jobs.length))
-                  .replace("{n}", String(ttPreview.importable))
-                  .replace("{d}", String(ttPreview.duplicates))}
-              </p>
-              {ttPreview.capped && <p className="text-xs text-amber-600">{t("rec.syncCapped")}</p>}
-              <table className="w-full text-sm">
-                <thead className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
-                  <tr>
-                    <th className="py-1.5 pr-3">{t("rec.ttJob")}</th>
-                    <th className="py-1.5 pr-3">{t("rec.ttApps")}</th>
-                    <th className="py-1.5">{t("rec.ttMatch")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ttPreview.jobs.map((j) => (
-                    <tr key={j.ttJobId} className="border-t border-border/50 align-top">
-                      <td className="py-2 pr-3">
-                        <div className="font-medium">{j.ttJobTitle}</div>
-                        {j.reason && <div className="text-[11px] text-muted-foreground">{j.reason}</div>}
-                      </td>
-                      <td className="py-2 pr-3 tabular-nums">{j.applications}</td>
-                      <td className="py-2">
-                        {j.roleId ? (
-                          <span className="text-xs">
-                            {j.roleTitle}
-                            <span className="ml-1.5 rounded bg-brand/10 px-1.5 py-0.5 text-[10px] text-brand">
-                              {j.status === "mapped" ? t("rec.ttMapped") : t("rec.ttByTitle")}
-                            </span>
-                          </span>
-                        ) : (
-                          <Select
-                            disabled={mapTtJob.isPending}
-                            onValueChange={(roleId) =>
-                              mapTtJob.mutate({ ttJobId: j.ttJobId, ttJobTitle: j.ttJobTitle, roleId })
-                            }
-                          >
-                            <SelectTrigger className="h-8 w-56 text-xs">
-                              <SelectValue placeholder={t("rec.ttPickRole")} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {(ws?.roles ?? []).map((r) => (
-                                <SelectItem key={r.id} value={r.id} className="text-xs">
-                                  {r.title}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setTtPreviewOpen(false)}>{t("ui.cancel")}</Button>
-            <Button disabled={syncTt.isPending || !ttPreview?.importable} onClick={() => syncTt.mutate()}>
-              {syncTt.isPending ? t("rec.syncing") : t("rec.syncConfirm")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
     </div>
   );
 }
