@@ -10,6 +10,7 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/hooks/useAuth";
 import { RoleMenu } from "@/routes/index";
 import { VisibleToPicker } from "@/components/VisibleToPicker";
+import { PersonPicker } from "@/components/PersonPicker";
 import { fetchOrgNodes, subtreeIds } from "@/lib/org-tree";
 import { toastUndoable } from "@/lib/ui-feedback";
 import { db } from "@/lib/db-client";
@@ -402,6 +403,19 @@ function RecruitingBody() {
               <div>
                 <h2 className="font-display text-lg font-semibold">{role.title}</h2>
                 {role.job_title && <p className="text-xs text-muted-foreground">{t("pp.f.offerTitle")}: {role.job_title}</p>}
+                {(() => {
+                  const nm = (id: string | null | undefined) => people.find((p) => p.id === id)?.name ?? null;
+                  const rc = nm(role.recruiter_person_id);
+                  const sv = nm(role.supervisor_person_id);
+                  if (!rc && !sv) return null;
+                  return (
+                    <p className="text-xs text-muted-foreground">
+                      {rc ? `${t("rec.roleRecruiter")}: ${rc}` : null}
+                      {rc && sv ? " · " : ""}
+                      {sv ? `${t("rec.roleSupervisor")}: ${sv}` : null}
+                    </p>
+                  );
+                })()}
                 <p className="text-xs text-muted-foreground">
                   Level {role.level_min}–{role.level_max} · {coverageOf(role, people).filled}/{role.target_count}
                 </p>
@@ -897,6 +911,8 @@ function AddHiringRole({ directionId, orgNodes, onCreated }: { directionId: stri
   const [node, setNode] = useState("none");
   const [count, setCount] = useState("1");
   const [visibleTo, setVisibleTo] = useState<string[]>([]);
+  const [recruiter, setRecruiter] = useState<string | null>(null);
+  const [supervisor, setSupervisor] = useState<string | null>(null);
   const create = useMutation({
     mutationFn: async () => {
       if (!directionId) throw new Error(t("rec.needDirection"));
@@ -910,6 +926,8 @@ function AddHiringRole({ directionId, orgNodes, onCreated }: { directionId: stri
           recruiting_only: true,
           criticality: "important",
           visible_to_person_ids: visibleTo,
+          recruiter_person_id: recruiter,
+          supervisor_person_id: supervisor,
         })
         .select("id")
         .single();
@@ -924,6 +942,8 @@ function AddHiringRole({ directionId, orgNodes, onCreated }: { directionId: stri
       setNode("none");
       setCount("1");
       setVisibleTo([]);
+      setRecruiter(null);
+      setSupervisor(null);
       onCreated(id);
     },
     onError: (e: Error) => toast.error(e.message),
@@ -944,11 +964,15 @@ function AddHiringRole({ directionId, orgNodes, onCreated }: { directionId: stri
               </Select>
             </div>
             <div className="space-y-1.5"><Label>{t("rec.roleCount")}</Label><Input type="number" min={1} value={count} onChange={(e) => setCount(e.target.value)} /></div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <PersonPicker label={t("rec.roleRecruiter")} value={recruiter} onChange={setRecruiter} clearLabel={t("ui.clear")} />
+              <PersonPicker label={t("rec.roleSupervisor")} value={supervisor} onChange={setSupervisor} clearLabel={t("ui.clear")} />
+            </div>
             <VisibleToPicker value={visibleTo} onChange={setVisibleTo} />
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setOpen(false)}>{t("ui.cancel")}</Button>
-            <Button disabled={!title.trim() || create.isPending} onClick={() => create.mutate()}>{t("ui.save")}</Button>
+            <Button disabled={!title.trim() || !recruiter || !supervisor || create.isPending} onClick={() => create.mutate()}>{t("ui.save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

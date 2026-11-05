@@ -1111,10 +1111,12 @@ export type Database = {
           location: string | null
           org_node_id: string | null
           recommended_action: string[]
+          recruiter_person_id: string | null
           recruiting_archived: boolean
           recruiting_only: boolean
           skills: Json
           sort_order: number
+          supervisor_person_id: string | null
           target_count: number
           title: string
           updated_at: string
@@ -1140,10 +1142,12 @@ export type Database = {
           location?: string | null
           org_node_id?: string | null
           recommended_action?: string[]
+          recruiter_person_id?: string | null
           recruiting_archived?: boolean
           recruiting_only?: boolean
           skills?: Json
           sort_order?: number
+          supervisor_person_id?: string | null
           target_count?: number
           title: string
           updated_at?: string
@@ -1169,10 +1173,12 @@ export type Database = {
           location?: string | null
           org_node_id?: string | null
           recommended_action?: string[]
+          recruiter_person_id?: string | null
           recruiting_archived?: boolean
           recruiting_only?: boolean
           skills?: Json
           sort_order?: number
+          supervisor_person_id?: string | null
           target_count?: number
           title?: string
           updated_at?: string

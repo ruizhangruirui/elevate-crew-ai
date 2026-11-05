@@ -31,6 +31,7 @@ import { db as supabase } from "@/lib/db-client";
 import { fetchOrgNodes, type OrgNode } from "@/lib/org-tree";
 import { FormActions } from "@/components/FormActions";
 import { VisibleToPicker } from "@/components/VisibleToPicker";
+import { PersonPicker } from "@/components/PersonPicker";
 import { toastError, toastSaved, toastUndoable } from "@/lib/ui-feedback";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -476,6 +477,8 @@ export function RoleMenu({
   const [directionId, setDirectionId] = useState(role.direction_id);
   const [contract, setContract] = useState<string>(roleContractOf(role));
   const [visibleTo, setVisibleTo] = useState<string[]>((role as any).visible_to_person_ids ?? []);
+  const [recruiterId, setRecruiterId] = useState<string | null>((role as any).recruiter_person_id ?? null);
+  const [supervisorId, setSupervisorId] = useState<string | null>((role as any).supervisor_person_id ?? null);
   const dirs = useQuery({
     queryKey: ["directions-active"],
     queryFn: async () => {
@@ -502,6 +505,8 @@ export function RoleMenu({
     setDirectionId(role.direction_id);
     setContract(roleContractOf(role));
     setVisibleTo((role as any).visible_to_person_ids ?? []);
+    setRecruiterId((role as any).recruiter_person_id ?? null);
+    setSupervisorId((role as any).supervisor_person_id ?? null);
   };
 
   const move = useMutation({
@@ -537,6 +542,8 @@ export function RoleMenu({
           employment_mode: mode === "__none" ? null : mode,
           location: location === "__none" ? null : location,
           contract_type: contract,
+          recruiter_person_id: recruiterId,
+          supervisor_person_id: supervisorId,
           ...(withVisibility ? { visible_to_person_ids: visibleTo } : {}),
         })
         .eq("id", role.id);
@@ -710,6 +717,10 @@ export function RoleMenu({
               </Select>
             </div>
             <ModeLocationFields mode={mode} location={location} onMode={setMode} onLocation={setLocation} />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <PersonPicker label={t("idx.roleRecruiter")} value={recruiterId} onChange={setRecruiterId} clearLabel={t("ui.clear")} />
+              <PersonPicker label={t("idx.roleSupervisor")} value={supervisorId} onChange={setSupervisorId} clearLabel={t("ui.clear")} />
+            </div>
             {withVisibility && <VisibleToPicker value={visibleTo} onChange={setVisibleTo} />}
 
             <p className="text-xs text-muted-foreground">
@@ -964,6 +975,8 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
     employment_mode: "__none",
     location: "__none",
     contract_type: "employee",
+    recruiter_person_id: "",
+    supervisor_person_id: "",
   };
   const [form, setForm] = useState(empty);
 
@@ -980,6 +993,8 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
         employment_mode: form.employment_mode === "__none" ? null : form.employment_mode,
         location: form.location === "__none" ? null : form.location,
         contract_type: form.contract_type,
+        recruiter_person_id: form.recruiter_person_id || null,
+        supervisor_person_id: form.supervisor_person_id || null,
       });
       if (error) throw error;
     },
@@ -1076,12 +1091,26 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
             onMode={(v) => setForm({ ...form, employment_mode: v })}
             onLocation={(v) => setForm({ ...form, location: v })}
           />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <PersonPicker
+              label={t("idx.roleRecruiter")}
+              value={form.recruiter_person_id || null}
+              onChange={(id) => setForm({ ...form, recruiter_person_id: id ?? "" })}
+              clearLabel={t("ui.clear")}
+            />
+            <PersonPicker
+              label={t("idx.roleSupervisor")}
+              value={form.supervisor_person_id || null}
+              onChange={(id) => setForm({ ...form, supervisor_person_id: id ?? "" })}
+              clearLabel={t("ui.clear")}
+            />
+          </div>
         </div>
         <FormActions
           onCancel={() => setOpen(false)}
           onSave={() => create.mutate()}
           pending={create.isPending}
-          disabled={!form.title.trim()}
+          disabled={!form.title.trim() || !form.recruiter_person_id || !form.supervisor_person_id}
         />
 
       </DialogContent>

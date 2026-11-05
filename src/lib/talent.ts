@@ -46,6 +46,8 @@ export type Role = {
   recruiting_only?: boolean;
   recruiting_archived?: boolean;
   location?: string | null;
+  recruiter_person_id?: string | null;
+  supervisor_person_id?: string | null;
 };
 
 export type Person = {
