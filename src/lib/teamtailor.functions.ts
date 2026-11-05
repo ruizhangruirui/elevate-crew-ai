@@ -124,7 +124,7 @@ export const syncTeamTailor = createServerFn({ method: "POST" }).handler(async (
 
   const { data: existing, error: existingError } = await db
     .from("candidates")
-    .select("id,role_id,email,name,stage,outcome,cv_url,teamtailor_application_id");
+    .select("id,role_id,email,name,stage,outcome,priority,cv_url,teamtailor_application_id");
   if (existingError) throw new Error(existingError.message);
   const byAppId = new Map((existing ?? []).filter((c) => c.teamtailor_application_id).map((c) => [c.teamtailor_application_id as string, c]));
   const byKey = new Map((existing ?? []).map((c) => [`${c.role_id}|${dedupeKey(c)}`, c]));
