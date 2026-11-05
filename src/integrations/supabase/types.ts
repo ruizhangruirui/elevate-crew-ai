@@ -304,6 +304,7 @@ export type Database = {
           role_id: string
           source: string | null
           stage: string | null
+          teamtailor_application_id: string | null
           updated_at: string
         }
         Insert: {
@@ -330,6 +331,7 @@ export type Database = {
           role_id: string
           source?: string | null
           stage?: string | null
+          teamtailor_application_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -356,6 +358,7 @@ export type Database = {
           role_id?: string
           source?: string | null
           stage?: string | null
+          teamtailor_application_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1268,6 +1271,41 @@ export type Database = {
             columns: ["org_node_id"]
             isOneToOne: false
             referencedRelation: "org_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teamtailor_job_mappings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          role_id: string
+          tt_job_id: string
+          tt_job_title: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role_id: string
+          tt_job_id: string
+          tt_job_title?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role_id?: string
+          tt_job_id?: string
+          tt_job_title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teamtailor_job_mappings_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
             referencedColumns: ["id"]
           },
         ]
