@@ -390,6 +390,7 @@ function RecruitingBody() {
               </Button>
               {canEditRole && <RoleMenu
                 withVisibility
+                showOwners
                 role={r}
                 orgNodes={orgNodes}
                 onArchive={() => removeRole.mutate(r.id)}

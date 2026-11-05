@@ -3,3 +3,10 @@ export function missingRoleOwners(payload: unknown): boolean {
   const rows = Array.isArray(payload) ? payload : [payload];
   return rows.some((r: any) => r?.recruiting_archived !== true && (!r?.recruiter_person_id || !r?.supervisor_person_id));
 }
+
+/** On update, a position re-entering Recruiting keeps existing owners unless the payload changes them. */
+export function missingRoleOwnersOnUpdate(payload: unknown, targets: Array<Record<string, unknown>>): boolean {
+  return targets.some(
+    (r) => !((payload as any)?.recruiter_person_id ?? r?.recruiter_person_id) || !((payload as any)?.supervisor_person_id ?? r?.supervisor_person_id),
+  );
+}
