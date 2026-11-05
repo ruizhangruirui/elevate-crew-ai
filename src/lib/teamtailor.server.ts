@@ -56,7 +56,7 @@ export function normTitle(s: string): string {
     .toLowerCase()
     .replace(/[\u00A0\u202F\u2009\u2007\u2000-\u200A]/g, " ")
     .replace(/[‐‑‒–—―]/g, "-")
-    .replace(/[()[\]{}"'‘’“”«».,:;!？?/\\|+*#@~^$%&=_<>]/g, " ")
+    .replace(/[-()[\]{}"'‘’“”«».,:;!？?/\\|+*#@~^$%&=_<>]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }

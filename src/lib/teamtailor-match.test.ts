@@ -1,5 +1,11 @@
-import { describe, expect, it } from "bun:test";
+import { describe, it } from "node:test";
+import { strictEqual, notStrictEqual } from "node:assert/strict";
 import { normTitle } from "./teamtailor.server";
+
+const expect = (v: string) => ({
+  toBe: (o: string) => strictEqual(v, o),
+  not: { toBe: (o: string) => notStrictEqual(v, o) },
+});
 
 describe("normTitle (TeamTailor job ↔ position matching)", () => {
   it("matches titles that differ only by case and whitespace", () => {
