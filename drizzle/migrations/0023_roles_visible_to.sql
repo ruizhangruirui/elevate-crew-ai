@@ -1,0 +1,1 @@
+ALTER TABLE public.roles ADD COLUMN IF NOT EXISTS visible_to_person_ids uuid[] NOT NULL DEFAULT '{}';

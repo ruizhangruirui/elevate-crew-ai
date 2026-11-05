@@ -30,6 +30,7 @@ import {
 import { db as supabase } from "@/lib/db-client";
 import { fetchOrgNodes, type OrgNode } from "@/lib/org-tree";
 import { FormActions } from "@/components/FormActions";
+import { VisibleToPicker } from "@/components/VisibleToPicker";
 import { toastError, toastSaved, toastUndoable } from "@/lib/ui-feedback";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -451,7 +452,9 @@ export function RoleMenu({
   onSaved,
   removalLabel,
   removalDescription,
+  withVisibility,
 }: {
+  withVisibility?: boolean;
   role: Role;
   orgNodes: OrgNode[];
   onArchive: () => void;
@@ -472,6 +475,7 @@ export function RoleMenu({
   const [location, setLocation] = useState(role.location ?? "__none");
   const [directionId, setDirectionId] = useState(role.direction_id);
   const [contract, setContract] = useState<string>(roleContractOf(role));
+  const [visibleTo, setVisibleTo] = useState<string[]>((role as any).visible_to_person_ids ?? []);
   const dirs = useQuery({
     queryKey: ["directions-active"],
     queryFn: async () => {
@@ -497,6 +501,7 @@ export function RoleMenu({
     setLocation(role.location ?? "__none");
     setDirectionId(role.direction_id);
     setContract(roleContractOf(role));
+    setVisibleTo((role as any).visible_to_person_ids ?? []);
   };
 
   const move = useMutation({
@@ -532,6 +537,7 @@ export function RoleMenu({
           employment_mode: mode === "__none" ? null : mode,
           location: location === "__none" ? null : location,
           contract_type: contract,
+          ...(withVisibility ? { visible_to_person_ids: visibleTo } : {}),
         })
         .eq("id", role.id);
       if (error) throw error;
@@ -704,6 +710,7 @@ export function RoleMenu({
               </Select>
             </div>
             <ModeLocationFields mode={mode} location={location} onMode={setMode} onLocation={setLocation} />
+            {withVisibility && <VisibleToPicker value={visibleTo} onChange={setVisibleTo} />}
 
             <p className="text-xs text-muted-foreground">
               {t("idx.roleProfileHint")}

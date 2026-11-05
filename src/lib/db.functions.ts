@@ -167,6 +167,7 @@ export const dbQuery = createServerFn({ method: "POST" })
           : { data: [] };
         const ids: string[] = [...new Set<string>([
           ...(await scopedRoleIds(db, scope.nodeIds)),
+          ...(await sharedRoleIds(db, user)),
           ...((held ?? []) as { role_id: string | null }[]).map((p) => p.role_id).filter((x): x is string => !!x),
         ])];
         q = q.in("id", ids);
@@ -187,7 +188,7 @@ export const dbQuery = createServerFn({ method: "POST" })
       }
       else if (PERSON_TABLES.has(spec.table)) q = q.in("person_id", [...scope.personIds]);
       else if (spec.table === "candidates" || spec.table === "candidate_events") {
-        const roleIds = await scopedRoleIds(db, scope.nodeIds);
+        const roleIds = [...new Set([...(await scopedRoleIds(db, scope.nodeIds)), ...(await sharedRoleIds(db, user))])];
         if (spec.table === "candidates") q = q.in("role_id", roleIds);
         else {
           const { data: cs } = roleIds.length ? await db.from("candidates").select("id").in("role_id", roleIds) : { data: [] };
@@ -367,6 +368,21 @@ async function scopedRoleIds(db: any, nodeIds: Set<string>): Promise<string[]> {
   if (!nodeIds.size) return [];
   const { data } = await db.from("roles").select("id").in("org_node_id", [...nodeIds]);
   return (data ?? []).map((r: any) => r.id);
+}
+
+/**
+ * Recruiting positions explicitly shared with this account ("Visible to"). The account is
+ * linked to a person by company email (case-insensitive), falling back to an exact name match.
+ * Read-only: write checks are unchanged.
+ */
+async function sharedRoleIds(db: any, user: AppUser): Promise<string[]> {
+  const { data: people } = await db.from("people").select("id,name,company_email").eq("archived", false);
+  const email = user.email.trim().toLowerCase();
+  const me = (people ?? []).filter((p: any) => (p.company_email ?? "").trim().toLowerCase() === email);
+  const ids: string[] = (me.length ? me : (people ?? []).filter((p: any) => p.name === user.name)).map((p: any) => p.id);
+  if (!ids.length) return [];
+  const { data } = await db.from("roles").select("id,visible_to_person_ids").eq("archived", false);
+  return (data ?? []).filter((r: any) => (r.visible_to_person_ids ?? []).some((id: string) => ids.includes(id))).map((r: any) => r.id);
 }
 
 /** Scope nodes plus their ancestors, so managers still see the Lab above their Team. */

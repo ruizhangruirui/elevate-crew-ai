@@ -1118,6 +1118,7 @@ export type Database = {
           target_count: number
           title: string
           updated_at: string
+          visible_to_person_ids: string[]
         }
         Insert: {
           archived?: boolean
@@ -1146,6 +1147,7 @@ export type Database = {
           target_count?: number
           title: string
           updated_at?: string
+          visible_to_person_ids?: string[]
         }
         Update: {
           archived?: boolean
@@ -1174,6 +1176,7 @@ export type Database = {
           target_count?: number
           title?: string
           updated_at?: string
+          visible_to_person_ids?: string[]
         }
         Relationships: [
           {
