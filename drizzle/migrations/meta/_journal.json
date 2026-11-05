@@ -183,6 +183,13 @@
       "when": 1793880533422,
       "tag": "0025_people_role_transition",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1793880644785,
+      "tag": "0026_deprecate_role_transition",
+      "breakpoints": true
     }
   ]
 }
