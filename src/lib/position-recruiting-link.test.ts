@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { toOnboardByPosition } from "./position-recruiting-link";
+import { toOnboardByPosition } from "./position-recruiting-link.ts";
 
 const positions = [{ id: "p1", title: "Data Scientist" }];
 const roles = [
