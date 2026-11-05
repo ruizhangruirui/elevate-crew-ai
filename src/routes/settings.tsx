@@ -271,7 +271,7 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
       } else {
         const parent = organizationParents(nodes, node.type ?? "Team").find((p) => p.id === node.parent_id);
         if (!parent || !node.name?.trim()) throw new Error(t("set.org.parentOrg"));
-        const id = `node-${crypto.randomUUID()}`;
+        const id = `node-${typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Date.now().toString(36) + "-" + Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => b.toString(16).padStart(2, "0")).join("")}`;
         const { error } = await supabase.from("org_nodes").insert({
           id,
           name: node.name.trim(),
