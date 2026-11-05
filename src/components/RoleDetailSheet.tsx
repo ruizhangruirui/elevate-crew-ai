@@ -154,37 +154,6 @@ export function RoleDetailSheet({
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const unassigned = role ? people.filter((p) => p.role_id !== role.id && p.status === "onboard" && !p.archived) : [];
-  const cov = role ? coverageOf(role, people) : null;
-
-  const assign = useMutation({
-    mutationFn: async (personId: string) => {
-      const { error } = await supabase
-        .from("people")
-        .update({ role_id: role!.id, status: "onboard", ...(role!.job_title && !people.find((p) => p.id === personId)?.offer_title ? { offer_title: role!.job_title } : {}) })
-        .eq("id", personId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success(t("sheet.role.ownerAssigned"));
-      setAssignSeat(null);
-      onDone();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const finishTransition = useMutation({
-    mutationFn: async (personId: string) => {
-      const { error } = await supabase.from("people").update({ role_transition_on: null }).eq("id", personId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success(t("sheet.role.transitionDone"));
-      onDone();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
   const unassign = useMutation({
     mutationFn: async (personId: string) => {
       const { error } = await supabase.from("people").update({ role_id: null }).eq("id", personId);
