@@ -12,6 +12,9 @@ describe("Hiring position owners", () => {
   it("accepts a position with both owners", () => {
     strictEqual(missingRoleOwners({ title: "X", recruiter_person_id: "p1", supervisor_person_id: "p2" }), false);
   });
+  it("accepts a position kept out of Recruiting without owners", () => {
+    strictEqual(missingRoleOwners({ title: "X", recruiting_archived: true }), false);
+  });
   it("checks every row in a batch insert", () => {
     strictEqual(missingRoleOwners([
       { recruiter_person_id: "p1", supervisor_person_id: "p2" },
