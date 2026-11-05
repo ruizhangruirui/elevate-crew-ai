@@ -162,6 +162,13 @@
       "when": 1793869465034,
       "tag": "0022_teamtailor_sync_mapping",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793871928602,
+      "tag": "0023_roles_visible_to",
+      "breakpoints": true
     }
   ]
 }
