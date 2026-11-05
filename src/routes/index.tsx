@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { EMPLOYMENT_MODES, employmentModeLabel, useLocations } from "@/lib/locations";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -997,6 +997,7 @@ export function NewDirectionDialog({ orgId, onDone }: { orgId: string; onDone: (
 function NewRoleDialog({ directionId, orgNodes, onDone, onAssign }: { directionId: string; orgNodes: { id: string; name: string; type: string }[]; onDone: () => void; onAssign: (id: string) => void }) {
   const { t } = useI18n();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"form" | "next" | "sourcing">("form");
   const [createdId, setCreatedId] = useState<string | null>(null);
@@ -1066,16 +1067,19 @@ function NewRoleDialog({ directionId, orgNodes, onDone, onAssign }: { directionI
 
   const startSourcing = useMutation({
     mutationFn: async () => {
+      if (!createdId) throw new Error("Create a position before starting sourcing.");
       const { error } = await supabase
         .from("roles")
         .update({ recruiting_archived: false, recruiter_person_id: recruiter, supervisor_person_id: supervisor, visible_to_person_ids: visibleTo })
-        .eq("id", createdId!);
+        .eq("id", createdId);
       if (error) throw error;
+      return createdId;
     },
-    onSuccess: () => {
+    onSuccess: (id) => {
       toastSaved(t("rec.roleAdded"));
       onDone();
       close();
+      void navigate({ to: "/recruiting", search: { role: id } });
     },
     onError: (e: Error) => toast.error(e.message),
   });
