@@ -29,6 +29,7 @@ import {
 } from "@/lib/talent";
 import { db as supabase } from "@/lib/db-client";
 import { fetchOrgNodes, type OrgNode } from "@/lib/org-tree";
+import { toOnboardByPosition, type LinkCandidate } from "@/lib/position-recruiting-link";
 import { FormActions } from "@/components/FormActions";
 import { VisibleToPicker } from "@/components/VisibleToPicker";
 import { PersonPicker } from "@/components/PersonPicker";
@@ -98,6 +99,16 @@ function StrategyBoard() {
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
   const orgNodes = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
+  const pipeline = useQuery({
+    queryKey: ["positions-pipeline"],
+    queryFn: async () => {
+      const [r, c] = await Promise.all([
+        supabase.from("roles").select("id,title,recruiting_only").eq("archived", false),
+        supabase.from("candidates").select("id,role_id,name,outcome,onboarding_on").eq("outcome", "to_onboard"),
+      ]);
+      return { roles: (r.data ?? []) as { id: string; title: string; recruiting_only: boolean }[], candidates: (c.data ?? []) as LinkCandidate[] };
+    },
+  });
   const [activeId, setActiveId] = useState<string | null>(null);
   const [openRoleId, setOpenRoleId] = useState<string | null>(null);
 
@@ -132,6 +143,7 @@ function StrategyBoard() {
   const { org, directions, roles, people } = data;
   const active = directions.find((d) => d.id === activeId) ?? directions[0] ?? null;
   const activeRoles = active ? roles.filter((r) => r.direction_id === active.id) : [];
+  const onboarding = toOnboardByPosition(roles, pipeline.data?.roles ?? [], pipeline.data?.candidates ?? []);
 
 
   const dirStats = (dirId: string) => {
@@ -242,6 +254,7 @@ function StrategyBoard() {
                 filled={coverageOf(role, people).filled}
                 gap={coverageOf(role, people).gap}
                 members={people.filter((p) => p.role_id === role.id).map((p) => p.name)}
+                toOnboard={onboarding.get(role.id) ?? []}
                 teams={Array.from(
                   new Set(
                     [
@@ -364,10 +377,12 @@ function RoleCard({
   gap,
   members,
   teams,
+  toOnboard,
   onArchive,
   onOpen,
   onSaved,
 }: {
+  toOnboard: LinkCandidate[];
   role: Role;
   orgNodes: OrgNode[];
   filled: number;
@@ -436,6 +451,15 @@ function RoleCard({
         <p className="mt-1 flex items-center gap-1 truncate text-[11px] text-muted-foreground">
           <Users className="size-3 shrink-0" />
           <span className="truncate">{members.join("、")}</span>
+        </p>
+      )}
+
+      {toOnboard.length > 0 && (
+        <p className="mt-1.5 flex flex-wrap items-center gap-1 text-[11px]">
+          <span className="rounded bg-primary/12 px-1.5 py-0.5 font-medium text-primary">{t("idx.toOnboard")}</span>
+          <span className="text-muted-foreground">
+            {toOnboard.map((c) => (c.onboarding_on ? `${c.name} (${c.onboarding_on})` : c.name)).join("、")}
+          </span>
         </p>
       )}
 
