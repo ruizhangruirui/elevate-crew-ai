@@ -1180,10 +1180,6 @@ function NewRoleDialog({ directionId, orgNodes, onDone, onAssign }: { directionI
   );
 }
 
-function OwnerOnly({ children }: { children: import("react").ReactNode }) {
-  const { isOwner } = useAuth();
-  return isOwner ? <>{children}</> : null;
-}
 
 function ModeLocationFields({
   mode,
