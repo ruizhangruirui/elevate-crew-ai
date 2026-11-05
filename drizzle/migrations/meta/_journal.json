@@ -169,6 +169,13 @@
       "when": 1793871928602,
       "tag": "0023_roles_visible_to",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793872364194,
+      "tag": "0024_create_roles_hiring_owners",
+      "breakpoints": true
     }
   ]
 }
