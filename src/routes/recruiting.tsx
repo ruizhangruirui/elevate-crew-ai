@@ -425,8 +425,8 @@ function RecruitingBody() {
                   <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("rec.search")} className="h-9 w-56 pl-8 text-sm" />
                 </div>
                 {canEdit && (
-                  <Button size="sm" variant="outline" className="gap-1.5" disabled={syncTt.isPending || syncTt.isPending} onClick={() => syncTt.mutate()}>
-                    <RefreshCw className={`size-4 ${syncTt.isPending || syncTt.isPending ? "animate-spin" : ""}`} /> {syncTt.isPending || syncTt.isPending ? t("rec.syncing") : t("rec.sync")}
+                  <Button size="sm" variant="outline" className="gap-1.5" disabled={syncTt.isPending} onClick={() => syncTt.mutate()}>
+                    <RefreshCw className={`size-4 ${syncTt.isPending ? "animate-spin" : ""}`} /> {syncTt.isPending ? t("rec.syncing") : t("rec.sync")}
                   </Button>
                 )}
                 {canEdit && (
