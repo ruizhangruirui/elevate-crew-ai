@@ -45,6 +45,7 @@ export const indexDict: Dict = {
   "idx.targetLevel": { zh: "目标级别", en: "Target level" },
   "idx.targetHeadcount": { zh: "目标人数", en: "Target headcount" },
   "idx.currentCoverage": { zh: "当前覆盖", en: "Current coverage" },
+  "idx.toOnboard": { zh: "待入职", en: "To onboard" },
   "idx.teamsLabel": { zh: "承载团队：", en: "Teams: " },
   "idx.viewRoleProfile": { zh: "查看岗位画像", en: "View role profile" },
   "idx.roleActionsSr": { zh: "岗位操作", en: "Role actions" },
