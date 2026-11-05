@@ -32,3 +32,4 @@
 - To onboard candidates auto-move to People (status onboard) and become Hired once their start date arrives, via an idempotent server function run on Recruiting load; there is no scheduler in either deployment mode.
 - TeamTailor sync uses the shared tested matcher against unarchived Recruiting roles; direct sync skips unmatched/ambiguous jobs and retains existing saved mappings to avoid disrupting candidate associations.
 - TeamTailor discovers and matches jobs before fetching independently paginated applications per matched job, so unrelated historical pipelines cannot exhaust the application page cap.
+- TeamTailor matching is one supplier job per position; ambiguous supplier duplicates are skipped. CV links resolve fresh signed URLs by application ID after server-side candidate scope checks, rather than storing expiring links.

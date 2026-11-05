@@ -12,7 +12,8 @@ import { RoleMenu } from "@/routes/index";
 import { fetchOrgNodes, subtreeIds } from "@/lib/org-tree";
 import { toastUndoable } from "@/lib/ui-feedback";
 import { db } from "@/lib/db-client";
-import { syncTeamTailor } from "@/lib/teamtailor.functions";
+import { syncTeamTailor, getTeamTailorCv } from "@/lib/teamtailor.functions";
+import { useServerFn } from "@tanstack/react-start";
 import { onboardingDate } from "@/lib/candidate-onboarding";
 import { processDueOnboardings } from "@/lib/candidate-autohire.functions";
 import { overviewCandidates, teamForRole } from "@/lib/recruiting-overview";
@@ -93,6 +94,7 @@ export type Candidate = {
   location: string | null;
   source: string | null;
   cv_url: string | null;
+  teamtailor_application_id?: string | null;
   linkedin_url: string | null;
   stage: string | null;
   outcome: string;
@@ -148,6 +150,21 @@ function RecruitingBody() {
   const [overviewTeam, setOverviewTeam] = useState("all");
   const [overviewStatus, setOverviewStatus] = useState("all");
   const [overviewQuery, setOverviewQuery] = useState("");
+  const resolveCv = useServerFn(getTeamTailorCv);
+  const [loadingCv, setLoadingCv] = useState<string | null>(null);
+  const openTeamTailorCv = async (candidate: Candidate) => {
+    const tab = window.open("about:blank", "_blank");
+    if (tab) tab.opener = null;
+    setLoadingCv(candidate.id);
+    try {
+      const { url } = await resolveCv({ data: { candidateId: candidate.id } });
+      if (tab) tab.location.href = url;
+      else window.location.assign(url);
+    } catch (error) {
+      tab?.close();
+      toast.error(error instanceof Error ? error.message : "CV unavailable");
+    } finally { setLoadingCv(null); }
+  };
 
   const { data: ws } = useQuery({ queryKey: ["workspace", "recruiting"], queryFn: fetchRecruitingWorkspace });
   const { data: orgNodes = [] } = useQuery({ queryKey: ["orgNodes"], queryFn: fetchOrgNodes });
@@ -535,9 +552,9 @@ function RecruitingBody() {
                         </td>
                         <td className="px-3 py-1.5">
                           <span className="flex gap-1.5 text-muted-foreground">
-                            {cv && <a href={cv} target="_blank" rel="noopener noreferrer" className="hover:text-brand" title="CV"><FileText className="size-4" /></a>}
+                            {c.teamtailor_application_id ? <Button variant="ghost" size="icon" className="size-5" title="CV" aria-label="CV" disabled={loadingCv === c.id} onClick={() => openTeamTailorCv(c)}><FileText className="size-4" /></Button> : cv && <a href={cv} target="_blank" rel="noopener noreferrer" className="hover:text-brand" title="CV"><FileText className="size-4" /></a>}
                             {li && <a href={li} target="_blank" rel="noopener noreferrer" className="hover:text-brand" title="LinkedIn"><Linkedin className="size-4" /></a>}
-                            {!cv && !li && "—"}
+                            {!cv && !li && !c.teamtailor_application_id && "—"}
                           </span>
                         </td>
                         <td className="px-3 py-1.5 text-xs">{c.recruiter || "—"}</td>
