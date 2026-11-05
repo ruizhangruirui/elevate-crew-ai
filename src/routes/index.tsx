@@ -31,6 +31,7 @@ import { db as supabase } from "@/lib/db-client";
 import { fetchOrgNodes, type OrgNode } from "@/lib/org-tree";
 import { FormActions } from "@/components/FormActions";
 import { VisibleToPicker } from "@/components/VisibleToPicker";
+import { PersonPicker } from "@/components/PersonPicker";
 import { toastError, toastSaved, toastUndoable } from "@/lib/ui-feedback";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -964,6 +965,8 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
     employment_mode: "__none",
     location: "__none",
     contract_type: "employee",
+    recruiter_person_id: "",
+    supervisor_person_id: "",
   };
   const [form, setForm] = useState(empty);
 
@@ -980,6 +983,8 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
         employment_mode: form.employment_mode === "__none" ? null : form.employment_mode,
         location: form.location === "__none" ? null : form.location,
         contract_type: form.contract_type,
+        recruiter_person_id: form.recruiter_person_id || null,
+        supervisor_person_id: form.supervisor_person_id || null,
       });
       if (error) throw error;
     },
@@ -1076,12 +1081,26 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
             onMode={(v) => setForm({ ...form, employment_mode: v })}
             onLocation={(v) => setForm({ ...form, location: v })}
           />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <PersonPicker
+              label={t("idx.roleRecruiter")}
+              value={form.recruiter_person_id || null}
+              onChange={(id) => setForm({ ...form, recruiter_person_id: id ?? "" })}
+              clearLabel={t("ui.clear")}
+            />
+            <PersonPicker
+              label={t("idx.roleSupervisor")}
+              value={form.supervisor_person_id || null}
+              onChange={(id) => setForm({ ...form, supervisor_person_id: id ?? "" })}
+              clearLabel={t("ui.clear")}
+            />
+          </div>
         </div>
         <FormActions
           onCancel={() => setOpen(false)}
           onSave={() => create.mutate()}
           pending={create.isPending}
-          disabled={!form.title.trim()}
+          disabled={!form.title.trim() || !form.recruiter_person_id || !form.supervisor_person_id}
         />
 
       </DialogContent>
