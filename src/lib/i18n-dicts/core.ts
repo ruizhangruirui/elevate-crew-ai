@@ -103,6 +103,7 @@ export const coreDict: Dict = {
   "ui.save": { zh: "保存", en: "Save" },
   "ui.saving": { zh: "保存中…", en: "Saving…" },
   "ui.cancel": { zh: "取消", en: "Cancel" },
+  "ui.clear": { zh: "清除", en: "Clear" },
   "ui.saveHint": {
     zh: "点「保存」后才会写入，取消则丢弃本次修改。",
     en: "Nothing is written until you press Save; Cancel discards these changes.",
