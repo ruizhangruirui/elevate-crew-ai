@@ -130,7 +130,7 @@ export const syncTeamTailor = createServerFn({ method: "POST" }).handler(async (
   const byKey = new Map((existing ?? []).map((c) => [`${c.role_id}|${dedupeKey(c)}`, c]));
 
   const rows: Record<string, unknown>[] = [];
-  const updates: { id: string; stage: string | null; outcome: string }[] = [];
+  const updates: { id: string; stage: string | null; outcome: string; priority?: string }[] = [];
   let unchanged = 0;
   let skippedDuplicates = 0;
   let unmatched = 0;
@@ -157,7 +157,9 @@ export const syncTeamTailor = createServerFn({ method: "POST" }).handler(async (
       if (!existingRow.cv_url && a.profileUrl) {
         await db.from("candidates").update({ cv_url: a.profileUrl } as never).eq("id", existingRow.id);
       }
-      const patch: { id: string; stage: string | null; outcome: string } = { id: existingRow.id, stage, outcome };
+      const priority = inboxDefaultPriority(stage, existingRow.priority);
+      const patch: { id: string; stage: string | null; outcome: string; priority?: string } = { id: existingRow.id, stage, outcome };
+      if (priority) patch.priority = priority;
       if (existingRow.stage !== stage || existingRow.outcome !== outcome) updates.push(patch);
       else unchanged++;
       // Backfill the stable ID on rows matched via the email/name fallback.
