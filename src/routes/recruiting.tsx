@@ -150,6 +150,7 @@ function RecruitingBody() {
   const [overviewTeam, setOverviewTeam] = useState("all");
   const [overviewStatus, setOverviewStatus] = useState("all");
   const [overviewQuery, setOverviewQuery] = useState("");
+  const [overviewOpen, setOverviewOpen] = useState(true);
 
   const { data: ws } = useQuery({ queryKey: ["workspace", "recruiting"], queryFn: fetchRecruitingWorkspace });
   const { data: orgNodes = [] } = useQuery({ queryKey: ["orgNodes"], queryFn: fetchOrgNodes });
@@ -241,9 +242,12 @@ function RecruitingBody() {
     .filter(({ r, cov }) => !openOnly || cov.gap > 0 || r.id === roleId || activeByRole.has(r.id));
   const role = scopedRoles.find((r) => r.id === roleId) ?? null;
   const editingRole = editing && editing !== "new" ? scopedRoles.find((r) => r.id === editing.role_id) : role;
-  const overviewTeams = orgNodes.filter((n) => n.type.toLowerCase() === "team" && scopedRoles.some((r) => teamForRole(r.org_node_id, orgNodes) === n.id));
-  const overviewBase = overviewCandidates(candidates ?? [], scopedRoles, orgNodes, overviewTeam);
-  const overviewRows = overviewCandidates(overviewBase, scopedRoles, orgNodes, overviewTeam, overviewStatus)
+  // The Lab filter also scopes the cross-role candidate overview below.
+  const labRoles = scopedRoles.filter((r) => lab === "all" || labOf(r.org_node_id)?.id === lab);
+  const overviewTeams = orgNodes.filter((n) => n.type.toLowerCase() === "team" && labRoles.some((r) => teamForRole(r.org_node_id, orgNodes) === n.id));
+  const effectiveOverviewTeam = lab !== "all" && overviewTeam !== "all" && !overviewTeams.some((tm) => tm.id === overviewTeam) ? "all" : overviewTeam;
+  const overviewBase = overviewCandidates(candidates ?? [], labRoles, orgNodes, effectiveOverviewTeam);
+  const overviewRows = overviewCandidates(overviewBase, labRoles, orgNodes, effectiveOverviewTeam, overviewStatus)
     .filter((c) => {
       const position = scopedRoles.find((r) => r.id === c.role_id);
       const q = overviewQuery.trim().toLowerCase();
@@ -286,27 +290,33 @@ function RecruitingBody() {
     <div className="space-y-4">
       <section className="card-glass min-w-0 overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 px-4 py-3">
-          <h2 className="font-display text-sm font-semibold">{t("rec.overview")}</h2>
+          <button type="button" onClick={() => setOverviewOpen(!overviewOpen)} className="flex items-center gap-1.5" aria-expanded={overviewOpen}>
+            <ChevronDown className={`size-4 transition-transform ${overviewOpen ? "" : "-rotate-90"}`} />
+            <h2 className="font-display text-sm font-semibold">{t("rec.overview")}</h2>
+            <span className="text-xs text-muted-foreground">({overviewBase.length})</span>
+          </button>
           <div className="flex flex-wrap items-center gap-2">
-            <Select value={overviewTeam} onValueChange={setOverviewTeam}>
-              <SelectTrigger className="h-8 w-44 text-xs" aria-label={t("rec.team")}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("rec.allTeams")}</SelectItem>
-                {overviewTeams.map((team) => <SelectItem key={team.id} value={team.id}>{labOf(team.id)?.name} · {team.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            {lab === "all" && (
+              <Select value={overviewTeam} onValueChange={setOverviewTeam}>
+                <SelectTrigger className="h-8 w-44 text-xs" aria-label={t("rec.team")}><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("rec.allTeams")}</SelectItem>
+                  {overviewTeams.map((team) => <SelectItem key={team.id} value={team.id}>{labOf(team.id)?.name} · {team.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            )}
             <div className="relative">
               <Search className="pointer-events-none absolute left-2.5 top-2 size-3.5 text-muted-foreground" />
               <Input value={overviewQuery} onChange={(e) => setOverviewQuery(e.target.value)} aria-label={t("rec.overview.search")} placeholder={t("rec.overview.search")} className="h-8 w-48 pl-8 text-xs" />
             </div>
           </div>
         </div>
-        <div className="flex flex-wrap gap-1 border-b border-border/60 px-4 py-2">
+        {overviewOpen && <div className="flex flex-wrap gap-1 border-b border-border/60 px-4 py-2">
           {["all", "offer", "to_onboard"].map((status) => <Button key={status} size="sm" variant="ghost" aria-pressed={overviewStatus === status} onClick={() => setOverviewStatus(status)} className={`h-7 gap-2 px-2.5 text-xs ${overviewStatus === status ? "bg-brand/12 text-brand" : "text-muted-foreground"}`}>
             {t(`rec.overview.${status}`)}<span className="tabular-nums">{overviewBase.filter((c) => status === "all" || c.outcome === status).length}</span>
           </Button>)}
-        </div>
-        <div className="max-h-80 overflow-auto">
+        </div>}
+        {overviewOpen && <div className="max-h-80 overflow-auto">
           <table className="w-full min-w-[760px] text-left text-xs">
             <thead className="sticky top-0 z-10 bg-background/95 text-muted-foreground backdrop-blur">
               <tr>
@@ -330,7 +340,7 @@ function RecruitingBody() {
               {overviewRows.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">{t("rec.overview.empty")}</td></tr>}
             </tbody>
           </table>
-        </div>
+        </div>}
       </section>
       <section className="card-glass p-3">
         <div className="flex flex-wrap items-center justify-between gap-2 px-1">
