@@ -12,7 +12,7 @@ const BASE_URLS: Record<string, string> = {
 };
 
 const API_VERSION = "20240404";
-const MAX_PAGES = 25;
+const MAX_PAGES = 40;
 
 type JsonApiResource = {
   id: string;
@@ -21,8 +21,14 @@ type JsonApiResource = {
   relationships?: Record<string, { data?: { id: string; type: string } | null }>;
 };
 
-export type TeamTailorCandidate = {
-  jobTitle: string;
+export type TeamTailorJob = {
+  id: string;
+  title: string;
+};
+
+export type TeamTailorApplication = {
+  applicationId: string;
+  jobId: string;
   stageName: string | null;
   name: string;
   email: string | null;
@@ -31,6 +37,29 @@ export type TeamTailorCandidate = {
   linkedin: string | null;
   profileUrl: string | null;
 };
+
+export type TeamTailorData = {
+  jobs: TeamTailorJob[];
+  applications: TeamTailorApplication[];
+  /** True when the page cap was hit, so some records may be missing. */
+  capped: boolean;
+};
+
+/**
+ * Normalize a job/position title for matching: Unicode NFKC, lowercase,
+ * non-breaking spaces and unicode dashes unified, punctuation stripped,
+ * whitespace collapsed. Matching-only — display keeps the original.
+ */
+export function normTitle(s: string): string {
+  return s
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[    ]/g, " ")
+    .replace(/[‐‑‒–—―]/g, "-")
+    .replace(/[()[\]{}"'‘’“”«».,:;!？?/\\|+*#@~^$%&=_<>]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 async function ttGet(base: string, apiKey: string, path: string) {
   const res = await fetch(`${base}${path}`, {
@@ -52,6 +81,7 @@ async function listAll(base: string, apiKey: string, path: string) {
   const data: JsonApiResource[] = [];
   const included: JsonApiResource[] = [];
   let next: string | null = path;
+  let capped = false;
   for (let page = 0; next && page < MAX_PAGES; page++) {
     // links.next is a full URL including the /v1 prefix; strip the base to avoid doubling it.
     const url = next.startsWith("http") ? next.replace(/^https?:\/\/[^/]+\/v1/, "") : next;
@@ -59,29 +89,31 @@ async function listAll(base: string, apiKey: string, path: string) {
     data.push(...(res.data ?? []));
     included.push(...(res.included ?? []));
     next = res.links?.next ?? null;
+    if (next && page === MAX_PAGES - 1) capped = true;
   }
-  return { data, included };
+  return { data, included, capped };
 }
 
 const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
 
 /**
- * Fetch job applications (with candidates included) and jobs, and flatten
- * them into one row per application: the candidate plus the job title they
- * applied to. Requires an API key with Admin read scope.
+ * Fetch jobs and job applications (with candidates included) from TeamTailor.
+ * Returns structured data so the caller can match jobs to internal positions,
+ * preview the result, and only then import. Requires an API key with Admin
+ * read scope.
  */
-export async function fetchTeamTailorCandidates(apiKey: string, region: string): Promise<TeamTailorCandidate[]> {
+export async function fetchTeamTailorData(apiKey: string, region: string): Promise<TeamTailorData> {
   const base = BASE_URLS[region] ?? BASE_URLS["eu"]!;
   const [jobs, applications] = await Promise.all([
     listAll(base, apiKey, "/jobs?page%5Bsize%5D=30"),
     listAll(base, apiKey, "/job-applications?include=candidate,job,stage&page%5Bsize%5D=30"),
   ]);
 
-  const jobTitleById = new Map<string, string>();
+  const jobById = new Map<string, TeamTailorJob>();
   for (const j of [...jobs.data, ...applications.included]) {
     if (j.type !== "jobs") continue;
     const title = str(j.attributes?.["title"]);
-    if (title) jobTitleById.set(j.id, title);
+    if (title && !jobById.has(j.id)) jobById.set(j.id, { id: j.id, title });
   }
   const candidateById = new Map<string, JsonApiResource>();
   const stageNameById = new Map<string, string>();
@@ -93,14 +125,13 @@ export async function fetchTeamTailorCandidates(apiKey: string, region: string):
     }
   }
 
-  const out: TeamTailorCandidate[] = [];
+  const out: TeamTailorApplication[] = [];
   for (const app of applications.data) {
     const jobId = app.relationships?.["job"]?.data?.id;
     const candId = app.relationships?.["candidate"]?.data?.id;
     const stageId = app.relationships?.["stage"]?.data?.id;
-    const jobTitle = jobId ? jobTitleById.get(jobId) : undefined;
     const cand = candId ? candidateById.get(candId) : undefined;
-    if (!jobTitle || !cand) continue;
+    if (!jobId || !cand) continue;
     const a = cand.attributes ?? {};
     const first = str(a["first-name"]) ?? "";
     const last = str(a["last-name"]) ?? "";
@@ -108,7 +139,8 @@ export async function fetchTeamTailorCandidates(apiKey: string, region: string):
     if (!name) continue;
     const location = [str(a["city"]), str(a["country"])].filter(Boolean).join(", ") || null;
     out.push({
-      jobTitle,
+      applicationId: app.id,
+      jobId,
       stageName: stageId ? (stageNameById.get(stageId) ?? null) : null,
       name,
       email: str(a["email"]),
@@ -120,5 +152,5 @@ export async function fetchTeamTailorCandidates(apiKey: string, region: string):
       profileUrl: str(a["profile-url"]),
     });
   }
-  return out;
+  return { jobs: [...jobById.values()], applications: out, capped: jobs.capped || applications.capped };
 }
