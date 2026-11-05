@@ -18,7 +18,7 @@ import { syncTeamTailor } from "@/lib/teamtailor.functions";
 import { onboardingDate } from "@/lib/candidate-onboarding";
 import { processDueOnboardings } from "@/lib/candidate-autohire.functions";
 import { overviewCandidates, teamForRole } from "@/lib/recruiting-overview";
-import { coverageOf, fetchRecruitingWorkspace } from "@/lib/talent";
+import { coverageOf, fetchRecruitingWorkspace, roleContractOf } from "@/lib/talent";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -413,19 +413,13 @@ function RecruitingBody() {
               <div>
                 <h2 className="font-display text-lg font-semibold">{role.title}</h2>
                 {role.job_title && <p className="text-xs text-muted-foreground">{t("pp.f.offerTitle")}: {role.job_title}</p>}
-                {(() => {
-                  const nm = (id: string | null | undefined) => people.find((p) => p.id === id)?.name ?? null;
-                  const rc = nm(role.recruiter_person_id);
-                  const sv = nm(role.supervisor_person_id);
-                  if (!rc && !sv) return null;
-                  return (
-                    <p className="text-xs text-muted-foreground">
-                      {rc ? `${t("rec.roleRecruiter")}: ${rc}` : null}
-                      {rc && sv ? " · " : ""}
-                      {sv ? `${t("rec.roleSupervisor")}: ${sv}` : null}
-                    </p>
-                  );
-                })()}
+                <p className="text-xs text-muted-foreground">
+                  {t("rec.c.contract")}: {t(`idx.ct.${roleContractOf(role)}`)}
+                  <span className="mx-1.5">·</span>
+                  {t("rec.roleRecruiter")}: {people.find((p) => p.id === role.recruiter_person_id)?.name ?? "—"}
+                  <span className="mx-1.5">·</span>
+                  {t("rec.roleSupervisor")}: {people.find((p) => p.id === role.supervisor_person_id)?.name ?? "—"}
+                </p>
                 <p className="text-xs text-muted-foreground">
                   Level {role.level_min}–{role.level_max} · {coverageOf(role, people).filled}/{role.target_count}
                 </p>
