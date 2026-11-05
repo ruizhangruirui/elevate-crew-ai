@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { admin, getSessionUser, managerScope, type AppUser } from "./auth.server";
 import { onboardingDateSchema } from "./candidate-onboarding";
-import { missingRoleOwners } from "./role-owners";
+import { missingRoleOwners, missingRoleOwnersOnUpdate } from "./role-owners";
 
 const TABLES = [
   "actions",
