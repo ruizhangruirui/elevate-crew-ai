@@ -41,7 +41,7 @@ export function matchJobs(roles: RoleRow[], mappings: { tt_job_id: string; role_
   for (const j of tt.jobs) jobIds.set(j.id, j.title);
   for (const a of tt.applications) if (!jobIds.has(a.jobId)) jobIds.set(a.jobId, "(unknown title)");
 
-  return [...jobIds.entries()].map(([ttJobId, ttJobTitle]) => {
+  const matches: JobMatch[] = [...jobIds.entries()].map(([ttJobId, ttJobTitle]) => {
     const applications = appsByJob.get(ttJobId) ?? 0;
     const base = { ttJobId, ttJobTitle, applications };
     const mapped = mappedRole.get(ttJobId);
@@ -63,5 +63,26 @@ export function matchJobs(roles: RoleRow[], mappings: { tt_job_id: string; role_
     if (!role) return { ...base, status: "unmatched" as const, roleId: null, roleTitle: null, reason: "No active recruiting position" };
     return { ...base, status: "title" as const, roleId: role.id, roleTitle: role.title, reason: null };
   });
+  // A title is not a stable identity: never silently merge two supplier jobs
+  // into one maintained position. A saved mapping can explicitly identify it.
+  const jobsByRole = new Map<string, JobMatch[]>();
+  for (const match of matches) {
+    if (!match.roleId) continue;
+    const group = jobsByRole.get(match.roleId) ?? [];
+    group.push(match);
+    jobsByRole.set(match.roleId, group);
+  }
+  for (const group of jobsByRole.values()) {
+    if (group.length < 2) continue;
+    const confirmed = group.filter((job) => job.status === "mapped");
+    for (const job of group) {
+      if (confirmed.length === 1 && job === confirmed[0]) continue;
+      job.status = "ambiguous";
+      job.roleId = null;
+      job.roleTitle = null;
+      job.reason = "Multiple TeamTailor jobs match this position — skipped to avoid merging pipelines";
+    }
+  }
+  return matches;
 }
 
