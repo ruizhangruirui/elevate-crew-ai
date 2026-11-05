@@ -20,6 +20,7 @@ export type SyncResult = {
   updated: number;
   unchanged: number;
   skippedDuplicates: number;
+  skippedRejected: number;
   unmatched: number;
   unmatchedJobs: string[];
   capped: boolean;
