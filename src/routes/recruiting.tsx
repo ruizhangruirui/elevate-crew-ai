@@ -10,6 +10,7 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/hooks/useAuth";
 import { RoleMenu } from "@/routes/index";
 import { VisibleToPicker } from "@/components/VisibleToPicker";
+import { PersonPicker } from "@/components/PersonPicker";
 import { fetchOrgNodes, subtreeIds } from "@/lib/org-tree";
 import { toastUndoable } from "@/lib/ui-feedback";
 import { db } from "@/lib/db-client";
@@ -897,6 +898,8 @@ function AddHiringRole({ directionId, orgNodes, onCreated }: { directionId: stri
   const [node, setNode] = useState("none");
   const [count, setCount] = useState("1");
   const [visibleTo, setVisibleTo] = useState<string[]>([]);
+  const [recruiter, setRecruiter] = useState<string | null>(null);
+  const [supervisor, setSupervisor] = useState<string | null>(null);
   const create = useMutation({
     mutationFn: async () => {
       if (!directionId) throw new Error(t("rec.needDirection"));
