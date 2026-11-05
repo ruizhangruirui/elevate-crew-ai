@@ -96,21 +96,36 @@ async function listAll(base: string, apiKey: string, path: string) {
 
 const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
 
-/**
- * Fetch jobs and job applications (with candidates included) from TeamTailor.
- * Returns structured data so the caller can match jobs to internal positions,
- * preview the result, and only then import. Requires an API key with Admin
- * read scope.
- */
-export async function fetchTeamTailorData(apiKey: string, region: string): Promise<TeamTailorData> {
-  const base = BASE_URLS[region] ?? BASE_URLS["eu"]!;
-  const [jobs, applications] = await Promise.all([
-    listAll(base, apiKey, "/jobs?page%5Bsize%5D=30"),
-    listAll(base, apiKey, "/job-applications?include=candidate,job,stage&page%5Bsize%5D=30"),
-  ]);
+/** Discover jobs first, so unrelated historical applications cannot consume the page cap. */
+export async function fetchTeamTailorJobs(apiKey: string, region: string) {
+  const base = BASE_URLS[region] ?? "https://api.teamtailor.com/v1";
+  const result = await listAll(base, apiKey, "/jobs?page%5Bsize%5D=30");
+  const jobs: TeamTailorJob[] = [];
+  for (const job of result.data) {
+    const title = str(job.attributes?.["title"]);
+    if (job.type === "jobs" && title) jobs.push({ id: job.id, title });
+  }
+  return { jobs, capped: result.capped };
+}
 
-  const jobById = new Map<string, TeamTailorJob>();
-  for (const j of [...jobs.data, ...applications.included]) {
+/** Read each matched job's own pipeline, with independent pagination and bounded concurrency. */
+export async function fetchTeamTailorData(apiKey: string, region: string, matchedJobs: TeamTailorJob[]): Promise<TeamTailorData> {
+  const base = BASE_URLS[region] ?? "https://api.teamtailor.com/v1";
+  const jobs = [...new Map(matchedJobs.map((job) => [job.id, job])).values()];
+  const applications: { data: JsonApiResource[]; included: JsonApiResource[]; capped: boolean } = { data: [], included: [], capped: false };
+  for (let offset = 0; offset < jobs.length; offset += 3) {
+    const batch = await Promise.all(jobs.slice(offset, offset + 3).map((job) =>
+      listAll(base, apiKey, `/job-applications?filter%5Bjob%5D=${encodeURIComponent(job.id)}&include=candidate,job,stage&page%5Bsize%5D=30`),
+    ));
+    for (const result of batch) {
+      applications.data.push(...result.data);
+      applications.included.push(...result.included);
+      applications.capped ||= result.capped;
+    }
+  }
+
+  const jobById = new Map<string, TeamTailorJob>(jobs.map((job) => [job.id, job]));
+  for (const j of applications.included) {
     if (j.type !== "jobs") continue;
     const title = str(j.attributes?.["title"]);
     if (title && !jobById.has(j.id)) jobById.set(j.id, { id: j.id, title });
@@ -152,5 +167,5 @@ export async function fetchTeamTailorData(apiKey: string, region: string): Promi
       profileUrl: str(a["profile-url"]),
     });
   }
-  return { jobs: [...jobById.values()], applications: out, capped: jobs.capped || applications.capped };
+  return { jobs: [...jobById.values()], applications: out, capped: applications.capped };
 }
