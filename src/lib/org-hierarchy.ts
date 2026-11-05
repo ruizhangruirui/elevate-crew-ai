@@ -17,5 +17,5 @@ export function organizationParents<T extends HierarchyNode>(nodes: T[], type: s
     visit(editingId);
   }
   return nodes.filter((node) => !node.archived && !excluded.has(node.id) &&
-    (type === "Team" ? node.type === "Lab" : type === "Lab" ? node.type === "Org" : true));
+    (type === "Lab" ? !node.parent_id : type === "Team" ? node.type !== "Team" || !!node.parent_id : true));
 }
