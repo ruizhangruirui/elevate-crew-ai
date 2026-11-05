@@ -211,7 +211,7 @@ export function letterBodySize(d: LetterDoc): number {
   return d.paragraphs.flatMap((text) => parseRich(text)).find((run) => run.size !== undefined)?.size ?? 11;
 }
 function companyLines(s: LetterStationery) {
-  return [s.company, s.address].flatMap(splitLines);
+  return splitLines(s.address);
 }
 
 function save(blob: Blob, filename: string) {
@@ -224,7 +224,7 @@ function save(blob: Blob, filename: string) {
 }
 
 export async function downloadDocx(d: LetterDoc) {
-  const { Document, Packer, Paragraph, TextRun, AlignmentType, Header, ImageRun, HorizontalPositionRelativeFrom, VerticalPositionRelativeFrom, HorizontalPositionAlign, VerticalPositionAlign, TextWrappingType } = await import("docx");
+  const { Document, Packer, Paragraph, TextRun, AlignmentType, BorderStyle, Header, ImageRun, HorizontalPositionRelativeFrom, VerticalPositionRelativeFrom, HorizontalPositionAlign, VerticalPositionAlign, TextWrappingType } = await import("docx");
   const lh = await letterhead();
   const s = lh.stationery;
   const headerKids: InstanceType<typeof Paragraph>[] = [];
@@ -260,8 +260,9 @@ export async function downloadDocx(d: LetterDoc) {
           ...splitLines(d.title).map((text) => new Paragraph({ keepNext: true, spacing: { before: 400, after: 400 }, children: runsOf(text, { bold: true, size: 16 }) })),
           ...splitLines(d.salutation).map((text) => new Paragraph({ keepNext: true, spacing: { after: 240 }, children: runsOf(text) })),
           ...d.paragraphs.map((p) => new Paragraph({ spacing: { after: 240 }, children: runsOf(p, {}, true) })),
-          ...signature.map((text, i) => new Paragraph({ keepNext: true, spacing: { before: i === 0 ? 600 : 0, after: 60 }, children: runsOf(text, {}, true) })),
-          ...company.map((text, i) => new Paragraph({ keepNext: i < company.length - 1, spacing: { before: i === 0 ? 240 : 0 }, children: runsOf(text, { size: 9, bold: text === s.company }) })),
+          ...(signature.length ? [new Paragraph({ keepNext: true, spacing: { before: 1400, after: 80 }, indent: { right: 4800 }, border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: "000000", space: 1 } }, children: [] })] : []),
+          ...signature.map((text) => new Paragraph({ keepNext: true, spacing: { after: 60 }, children: runsOf(text, {}, true) })),
+          ...company.map((text, i) => new Paragraph({ keepNext: i < company.length - 1, spacing: { before: i === 0 ? 240 : 0 }, children: runsOf(text, { size: 9 }) })),
         ],
       },
     ],
@@ -394,12 +395,16 @@ export async function downloadPdf(d: LetterDoc) {
   for (const p of d.paragraphs) writeRich(p, {}, 10, true);
   const signature = d.signature ?? signatureLines(s);
   const company = companyLines(s);
-  const blockH = [...signature, ...company].reduce((h, text) => h + wrap(stripRich(text), bodySize).length * (bodySize + 5) + 4, 60);
+  const blockH = [...signature, ...company].reduce((h, text) => h + wrap(stripRich(text), bodySize).length * (bodySize + 5) + 4, 130);
   if (y + blockH > bottom && blockH < bottom - contentTop) { pdf.addPage(); decorate(); y = contentTop; }
-  y += 24;
+  if (signature.length) {
+    y += 70;
+    pdf.setLineWidth(0.7).setDrawColor("#000000").line(margin, y, margin + 220, y);
+    y += bodySize + 6;
+  }
   signature.forEach((text) => writeRich(text, {}, 2, true));
   y += 12;
-  company.forEach((text) => writeRich(text, { size: 9, bold: text === s.company }, 0));
+  company.forEach((text) => writeRich(text, { size: 9 }, 0));
   pdf.save(`${d.fileBase}.pdf`);
 }
 
