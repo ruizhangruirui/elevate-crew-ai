@@ -253,7 +253,7 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
   const live = nodes.filter((n) => !n.archived);
   const parents = organizationParents(nodes, editing?.type ?? "Team", editing?.id);
   const labs = live.filter((node) => node.type === "Lab");
-  const root = live.find((node) => node.type === "Org" && !node.parent_id);
+  const root = live.find((node) => !node.parent_id);
 
   const save = useMutation({
     mutationFn: async (node: Partial<OrgNode>) => {
@@ -429,7 +429,7 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
           <DialogFooter>
             <Button
               onClick={() => editing?.name && save.mutate(editing)}
-              disabled={save.isPending || !editing?.name?.trim() || (editing.type !== "Org" && !parents.some((parent) => parent.id === editing.parent_id))}
+              disabled={save.isPending || !editing?.name?.trim() || (editing.id !== root?.id && !parents.some((parent) => parent.id === editing.parent_id))}
             >
               {t("set.org.save")}
             </Button>

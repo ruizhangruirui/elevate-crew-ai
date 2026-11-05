@@ -16,6 +16,10 @@ export function organizationParents<T extends HierarchyNode>(nodes: T[], type: s
     };
     visit(editingId);
   }
+  // The top node may use any type label (e.g. "Research Center"), so roots are identified by having no parent.
+  const roots = new Set(nodes.filter((node) => !node.parent_id).map((node) => node.id));
   return nodes.filter((node) => !node.archived && !excluded.has(node.id) &&
-    (type === "Team" ? node.type === "Lab" : type === "Lab" ? node.type === "Org" : true));
+    (type === "Lab" ? roots.has(node.id)
+      : type === "Team" ? roots.has(node.id) || node.type === "Lab" || (node.type === "Team" && !!node.parent_id && roots.has(node.parent_id))
+      : true));
 }
