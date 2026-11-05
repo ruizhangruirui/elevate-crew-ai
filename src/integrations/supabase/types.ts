@@ -695,6 +695,7 @@ export type Database = {
           prior_experience: string[]
           readiness: string
           role_id: string | null
+          role_transition_on: string | null
           staff_id: string | null
           status: string
           supervisor_id: string | null
@@ -732,6 +733,7 @@ export type Database = {
           prior_experience?: string[]
           readiness?: string
           role_id?: string | null
+          role_transition_on?: string | null
           staff_id?: string | null
           status?: string
           supervisor_id?: string | null
@@ -769,6 +771,7 @@ export type Database = {
           prior_experience?: string[]
           readiness?: string
           role_id?: string | null
+          role_transition_on?: string | null
           staff_id?: string | null
           status?: string
           supervisor_id?: string | null

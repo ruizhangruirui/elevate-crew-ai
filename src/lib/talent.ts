@@ -54,6 +54,8 @@ export type Person = {
   id: string;
   org_id: string;
   role_id: string | null;
+  /** Set while a newly assigned owner is still taking over; not counted as coverage. */
+  role_transition_on?: string | null;
   appointed_role_title?: string | null;
   org_node_id?: string | null;
   name: string;
@@ -132,7 +134,7 @@ async function loadWorkspace(includeRecruiting: boolean) {
 }
 
 export function coverageOf(role: Role, people: Person[]) {
-  const filled = people.filter((p) => p.role_id === role.id && p.status === "onboard").length;
+  const filled = people.filter((p) => p.role_id === role.id && p.status === "onboard" && !p.role_transition_on).length;
   const gap = Math.max(0, role.target_count - filled);
   const state = gap === 0 ? "full" : filled === 0 ? "empty" : "partial";
   return { filled, gap, state } as const;
@@ -141,3 +143,9 @@ export const ROLE_CONTRACT_TYPES = ["employee", "leased", "intern"] as const;
 export type RoleContractType = (typeof ROLE_CONTRACT_TYPES)[number];
 export const roleContractOf = (r: { contract_type?: string | null }): RoleContractType =>
   (ROLE_CONTRACT_TYPES as readonly string[]).includes(r.contract_type ?? "") ? (r.contract_type as RoleContractType) : "employee";
+
+/** Transition state of a role owner: none, still transiting, or transition date reached (reminder only). */
+export function transitionStateOf(p: { role_transition_on?: string | null }, today: string): "none" | "transiting" | "due" {
+  if (!p.role_transition_on) return "none";
+  return p.role_transition_on <= today ? "due" : "transiting";
+}

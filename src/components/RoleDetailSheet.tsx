@@ -134,15 +134,19 @@ export function RoleDetailSheet({
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const [transitOn, setTransitOn] = useState(false);
+  const [transitDate, setTransitDate] = useState("");
+  const today = new Date().toISOString().slice(0, 10);
   const owners = role ? people.filter((p) => p.role_id === role.id && p.status === "onboard") : [];
   const unassigned = role ? people.filter((p) => p.role_id !== role.id && p.status === "onboard" && !p.archived) : [];
   const cov = role ? coverageOf(role, people) : null;
 
   const assign = useMutation({
     mutationFn: async (personId: string) => {
+      if (transitOn && !transitDate) throw new Error(t("sheet.role.transitionDateRequired"));
       const { error } = await supabase
         .from("people")
-        .update({ role_id: role!.id, status: "onboard", ...(role!.job_title && !people.find((p) => p.id === personId)?.offer_title ? { offer_title: role!.job_title } : {}) })
+        .update({ role_id: role!.id, status: "onboard", role_transition_on: transitOn ? transitDate : null, ...(role!.job_title && !people.find((p) => p.id === personId)?.offer_title ? { offer_title: role!.job_title } : {}) })
         .eq("id", personId);
       if (error) throw error;
     },
@@ -154,9 +158,21 @@ export function RoleDetailSheet({
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const finishTransition = useMutation({
+    mutationFn: async (personId: string) => {
+      const { error } = await supabase.from("people").update({ role_transition_on: null }).eq("id", personId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(t("sheet.role.transitionDone"));
+      onDone();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const unassign = useMutation({
     mutationFn: async (personId: string) => {
-      const { error } = await supabase.from("people").update({ role_id: null }).eq("id", personId);
+      const { error } = await supabase.from("people").update({ role_id: null, role_transition_on: null }).eq("id", personId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -299,19 +315,39 @@ export function RoleDetailSheet({
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <strong className="text-sm">{t("sheet.role.seat").replace("{n}", String(i + 1))}</strong>
-                    <span
-                      className={`rounded-md px-2 py-1 text-[11px] font-medium ${
-                        owner ? "bg-ok/12 text-ok" : "bg-danger/12 text-danger"
-                      }`}
-                    >
-                      {owner ? "Filled" : "Vacant"}
-                    </span>
+                    {(() => {
+                      const ts = owner ? transitionStateOf(owner, today) : "none";
+                      return (
+                        <span
+                          className={`rounded-md px-2 py-1 text-[11px] font-medium ${
+                            !owner ? "bg-danger/12 text-danger" : ts === "none" ? "bg-ok/12 text-ok" : "bg-warn/12 text-warn"
+                          }`}
+                        >
+                          {!owner ? "Vacant" : ts === "none" ? "Filled" : `${t("sheet.role.transiting")} · ${owner.role_transition_on}`}
+                        </span>
+                      );
+                    })()}
                   </div>
                   {owner ? (
                     <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                       <p className="text-sm text-muted-foreground">
                         {owner.name} · Level {owner.level ?? "-"}
                       </p>
+                      {transitionStateOf(owner, today) === "due" && (
+                        <p className="w-full rounded-md bg-warn/10 px-2 py-1.5 text-xs text-warn">
+                          {t("sheet.role.transitionDue")}
+                        </p>
+                      )}
+                      {transitionStateOf(owner, today) !== "none" && (
+                        <ConfirmAction
+                          title={t("sheet.role.transitionDoneTitle").replace("{name}", owner.name)}
+                          description={<p>{t("sheet.role.transitionDoneDesc")}</p>}
+                          confirmLabel={t("sheet.role.transitionDoneBtn")}
+                          onConfirm={() => finishTransition.mutate(owner.id)}
+                        >
+                          <Button variant="outline" size="sm" className="h-8 text-xs">{t("sheet.role.transitionDoneBtn")}</Button>
+                        </ConfirmAction>
+                      )}
                       <ConfirmAction
                         title={t("sheet.role.confirmRemoveOwnerTitle").replace("{name}", owner.name)}
                         description={
@@ -344,7 +380,20 @@ export function RoleDetailSheet({
                           </Link>
                         </Button>
                       </div>
-                      {assignSeat === i && <div className="flex gap-2">
+                      {assignSeat === i && <div className="space-y-2">
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <label className="flex items-center gap-1.5">
+                          <input type="checkbox" checked={transitOn} onChange={(e) => setTransitOn(e.target.checked)} />
+                          {t("sheet.role.transiting")}
+                        </label>
+                        {transitOn && (
+                          <label className="flex items-center gap-1.5 text-muted-foreground">
+                            {t("sheet.role.transitionTime")}
+                            <Input type="date" className="h-8 w-40" value={transitDate} onChange={(e) => setTransitDate(e.target.value)} />
+                          </label>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
                       <Select onValueChange={(v) => assign.mutate(v)}>
                         <SelectTrigger className="min-w-0 flex-1" disabled={assign.isPending}>
                           <SelectValue placeholder={t("sheet.role.selectPerson")} />
@@ -360,6 +409,7 @@ export function RoleDetailSheet({
                       <Button variant="ghost" size="sm" onClick={() => setAssignSeat(null)}>
                         {t("sheet.cancel")}
                       </Button>
+                      </div>
                       </div>}
                     </div>
                   )}
