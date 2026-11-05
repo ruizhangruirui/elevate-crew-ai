@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { admin, requireUser } from "./auth.server";
 import { matchJobs, type JobMatch } from "./teamtailor-match";
+import { inboxDefaultPriority } from "./teamtailor-priority";
 
 const SYNC_ROLES = ["owner", "hr", "recruiter"] as const;
 
