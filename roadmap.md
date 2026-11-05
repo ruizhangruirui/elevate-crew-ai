@@ -35,4 +35,4 @@
 - [ ] Verify signed-in candidate status/date save and readback (blocked: no app-owned login session available).
 - [x] Add a cross-role Offered / To onboard candidate overview with Team filtering in Recruiting; filtering regression tests passed.
 - [ ] Verify signed-in cross-role overview, Team selection and candidate editing (blocked: no app-owned test session available).
-- [ ] Fix TeamTailor zero applications by fetching applications per matched job; verify against the live API and regression tests.
+- [x] Fix TeamTailor zero applications by fetching applications per matched job; 11 tests passed, and live API readback recovered 8 applicants for a job absent from the first 1,200 global applications.
