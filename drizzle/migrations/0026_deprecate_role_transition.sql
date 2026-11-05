@@ -1,0 +1,1 @@
+COMMENT ON COLUMN public.people.role_transition_on IS 'DEPRECATED: transition feature cancelled, unused';
