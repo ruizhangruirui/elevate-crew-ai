@@ -59,6 +59,8 @@ export const indexDict: Dict = {
   "idx.roleUpdated": { zh: "岗位已更新", en: "Role updated" },
   "idx.editRoleTitle": { zh: "编辑目标岗位", en: "Edit target role" },
   "idx.roleName": { zh: "岗位名称", en: "Role name" },
+  "idx.roleRecruiter": { zh: "招聘负责人", en: "Recruiter" },
+  "idx.roleSupervisor": { zh: "用人主管", en: "Hiring supervisor" },
   "idx.roleDescription": { zh: "岗位描述", en: "Role description" },
   "idx.levelMin": { zh: "级别下限", en: "Min level" },
   "idx.levelMax": { zh: "级别上限", en: "Max level" },
