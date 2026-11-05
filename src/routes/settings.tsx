@@ -192,7 +192,7 @@ function SettingsBody() {
         {visible.map((s, i) => {
           const Icon = SECTION_ICONS[s];
           const group = SECTION_GROUP[s];
-          const showGroup = i === 0 || SECTION_GROUP[visible[i - 1]] !== group;
+          const showGroup = i === 0 || SECTION_GROUP[visible[i - 1] as Section] !== group;
           return <div key={s} className="contents">
           {showGroup && <p className={`hidden px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 lg:block ${i === 0 ? "" : "mt-3"}`}>{t(group)}</p>}
           <Button
