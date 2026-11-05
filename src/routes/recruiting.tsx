@@ -315,7 +315,7 @@ function RecruitingBody() {
           {["all", "offer", "to_onboard"].map((status) => <Button key={status} size="sm" variant="ghost" aria-pressed={overviewStatus === status} onClick={() => setOverviewStatus(status)} className={`h-7 gap-2 px-2.5 text-xs ${overviewStatus === status ? "bg-brand/12 text-brand" : "text-muted-foreground"}`}>
             {t(`rec.overview.${status}`)}<span className="tabular-nums">{overviewBase.filter((c) => status === "all" || c.outcome === status).length}</span>
           </Button>)}
-        </div>
+        </div>}
         {overviewOpen && <div className="max-h-80 overflow-auto">
           <table className="w-full min-w-[760px] text-left text-xs">
             <thead className="sticky top-0 z-10 bg-background/95 text-muted-foreground backdrop-blur">
