@@ -77,9 +77,9 @@ export function AddHiringRole({ directionId, orgNodes, onCreated }: { directionI
                   <SelectContent><SelectItem value="none">—</SelectItem>{orgNodes.map((n) => <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5"><Label>{t("rec.roleContract")}</Label>
+              <div className="space-y-1.5"><Label>{t("idx.ct.field")}</Label>
                 <Select value={contract} onValueChange={setContract}><SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{ROLE_CONTRACT_TYPES.map((c) => <SelectItem key={c} value={c}>{t(`roleContract.${c}`)}</SelectItem>)}</SelectContent>
+                  <SelectContent>{ROLE_CONTRACT_TYPES.map((c) => <SelectItem key={c} value={c}>{t(`idx.ct.${c}`)}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>

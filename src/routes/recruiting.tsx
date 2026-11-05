@@ -367,7 +367,6 @@ function RecruitingBody() {
               <input type="checkbox" checked={openOnly} onChange={(e) => setOpenOnly(e.target.checked)} />
               {t("rec.openOnly")}
             </label>
-            {canEditRole && <AddHiringRole directionId={ws.directions[0]?.id} orgNodes={orgNodes} onCreated={(id) => navigate({ search: { role: id } })} />}
           </div>
         </div>
         {rolesOpen && (
@@ -904,82 +903,5 @@ function CandidateDialog({
         )}
       </DialogContent>
     </Dialog>
-  );
-}
-
-function AddHiringRole({ directionId, orgNodes, onCreated }: { directionId: string | undefined; orgNodes: { id: string; name: string; type: string }[]; onCreated: (id: string) => void }) {
-  const { t } = useI18n();
-  const qc = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState("");
-  const [node, setNode] = useState("none");
-  const [count, setCount] = useState("1");
-  const [visibleTo, setVisibleTo] = useState<string[]>([]);
-  const [recruiter, setRecruiter] = useState<string | null>(null);
-  const [supervisor, setSupervisor] = useState<string | null>(null);
-  const create = useMutation({
-    mutationFn: async () => {
-      if (!directionId) throw new Error(t("rec.needDirection"));
-      const { data, error } = await db
-        .from("roles")
-        .insert({
-          title: title.trim(),
-          direction_id: directionId,
-          org_node_id: node === "none" ? null : node,
-          target_count: Math.max(1, Number(count) || 1),
-          recruiting_only: true,
-          criticality: "important",
-          visible_to_person_ids: visibleTo,
-          recruiter_person_id: recruiter,
-          supervisor_person_id: supervisor,
-        })
-        .select("id")
-        .single();
-      if (error) throw error;
-      return (data as { id: string }).id;
-    },
-    onSuccess: (id) => {
-      toast.success(t("rec.roleAdded"));
-      qc.invalidateQueries({ refetchType: "all" });
-      setOpen(false);
-      setTitle("");
-      setNode("none");
-      setCount("1");
-      setVisibleTo([]);
-      setRecruiter(null);
-      setSupervisor(null);
-      onCreated(id);
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-  return (
-    <>
-      <Button size="sm" variant="outline" className="ml-2 h-7 gap-1 text-xs" onClick={() => setOpen(true)}>
-        <Plus className="size-3.5" /> {t("rec.addRole")}
-      </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{t("rec.addRoleTitle")}</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-1.5"><Label>{t("rec.roleTitle")}</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} /></div>
-            <div className="space-y-1.5"><Label>{t("rec.roleTeam")}</Label>
-              <Select value={node} onValueChange={setNode}><SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="none">—</SelectItem>{orgNodes.map((n) => <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5"><Label>{t("rec.roleCount")}</Label><Input type="number" min={1} value={count} onChange={(e) => setCount(e.target.value)} /></div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <PersonPicker label={t("rec.roleRecruiter")} value={recruiter} onChange={setRecruiter} clearLabel={t("ui.clear")} scope="hr" />
-              <PersonPicker label={t("rec.roleSupervisor")} value={supervisor} onChange={setSupervisor} clearLabel={t("ui.clear")} />
-            </div>
-            <VisibleToPicker value={visibleTo} onChange={setVisibleTo} orgNodeId={node === "none" ? null : node} />
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setOpen(false)}>{t("ui.cancel")}</Button>
-            <Button disabled={!title.trim() || !recruiter || !supervisor || create.isPending} onClick={() => create.mutate()}>{t("ui.save")}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
   );
 }
