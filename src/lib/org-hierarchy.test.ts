@@ -12,4 +12,10 @@ describe("Lab and Team hierarchy", () => {
     deepStrictEqual(organizationParents(nodes, "Team"), [lab]);
     deepStrictEqual(organizationParents(nodes, "Team", "team-2"), [lab]);
   });
+
+  test("Labs can be added under a root that is not typed Org", () => {
+    const root = { id: "vnrc", parent_id: null, type: "Research Center", archived: false };
+    const lab = { id: "lab-a", parent_id: "vnrc", type: "Lab", archived: false };
+    deepStrictEqual(organizationParents([root, lab], "Lab"), [root]);
+  });
 });

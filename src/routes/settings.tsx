@@ -429,7 +429,7 @@ function OrgSection({ nodes }: { nodes: OrgNode[] }) {
           <DialogFooter>
             <Button
               onClick={() => editing?.name && save.mutate(editing)}
-              disabled={save.isPending || !editing?.name?.trim() || (!!editing.parent_id !== false && editing.id !== root?.id && !parents.some((parent) => parent.id === editing.parent_id))}
+              disabled={save.isPending || !editing?.name?.trim() || (editing.id !== root?.id && !parents.some((parent) => parent.id === editing.parent_id))}
             >
               {t("set.org.save")}
             </Button>
