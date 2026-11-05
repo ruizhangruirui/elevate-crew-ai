@@ -1,0 +1,1 @@
+ALTER TABLE public.people ADD COLUMN IF NOT EXISTS role_transition_on date;
