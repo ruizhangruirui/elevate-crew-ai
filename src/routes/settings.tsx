@@ -160,6 +160,13 @@ const SECTION_LABEL_KEYS: Record<Section, string> = {
   "系统设置": "set.nav.system",
 };
 
+const SECTION_GROUP: Record<Section, string> = {
+  "组织管理": "set.group.structure", "战略方向": "set.group.structure",
+  "人员管理": "set.group.people", "权限管理": "set.group.people",
+  "人才配置": "set.group.templates",
+  "操作记录": "set.group.system", "系统设置": "set.group.system",
+};
+
 const SECTION_ICONS = {
   "组织管理": Building2, "战略方向": Compass, "人员管理": Users,
   "权限管理": ShieldCheck, "人才配置": SlidersHorizontal, "操作记录": History, "系统设置": Settings2,
@@ -180,16 +187,19 @@ function SettingsBody() {
   const { data } = useQuery({ queryKey: ["settings"], queryFn: fetchSettings });
 
   return (
-    <div className="grid items-start gap-4 lg:grid-cols-[176px_minmax(0,1fr)]">
-      <nav aria-label={t("set.title")} className="flex flex-wrap gap-1 border-b border-border/60 pb-3 lg:sticky lg:top-4 lg:flex-col lg:border-b-0 lg:border-r lg:pb-0 lg:pr-3">
-        {visible.map((s) => {
+    <div className="grid items-start gap-4 lg:grid-cols-[168px_minmax(0,1fr)]">
+      <nav aria-label={t("set.title")} className="flex flex-wrap gap-1 border-b border-border/60 pb-3 lg:sticky lg:top-4 lg:flex-col lg:gap-0.5 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-3">
+        {visible.map((s, i) => {
           const Icon = SECTION_ICONS[s];
-          return <Button
-            key={s}
+          const group = SECTION_GROUP[s];
+          const showGroup = i === 0 || SECTION_GROUP[visible[i - 1]] !== group;
+          return <div key={s} className="contents">
+          {showGroup && <p className={`hidden px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 lg:block ${i === 0 ? "" : "mt-3"}`}>{t(group)}</p>}
+          <Button
             variant="ghost"
             aria-current={section === s ? "page" : undefined}
             onClick={() => setSection(s)}
-            className={`h-auto min-h-9 justify-start gap-2 whitespace-normal px-3 py-2 text-left text-sm ${
+            className={`h-auto min-h-8 justify-start gap-2 whitespace-normal px-3 py-1.5 text-left text-sm ${
               section === s
                 ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
                 : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground"
@@ -197,7 +207,7 @@ function SettingsBody() {
           >
             <Icon className="size-4 shrink-0" />
             {t(SECTION_LABEL_KEYS[s])}
-          </Button>;
+          </Button></div>;
         })}
       </nav>
 
@@ -234,10 +244,10 @@ function SectionHeader({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-border/50 pb-3">
       <div>
-        <h2 className="font-display text-xl font-semibold">{title}</h2>
-        {desc && <p className="mt-1 text-sm text-muted-foreground">{desc}</p>}
+        <h2 className="font-display text-lg font-semibold">{title}</h2>
+        {desc && <p className="mt-0.5 text-xs text-muted-foreground">{desc}</p>}
       </div>
       <div className="flex flex-wrap gap-2">{children}</div>
     </div>
@@ -764,8 +774,8 @@ function SystemSection() {
   return (
     <>
       <SectionHeader title={t("set.system.title")} desc={t("set.system.desc")} />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2 rounded-lg border border-border/60 bg-card/40 p-4">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="space-y-2 rounded-lg border border-border/60 bg-card/40 p-3">
           <Label>Language</Label>
           <Select value={language} onValueChange={setLanguage}>
             <SelectTrigger>
@@ -777,11 +787,11 @@ function SystemSection() {
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-2 rounded-lg border border-border/60 bg-card/40 p-4">
+        <div className="space-y-2 rounded-lg border border-border/60 bg-card/40 p-3">
           <Label>Appearance</Label>
           <p className="text-sm text-muted-foreground">{t("set.system.appearanceValue")}</p>
         </div>
-        <div className="space-y-2 rounded-lg border border-border/60 bg-card/40 p-4 sm:col-span-2">
+        <div className="space-y-2 rounded-lg border border-border/60 bg-card/40 p-3">
           <Label>{t("set.system.data")}</Label>
           <div>
             <Button size="sm" variant="secondary" onClick={exportAll}>
@@ -802,19 +812,15 @@ function StrategySection() {
   if (!data) return <p className="text-sm text-muted-foreground">{t("set.loading")}</p>;
   return (
     <>
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="font-display text-xl font-semibold">{t("set.nav.strategy")}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{t("set.strategy.desc")}</p>
-        </div>
+      <SectionHeader title={t("set.nav.strategy")} desc={t("set.strategy.desc")}>
         <div className="flex items-center gap-1">
           <ArchivedBinDialog />
           {data.org && <NewDirectionDialog orgId={data.org.id} onDone={invalidate} />}
         </div>
-      </div>
-      <div className="space-y-2">
+      </SectionHeader>
+      <div className="grid gap-2 md:grid-cols-2">
         {data.directions.map((d) => (
-          <div key={d.id} className="card-glass group relative p-4 pr-12">
+          <div key={d.id} className="card-glass group relative p-3 pr-12">
             <p className="font-medium">{d.title}</p>
             {d.description && <p className="mt-1 text-sm text-muted-foreground">{d.description}</p>}
             <p className="mt-1 text-xs text-muted-foreground">
