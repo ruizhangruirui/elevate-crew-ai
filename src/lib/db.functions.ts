@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { admin, getSessionUser, managerScope, type AppUser } from "./auth.server";
 import { onboardingDateSchema } from "./candidate-onboarding";
+import { missingRoleOwners } from "./role-owners";
 
 const TABLES = [
   "actions",
@@ -107,11 +108,8 @@ export const dbQuery = createServerFn({ method: "POST" })
     if (spec.table === "roles" && spec.op === "insert" && user.role !== "owner" && !((user.role === "hr" || user.role === "recruiter") && recruitingOnlyInsert))
       return fail("Only the Owner can add strategic roles", "403");
     // Every hiring position must name its recruiter and hiring supervisor at creation time.
-    if (spec.table === "roles" && spec.op === "insert") {
-      const roleRows = Array.isArray(payload) ? payload : [payload];
-      if (roleRows.some((r: any) => !r?.recruiter_person_id || !r?.supervisor_person_id))
-        return fail("Each position needs a recruiter and a supervisor", "400");
-    }
+    if (spec.table === "roles" && spec.op === "insert" && missingRoleOwners(payload))
+      return fail("Each position needs a recruiter and a supervisor", "400");
     if (spec.table === "directions" && spec.op !== "select" && user.role !== "owner")
       return fail("Only the Owner can change strategy directions", "403");
     if (user.role === "recruiter") {
