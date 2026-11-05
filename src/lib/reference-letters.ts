@@ -262,7 +262,7 @@ export async function downloadDocx(d: LetterDoc) {
           ...d.paragraphs.map((p) => new Paragraph({ spacing: { after: 240 }, children: runsOf(p, {}, true) })),
           ...(signature.length ? [new Paragraph({ keepNext: true, spacing: { before: 1400, after: 80 }, indent: { right: 4800 }, border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: "000000", space: 1 } }, children: [] })] : []),
           ...signature.map((text) => new Paragraph({ keepNext: true, spacing: { after: 60 }, children: runsOf(text, {}, true) })),
-          ...company.map((text, i) => new Paragraph({ keepNext: i < company.length - 1, spacing: { before: i === 0 ? 240 : 0 }, children: runsOf(text, { size: 9 }) })),
+          ...company.map((text, i) => new Paragraph({ keepNext: i < company.length - 1, spacing: { before: i === 0 ? 240 : 0 }, children: runsOf(text, {}, true) })),
         ],
       },
     ],
@@ -404,7 +404,7 @@ export async function downloadPdf(d: LetterDoc) {
   }
   signature.forEach((text) => writeRich(text, {}, 2, true));
   y += 12;
-  company.forEach((text) => writeRich(text, { size: 9 }, 0));
+  company.forEach((text) => writeRich(text, {}, 0, true));
   pdf.save(`${d.fileBase}.pdf`);
 }
 
