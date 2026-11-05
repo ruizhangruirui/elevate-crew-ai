@@ -32,7 +32,6 @@ import { fetchOrgNodes, type OrgNode } from "@/lib/org-tree";
 import { FormActions } from "@/components/FormActions";
 import { VisibleToPicker } from "@/components/VisibleToPicker";
 import { PersonPicker } from "@/components/PersonPicker";
-import { AddHiringRole } from "@/components/AddHiringRole";
 import { toastError, toastSaved, toastUndoable } from "@/lib/ui-feedback";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,11 +92,6 @@ function Index() {
   );
 }
 
-function HiringRoleButton({ directionId, orgNodes }: { directionId: string; orgNodes: { id: string; name: string; type: string }[] }) {
-  const { user } = useAuth();
-  if (!(user?.role === "owner" || user?.role === "hr" || user?.role === "recruiter")) return null;
-  return <AddHiringRole directionId={directionId} orgNodes={orgNodes} />;
-}
 
 function StrategyBoard() {
   const { t } = useI18n();
@@ -225,8 +219,7 @@ function StrategyBoard() {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <HiringRoleButton directionId={active.id} orgNodes={orgNodes.data ?? []} />
-              <OwnerOnly><NewRoleDialog directionId={active.id} onDone={invalidate} /></OwnerOnly>
+              <NewRoleDialog directionId={active.id} orgNodes={orgNodes.data ?? []} onDone={invalidate} onAssign={setOpenRoleId} />
             </div>
           </div>
 
@@ -972,9 +965,12 @@ export function NewDirectionDialog({ orgId, onDone }: { orgId: string; onDone: (
   );
 }
 
-function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: () => void }) {
+function NewRoleDialog({ directionId, orgNodes, onDone, onAssign }: { directionId: string; orgNodes: { id: string; name: string; type: string }[]; onDone: () => void; onAssign: (id: string) => void }) {
   const { t } = useI18n();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  const [step, setStep] = useState<"form" | "next" | "sourcing">("form");
+  const [createdId, setCreatedId] = useState<string | null>(null);
   const empty = {
     title: "",
     description: "",
@@ -985,40 +981,80 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
     employment_mode: "__none",
     location: "__none",
     contract_type: "employee",
-    recruiter_person_id: "",
-    supervisor_person_id: "",
+    org_node_id: "none",
   };
   const [form, setForm] = useState(empty);
+  const [recruiter, setRecruiter] = useState<string | null>(null);
+  const [supervisor, setSupervisor] = useState<string | null>(null);
+  const [visibleTo, setVisibleTo] = useState<string[]>([]);
+
+  const reset = () => {
+    setStep("form");
+    setCreatedId(null);
+    setForm(empty);
+    setRecruiter(null);
+    setSupervisor(null);
+    setVisibleTo([]);
+  };
+  const close = () => {
+    setOpen(false);
+    reset();
+  };
 
   const create = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("roles").insert({
-        direction_id: directionId,
-        title: form.title,
-        description: form.description,
-        level_min: Number(form.level_min),
-        level_max: Number(form.level_max),
-        target_count: Number(form.target_count),
-        criticality: form.criticality,
-        employment_mode: form.employment_mode === "__none" ? null : form.employment_mode,
-        location: form.location === "__none" ? null : form.location,
-        contract_type: form.contract_type,
-        recruiter_person_id: form.recruiter_person_id || null,
-        supervisor_person_id: form.supervisor_person_id || null,
-      });
+      const { data, error } = await supabase
+        .from("roles")
+        .insert({
+          direction_id: directionId,
+          title: form.title.trim(),
+          description: form.description,
+          level_min: Number(form.level_min),
+          level_max: Number(form.level_max),
+          target_count: Math.max(1, Number(form.target_count) || 1),
+          criticality: form.criticality,
+          employment_mode: form.employment_mode === "__none" ? null : form.employment_mode,
+          location: form.location === "__none" ? null : form.location,
+          contract_type: form.contract_type,
+          org_node_id: form.org_node_id === "none" ? null : form.org_node_id,
+          recruiting_only: false,
+          // Not in Recruiting until the creator chooses "Start sourcing".
+          recruiting_archived: true,
+        })
+        .select("id")
+        .single();
       if (error) throw error;
+      return (data as { id: string }).id;
     },
-    onSuccess: () => {
+    onSuccess: (id) => {
       toastSaved(t("idx.roleCreated"));
-      setOpen(false);
-      setForm(empty);
+      setCreatedId(id);
+      setStep("next");
       onDone();
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const startSourcing = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("roles")
+        .update({ recruiting_archived: false, recruiter_person_id: recruiter, supervisor_person_id: supervisor, visible_to_person_ids: visibleTo })
+        .eq("id", createdId!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toastSaved(t("rec.roleAdded"));
+      onDone();
+      close();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (!(user?.role === "owner" || user?.role === "hr" || user?.role === "recruiter")) return null;
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(v) => (v ? setOpen(true) : close())}>
       <DialogTrigger asChild>
         <Button size="sm" className="gap-1.5">
           <Plus className="size-4" /> {t("idx.newRole")}
@@ -1026,104 +1062,119 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t("idx.newRole")}</DialogTitle>
+          <DialogTitle>{step === "form" ? t("idx.newRole") : step === "next" ? t("idx.nextStepTitle") : t("idx.nextSourcing")}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>{t("idx.roleName")}</Label>
-            <Input
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-            />
-          </div>
-            <div className="space-y-2">
-              <Label>{t("idx.ct.field")}</Label>
-              <Select value={form.contract_type} onValueChange={(v) => setForm({ ...form, contract_type: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {ROLE_CONTRACT_TYPES.map((c) => <SelectItem key={c} value={c}>{t(`idx.ct.${c}`)}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          <div className="space-y-2">
-            <Label>{t("idx.roleDescription")}</Label>
-            <Textarea
-              rows={3}
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-            />
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-2">
-              <Label>{t("idx.lowestLevel")}</Label>
-              <Input
-                type="number"
-                value={form.level_min}
-                onChange={(e) => setForm({ ...form, level_min: e.target.value })}
+        {step === "form" && (
+          <>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>{t("idx.roleName")}</Label>
+                <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>{t("idx.ct.field")}</Label>
+                  <Select value={form.contract_type} onValueChange={(v) => setForm({ ...form, contract_type: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {ROLE_CONTRACT_TYPES.map((c) => <SelectItem key={c} value={c}>{t(`idx.ct.${c}`)}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("idx.roleTeam")}</Label>
+                  <Select value={form.org_node_id} onValueChange={(v) => setForm({ ...form, org_node_id: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">—</SelectItem>
+                      {orgNodes.map((n) => <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>{t("idx.roleDescription")}</Label>
+                <Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-2">
+                  <Label>{t("idx.lowestLevel")}</Label>
+                  <Input type="number" value={form.level_min} onChange={(e) => setForm({ ...form, level_min: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("idx.highestLevel")}</Label>
+                  <Input type="number" value={form.level_max} onChange={(e) => setForm({ ...form, level_max: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("idx.targetHeadcount")}</Label>
+                  <Input type="number" min={1} value={form.target_count} onChange={(e) => setForm({ ...form, target_count: e.target.value })} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>{t("idx.criticality")}</Label>
+                <Select value={form.criticality} onValueChange={(v) => setForm({ ...form, criticality: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="strategic_critical">Strategic Critical</SelectItem>
+                    <SelectItem value="critical">Critical</SelectItem>
+                    <SelectItem value="important">Important</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <ModeLocationFields
+                mode={form.employment_mode}
+                location={form.location}
+                onMode={(v) => setForm({ ...form, employment_mode: v })}
+                onLocation={(v) => setForm({ ...form, location: v })}
               />
             </div>
-            <div className="space-y-2">
-              <Label>{t("idx.highestLevel")}</Label>
-              <Input
-                type="number"
-                value={form.level_max}
-                onChange={(e) => setForm({ ...form, level_max: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>{t("idx.targetHeadcount")}</Label>
-              <Input
-                type="number"
-                value={form.target_count}
-                onChange={(e) => setForm({ ...form, target_count: e.target.value })}
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>{t("idx.criticality")}</Label>
-            <Select
-              value={form.criticality}
-              onValueChange={(v) => setForm({ ...form, criticality: v })}
+            <FormActions onCancel={close} onSave={() => create.mutate()} pending={create.isPending} disabled={!form.title.trim()} />
+          </>
+        )}
+        {step === "next" && (
+          <div className="space-y-3">
+            <button
+              type="button"
+              className="card-glass w-full rounded-lg border p-4 text-left transition hover:border-primary"
+              onClick={() => {
+                const id = createdId!;
+                close();
+                onAssign(id);
+              }}
             >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="strategic_critical">Strategic Critical</SelectItem>
-                <SelectItem value="critical">Critical</SelectItem>
-                <SelectItem value="important">Important</SelectItem>
-              </SelectContent>
-            </Select>
+              <div className="font-medium">{t("idx.nextAssign")}</div>
+              <div className="text-sm text-muted-foreground">{t("idx.nextAssignHint")}</div>
+            </button>
+            <button
+              type="button"
+              className="card-glass w-full rounded-lg border p-4 text-left transition hover:border-primary"
+              onClick={() => setStep("sourcing")}
+            >
+              <div className="font-medium">{t("idx.nextSourcing")}</div>
+              <div className="text-sm text-muted-foreground">{t("idx.nextSourcingHint")}</div>
+            </button>
+            <div className="flex justify-end">
+              <Button variant="ghost" onClick={close}>{t("idx.nextLater")}</Button>
+            </div>
           </div>
-          <ModeLocationFields
-            mode={form.employment_mode}
-            location={form.location}
-            onMode={(v) => setForm({ ...form, employment_mode: v })}
-            onLocation={(v) => setForm({ ...form, location: v })}
-          />
-          <div className="grid gap-3 sm:grid-cols-2">
-            <PersonPicker
-              label={t("idx.roleRecruiter")}
-              value={form.recruiter_person_id || null}
-              onChange={(id) => setForm({ ...form, recruiter_person_id: id ?? "" })}
-              clearLabel={t("ui.clear")}
-              scope="hr"
+        )}
+        {step === "sourcing" && (
+          <>
+            <div className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <PersonPicker label={t("idx.roleRecruiter")} value={recruiter} onChange={setRecruiter} clearLabel={t("ui.clear")} scope="hr" />
+                <PersonPicker label={t("idx.roleSupervisor")} value={supervisor} onChange={setSupervisor} clearLabel={t("ui.clear")} />
+              </div>
+              <VisibleToPicker value={visibleTo} onChange={setVisibleTo} orgNodeId={form.org_node_id === "none" ? null : form.org_node_id} />
+            </div>
+            <FormActions
+              onCancel={() => setStep("next")}
+              onSave={() => startSourcing.mutate()}
+              pending={startSourcing.isPending}
+              disabled={!recruiter || !supervisor}
             />
-            <PersonPicker
-              label={t("idx.roleSupervisor")}
-              value={form.supervisor_person_id || null}
-              onChange={(id) => setForm({ ...form, supervisor_person_id: id ?? "" })}
-              clearLabel={t("ui.clear")}
-            />
-          </div>
-        </div>
-        <FormActions
-          onCancel={() => setOpen(false)}
-          onSave={() => create.mutate()}
-          pending={create.isPending}
-          disabled={!form.title.trim() || !form.recruiter_person_id || !form.supervisor_person_id}
-        />
-
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
