@@ -11,9 +11,12 @@ describe("normTitle (TeamTailor job ↔ position matching)", () => {
     expect(normTitle("AI Compiler 架构专家")).toBe(normTitle("AI Compiler 架构专家"));
   });
 
-  it("ignores punctuation differences such as parentheses and slashes", () => {
-    expect(normTitle("HR Specialist (m/f/d)")).toBe(normTitle("HR Specialist"));
+  it("ignores dash and slash punctuation differences", () => {
     expect(normTitle("IT-Specialist")).toBe(normTitle("IT Specialist"));
+  });
+
+  it("keeps parenthetical suffixes significant — matched manually, not automatically", () => {
+    expect(normTitle("HR Specialist (m/f/d)")).not.toBe(normTitle("HR Specialist"));
   });
 
   it("does not equate genuinely different titles", () => {
