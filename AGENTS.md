@@ -30,3 +30,4 @@
 - Document titles are read from type-specific config_items templates; the old stationery title is only a reference-template fallback until saved, preserving existing installations without a database migration.
 - Reference signatory choice and supervisor signature are dedicated reference_letters columns restricted to the supervisor section; both exporters resolve the same signature lines and uniform body/signature size to prevent format drift.
 - To onboard candidates auto-move to People (status onboard) and become Hired once their start date arrives, via an idempotent server function run on Recruiting load; there is no scheduler in either deployment mode.
+- TeamTailor sync uses the shared tested matcher against unarchived Recruiting roles; direct sync skips unmatched/ambiguous jobs and retains existing saved mappings to avoid disrupting candidate associations.
