@@ -12,7 +12,7 @@ import { RoleMenu } from "@/routes/index";
 import { fetchOrgNodes, subtreeIds } from "@/lib/org-tree";
 import { toastUndoable } from "@/lib/ui-feedback";
 import { db } from "@/lib/db-client";
-import { syncTeamTailor } from "@/lib/teamtailor.functions";
+import { previewTeamTailorSync, saveTeamTailorMapping, syncTeamTailor, type SyncPreview } from "@/lib/teamtailor.functions";
 import { onboardingDate } from "@/lib/candidate-onboarding";
 import { processDueOnboardings } from "@/lib/candidate-autohire.functions";
 import { overviewCandidates, teamForRole } from "@/lib/recruiting-overview";
@@ -151,13 +151,32 @@ function RecruitingBody() {
 
   const { data: ws } = useQuery({ queryKey: ["workspace", "recruiting"], queryFn: fetchRecruitingWorkspace });
   const { data: orgNodes = [] } = useQuery({ queryKey: ["orgNodes"], queryFn: fetchOrgNodes });
+  const [ttPreviewOpen, setTtPreviewOpen] = useState(false);
+  const [ttPreview, setTtPreview] = useState<SyncPreview | null>(null);
+  const previewTt = useMutation({
+    mutationFn: () => previewTeamTailorSync(),
+    onSuccess: (r) => {
+      setTtPreview(r);
+      setTtPreviewOpen(true);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const mapTtJob = useMutation({
+    mutationFn: (input: { ttJobId: string; ttJobTitle: string; roleId: string }) => saveTeamTailorMapping({ data: input }),
+    onSuccess: () => previewTt.mutate(),
+    onError: (e: Error) => toast.error(e.message),
+  });
   const syncTt = useMutation({
     mutationFn: () => syncTeamTailor(),
     onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ["candidates"] });
+      setTtPreviewOpen(false);
       const parts = [t("rec.syncDone").replace("{n}", String(r.imported))];
+      if (r.updated) parts.push(t("rec.syncUpdated").replace("{n}", String(r.updated)));
+      if (r.unchanged) parts.push(t("rec.syncUnchanged").replace("{n}", String(r.unchanged)));
       if (r.skippedDuplicates) parts.push(t("rec.syncSkipped").replace("{n}", String(r.skippedDuplicates)));
       if (r.unmatched) parts.push(t("rec.syncUnmatched").replace("{n}", String(r.unmatched)).replace("{jobs}", r.unmatchedJobs.join(", ")));
+      if (r.capped) parts.push(t("rec.syncCapped"));
       toast.success(parts.join(" · "));
     },
     onError: (e: Error) => toast.error(e.message),
