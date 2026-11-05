@@ -4,24 +4,41 @@ import { X } from "lucide-react";
 import { db } from "@/lib/db-client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { hrNodes, type ScopeNode } from "@/lib/people-scope";
 
 /** Pick one person from the People list (single select, searchable). */
-export function PersonPicker({ label, value, onChange, clearLabel }: {
+export function PersonPicker({ label, value, onChange, clearLabel, scope }: {
   label: string;
   value: string | null;
   onChange: (id: string | null) => void;
   clearLabel: string;
+  /** "hr": only people in the HR team. */
+  scope?: "hr";
 }) {
   const [q, setQ] = useState("");
   const people = useQuery({
     queryKey: ["people-names"],
     queryFn: async () => {
-      const { data, error } = await db.from("people").select("id,name").eq("archived", false).order("name");
+      const { data, error } = await db.from("people").select("id,name,org_node_id").eq("archived", false).order("name");
       if (error) throw error;
-      return (data ?? []) as { id: string; name: string }[];
+      return (data ?? []) as { id: string; name: string; org_node_id: string | null }[];
     },
   });
-  const list = people.data ?? [];
+  const nodes = useQuery({
+    queryKey: ["scope-org-nodes"],
+    enabled: scope === "hr",
+    queryFn: async () => {
+      const { data, error } = await db.from("org_nodes").select("id,name,type,parent_id").eq("archived", false);
+      if (error) throw error;
+      return (data ?? []) as ScopeNode[];
+    },
+  });
+  const all = people.data ?? [];
+  const list = useMemo(() => {
+    if (scope !== "hr") return all;
+    const hr = hrNodes(nodes.data ?? []);
+    return all.filter((p) => p.id === value || (p.org_node_id && hr.has(p.org_node_id)));
+  }, [all, nodes.data, scope, value]);
   const name = useMemo(() => list.find((p) => p.id === value)?.name ?? null, [list, value]);
   const shown = list.filter((p) => !q || p.name.toLowerCase().includes(q.toLowerCase())).slice(0, 50);
 

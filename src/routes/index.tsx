@@ -718,10 +718,10 @@ export function RoleMenu({
             </div>
             <ModeLocationFields mode={mode} location={location} onMode={setMode} onLocation={setLocation} />
             <div className="grid gap-3 sm:grid-cols-2">
-              <PersonPicker label={t("idx.roleRecruiter")} value={recruiterId} onChange={setRecruiterId} clearLabel={t("ui.clear")} />
+              <PersonPicker label={t("idx.roleRecruiter")} value={recruiterId} onChange={setRecruiterId} clearLabel={t("ui.clear")} scope="hr" />
               <PersonPicker label={t("idx.roleSupervisor")} value={supervisorId} onChange={setSupervisorId} clearLabel={t("ui.clear")} />
             </div>
-            {withVisibility && <VisibleToPicker value={visibleTo} onChange={setVisibleTo} />}
+            {withVisibility && <VisibleToPicker value={visibleTo} onChange={setVisibleTo} orgNodeId={nodeId === "__none" ? null : nodeId} />}
 
             <p className="text-xs text-muted-foreground">
               {t("idx.roleProfileHint")}
@@ -1097,6 +1097,7 @@ function NewRoleDialog({ directionId, onDone }: { directionId: string; onDone: (
               value={form.recruiter_person_id || null}
               onChange={(id) => setForm({ ...form, recruiter_person_id: id ?? "" })}
               clearLabel={t("ui.clear")}
+              scope="hr"
             />
             <PersonPicker
               label={t("idx.roleSupervisor")}

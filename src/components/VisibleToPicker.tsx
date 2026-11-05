@@ -6,21 +6,36 @@ import { useI18n } from "@/lib/i18n";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { labOf, subtree, type ScopeNode } from "@/lib/people-scope";
 
 /** Choose people (from the People list) who may view this recruiting position with their own account. */
-export function VisibleToPicker({ value, onChange }: { value: string[]; onChange: (ids: string[]) => void }) {
+export function VisibleToPicker({ value, onChange, orgNodeId }: { value: string[]; onChange: (ids: string[]) => void; orgNodeId?: string | null }) {
   const { lang } = useI18n();
   const zh = lang === "zh";
   const [q, setQ] = useState("");
   const people = useQuery({
     queryKey: ["visible-to-people"],
     queryFn: async () => {
-      const { data, error } = await db.from("people").select("id,name,company_email").eq("archived", false).order("name");
+      const { data, error } = await db.from("people").select("id,name,company_email,org_node_id").eq("archived", false).order("name");
       if (error) throw error;
-      return (data ?? []) as { id: string; name: string; company_email: string | null }[];
+      return (data ?? []) as { id: string; name: string; company_email: string | null; org_node_id: string | null }[];
     },
   });
-  const list = people.data ?? [];
+  const nodes = useQuery({
+    queryKey: ["scope-org-nodes"],
+    queryFn: async () => {
+      const { data, error } = await db.from("org_nodes").select("id,name,type,parent_id").eq("archived", false);
+      if (error) throw error;
+      return (data ?? []) as ScopeNode[];
+    },
+  });
+  const all = people.data ?? [];
+  const lab = labOf(nodes.data ?? [], orgNodeId);
+  const list = useMemo(() => {
+    if (!lab) return all;
+    const inLab = subtree(nodes.data ?? [], [lab]);
+    return all.filter((p) => value.includes(p.id) || (p.org_node_id && inLab.has(p.org_node_id)));
+  }, [all, lab, nodes.data, value]);
   const byId = useMemo(() => new Map(list.map((p) => [p.id, p])), [list]);
   const shown = list.filter((p) => !q || p.name.toLowerCase().includes(q.toLowerCase())).slice(0, 50);
   const toggle = (id: string) => onChange(value.includes(id) ? value.filter((x) => x !== id) : [...value, id]);
