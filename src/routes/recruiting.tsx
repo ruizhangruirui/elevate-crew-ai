@@ -9,6 +9,7 @@ import { ConfirmAction } from "@/components/ConfirmAction";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/hooks/useAuth";
 import { RoleMenu } from "@/routes/index";
+import { VisibleToPicker } from "@/components/VisibleToPicker";
 import { fetchOrgNodes, subtreeIds } from "@/lib/org-tree";
 import { toastUndoable } from "@/lib/ui-feedback";
 import { db } from "@/lib/db-client";
@@ -378,6 +379,7 @@ function RecruitingBody() {
                 </p>
               </Button>
               {canEditRole && <RoleMenu
+                withVisibility
                 role={r}
                 orgNodes={orgNodes}
                 onArchive={() => removeRole.mutate(r.id)}
@@ -894,6 +896,7 @@ function AddHiringRole({ directionId, orgNodes, onCreated }: { directionId: stri
   const [title, setTitle] = useState("");
   const [node, setNode] = useState("none");
   const [count, setCount] = useState("1");
+  const [visibleTo, setVisibleTo] = useState<string[]>([]);
   const create = useMutation({
     mutationFn: async () => {
       if (!directionId) throw new Error(t("rec.needDirection"));
@@ -906,6 +909,7 @@ function AddHiringRole({ directionId, orgNodes, onCreated }: { directionId: stri
           target_count: Math.max(1, Number(count) || 1),
           recruiting_only: true,
           criticality: "important",
+          visible_to_person_ids: visibleTo,
         })
         .select("id")
         .single();
@@ -919,6 +923,7 @@ function AddHiringRole({ directionId, orgNodes, onCreated }: { directionId: stri
       setTitle("");
       setNode("none");
       setCount("1");
+      setVisibleTo([]);
       onCreated(id);
     },
     onError: (e: Error) => toast.error(e.message),
@@ -939,6 +944,7 @@ function AddHiringRole({ directionId, orgNodes, onCreated }: { directionId: stri
               </Select>
             </div>
             <div className="space-y-1.5"><Label>{t("rec.roleCount")}</Label><Input type="number" min={1} value={count} onChange={(e) => setCount(e.target.value)} /></div>
+            <VisibleToPicker value={visibleTo} onChange={setVisibleTo} />
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setOpen(false)}>{t("ui.cancel")}</Button>
