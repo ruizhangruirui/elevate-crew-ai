@@ -16,6 +16,7 @@ import { toastUndoable } from "@/lib/ui-feedback";
 import { db } from "@/lib/db-client";
 import { syncTeamTailor } from "@/lib/teamtailor.functions";
 import { onboardingDate } from "@/lib/candidate-onboarding";
+import { recruitingRoleStatus } from "@/lib/recruiting-role-status";
 import { processDueOnboardings } from "@/lib/candidate-autohire.functions";
 import { overviewCandidates, teamForRole } from "@/lib/recruiting-overview";
 import { coverageOf, fetchRecruitingWorkspace, roleContractOf } from "@/lib/talent";
@@ -202,6 +203,7 @@ function RecruitingBody() {
 
   const { data: candidates } = useQuery({
     queryKey: ["candidates"],
+    refetchInterval: 60_000,
     queryFn: async () => {
       try {
         const r = await processDueOnboardings();
@@ -219,6 +221,15 @@ function RecruitingBody() {
     const m = new Map<string, number>();
     for (const c of candidates ?? []) if ((FILTERS.active as readonly string[]).includes(c.outcome)) m.set(c.role_id, (m.get(c.role_id) ?? 0) + 1);
     return m;
+  }, [candidates]);
+  const onboardingByRole = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const candidate of candidates ?? []) {
+      if (candidate.outcome === "to_onboard") {
+        counts.set(candidate.role_id, (counts.get(candidate.role_id) ?? 0) + 1);
+      }
+    }
+    return counts;
   }, [candidates]);
 
   const nodeById = new Map(orgNodes.map((n) => [n.id, n]));
@@ -238,7 +249,10 @@ function RecruitingBody() {
   const labs = orgNodes.filter((n) => n.type.toLowerCase() === "lab" && scopedRoles.some((r) => labOf(r.org_node_id)?.id === n.id));
   const roleList = scopedRoles
     .filter((r) => lab === "all" || labOf(r.org_node_id)?.id === lab)
-    .map((r) => ({ r, cov: coverageOf(r, people) }))
+    .map((r) => {
+      const cov = coverageOf(r, people);
+      return { r, cov, status: recruitingRoleStatus(cov.gap, onboardingByRole.get(r.id) ?? 0) };
+    })
     .filter(({ r, cov }) => !openOnly || cov.gap > 0 || r.id === roleId || activeByRole.has(r.id));
   const role = scopedRoles.find((r) => r.id === roleId && (lab === "all" || labOf(r.org_node_id)?.id === lab)) ?? null;
   const editingRole = editing && editing !== "new" ? scopedRoles.find((r) => r.id === editing.role_id) : role;
@@ -372,7 +386,7 @@ function RecruitingBody() {
         {rolesOpen && (
         <ul className="mt-2 grid gap-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {roleList.length === 0 && <li className="px-2 py-3 text-xs text-muted-foreground">{t("rec.noRoles")}</li>}
-          {roleList.map(({ r, cov }) => (
+          {roleList.map(({ r, cov, status }) => (
             <li key={r.id} className="group relative">
               <Button
                 variant="ghost"
@@ -381,8 +395,8 @@ function RecruitingBody() {
               >
                 <p className="flex w-full items-center gap-1.5 font-medium"><span className="truncate">{r.title}</span></p>
                 <p className="mt-0.5 flex gap-2 text-[11px] text-muted-foreground">
-                  <span className={cov.gap ? "text-danger" : "text-ok"}>
-                    {cov.gap ? t("rec.gap").replace("{n}", String(cov.gap)) : t("rec.full")}
+                  <span className={status === "open" ? "text-danger" : "text-ok"}>
+                    {status === "to_onboard" ? t("rec.out.to_onboard") : status === "filled" ? t("rec.full") : t("rec.gap").replace("{n}", String(cov.gap))}
                   </span>
                   {activeByRole.get(r.id) ? <span>{t("rec.active").replace("{n}", String(activeByRole.get(r.id)))}</span> : null}
                   {labOf(r.org_node_id) && <span className="truncate">· {labOf(r.org_node_id)?.name}</span>}

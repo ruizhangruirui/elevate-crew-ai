@@ -30,6 +30,7 @@
 - Document titles are read from type-specific config_items templates; the old stationery title is only a reference-template fallback until saved, preserving existing installations without a database migration.
 - Reference signatory choice and supervisor signature are dedicated reference_letters columns restricted to the supervisor section; both exporters resolve the same signature lines and uniform body/signature size to prevent format drift.
 - To onboard candidates auto-move to People (status onboard) and become Hired once their start date arrives, via an idempotent server function run on Recruiting load; there is no scheduler in either deployment mode.
+- Recruiting role status is derived from awaiting candidates and actual personnel coverage; the open page rechecks due onboarding every minute to keep dates and status current without a deployment-specific scheduler.
 - TeamTailor sync uses the shared tested matcher against unarchived Recruiting roles; direct sync skips unmatched/ambiguous jobs and retains existing saved mappings to avoid disrupting candidate associations.
 - TeamTailor discovers and matches jobs before fetching independently paginated applications per matched job, so unrelated historical pipelines cannot exhaust the application page cap.
 - Recruiting "Visible to" (roles.visible_to_person_ids) grants read-only access to that position and its candidates in dbQuery scope filters; accounts link to people by company email (name fallback), keeping sharing server-enforced.
