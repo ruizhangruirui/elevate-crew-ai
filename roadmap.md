@@ -1,3 +1,5 @@
+- [x] Add Action Center detail dialogs and direct links to the associated position, person or reference letter.
+- [ ] Verify signed-in Action Center details and position approval navigation (blocked: preview redirects to app-owned sign-in; no app session available).
 - [x] Add Recruiting role editing and confirmed, reversible removal using the shared strategic role controls.
 - [x] Preserve Excel role values as Appointed Role even when unmatched; keep Job Title separate and existing Staff ID updates partial.
 - [x] Combine footer credits and contact into one continuous line that wraps only when space requires.

@@ -9,6 +9,7 @@ import { StatTile } from "@/components/StatTile";
 import { useI18n } from "@/lib/i18n";
 import { fetchWorkspace } from "@/lib/talent";
 import { fetchOrgNodes } from "@/lib/org-tree";
+import { actionTarget } from "@/lib/action-target";
 import {
   actionSummary,
   createAction,
@@ -77,6 +78,7 @@ function ActionsBoard() {
   const { data: ws } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
   const { data: nodes } = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
   const [tab, setTab] = useState<"open" | "done" | "all">("open");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const invalidate = () => qc.invalidateQueries({ refetchType: "all" });
 
@@ -97,6 +99,12 @@ function ActionsBoard() {
   });
 
   const list = actions ?? [];
+  const selected = list.find((a) => a.id === selectedId);
+  const selectedWorkflow = selected ? parseActionWorkflow(selected.detail) : null;
+  const target = selected ? actionTarget(selected) : null;
+  const selectedRole = ws?.roles.find((r) => r.id === selected?.role_id || (target?.kind === "position" && r.id === target.id));
+  const request = selectedRole?.approval_request;
+  const personName = (id: string) => ws?.people.find((p) => p.id === id)?.name ?? "—";
   const s = useMemo(() => actionSummary(list), [list]);
 
   const shown = list.filter((a) =>
@@ -180,20 +188,13 @@ function ActionsBoard() {
               </button>
 
               <div className="min-w-0 flex-1">
-                <p
-                  className={`text-sm font-medium ${done ? "text-muted-foreground line-through" : ""}`}
+                <Button
+                  variant="link"
+                  onClick={() => setSelectedId(a.id)}
+                  className={`h-auto max-w-full justify-start whitespace-normal p-0 text-left text-sm font-medium ${done ? "text-muted-foreground line-through" : "text-foreground"}`}
                 >
                   {a.title}
-                  {(a.source_kind === "reference" || a.source_kind === "reference_review") && a.source_key && !done && (
-                    <Link
-                      to="/growth"
-                      search={{ tab: "reference", letter: a.source_key }}
-                      className="ml-2 rounded-full border border-brand/40 px-2 py-0.5 text-[11px] font-normal text-brand hover:bg-brand/10"
-                    >
-                      {t("act.open")} →
-                    </Link>
-                  )}
-                </p>
+                </Button>
                 {workflow.description && (
                   <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                     {workflow.description}
@@ -271,6 +272,9 @@ function ActionsBoard() {
               </div>
 
               <div className="flex items-center gap-1">
+                <Button variant="outline" size="sm" onClick={() => setSelectedId(a.id)}>
+                  {t("act.open")}
+                </Button>
                 {!done && (
                   <Select
                     value={a.status}
@@ -306,6 +310,55 @@ function ActionsBoard() {
           <p className="px-5 py-10 text-center text-sm text-muted-foreground">{t("act.empty")}</p>
         )}
       </section>
+      <Dialog open={!!selected} onOpenChange={(open) => { if (!open) setSelectedId(null); }}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="break-words leading-relaxed">{selected?.title ?? t("act.details")}</DialogTitle>
+          </DialogHeader>
+          {selected && selectedWorkflow && (
+            <div className="min-w-0 space-y-5 text-sm">
+              <dl className="grid grid-cols-2 gap-4">
+                {([
+                  [t("act.field.status"), t(`act.status.${selected.status}`)],
+                  [t("act.field.priority"), t(`act.priority.${selected.priority}`)],
+                  [t("act.field.owner"), selected.owner ?? "—"],
+                  [t("act.field.dueDate"), selected.due_on ?? "—"],
+                ]).map(([label, value]) => (
+                  <div key={label}><dt className="text-xs text-muted-foreground">{label}</dt><dd className="mt-1 break-words">{value}</dd></div>
+                ))}
+              </dl>
+              <div><p className="mb-1 text-xs text-muted-foreground">{t("act.field.detail")}</p><p className="whitespace-pre-wrap break-words leading-relaxed">{selectedWorkflow.description || "—"}</p></div>
+              {context(selected).length > 0 && <div className="space-y-1 border-t border-border pt-3">{context(selected).map((value) => <p key={value} className="break-words">{value}</p>)}</div>}
+              {selectedRole && (
+                <div className="space-y-3 border-t border-border pt-3">
+                  <p className="font-medium">{selectedRole.title}</p>
+                  <p className="whitespace-pre-wrap break-words leading-relaxed text-muted-foreground">{selectedRole.description}</p>
+                  {selectedRole.approval_status === "pending" && <p className="text-warn">{t("idx.pendingApproval")}</p>}
+                  {selectedRole.requested_by && <p>{t("idx.requestedBy")} {selectedRole.requested_by}</p>}
+                  {request?.kind === "assign" && <p>{t("idx.nextAssign")}: {personName(request.person_id)}</p>}
+                  {request?.kind === "sourcing" && <div className="space-y-1"><p>{t("idx.nextSourcing")}</p><p>{t("idx.roleRecruiter")}: {personName(request.recruiter)}</p><p>{t("idx.roleSupervisor")}: {personName(request.supervisor)}</p></div>}
+                </div>
+              )}
+              {([
+                [t("act.field.sourceNote"), selectedWorkflow.sourceNote],
+                [t("act.field.relatedObject"), selectedWorkflow.relatedObject],
+                [t("act.field.approver"), selectedWorkflow.approver],
+                [t("act.field.evidence"), selectedWorkflow.evidence],
+                [t("act.field.rejectionReason"), selectedWorkflow.rejectionReason],
+              ]).filter(([, value]) => value).map(([label, value]) => (
+                <div key={label}><p className="text-xs text-muted-foreground">{label}</p><p className="mt-1 whitespace-pre-wrap break-words">{value}</p></div>
+              ))}
+            </div>
+          )}
+          {target && <DialogFooter>
+            <Button asChild>
+              {target.kind === "reference" ? <Link to="/growth" search={{ tab: "reference", letter: target.id }}>{t("act.openRelated")} →</Link>
+                : target.kind === "position" ? <Link to="/" search={{ role: target.id }}>{t("act.openRelated")} →</Link>
+                : <Link to="/people/$personId" params={{ personId: target.id }}>{t("act.openRelated")} →</Link>}
+            </Button>
+          </DialogFooter>}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -65,6 +65,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/")({
+  validateSearch: (search: Record<string, unknown>): { role?: string } => ({
+    ...(typeof search["role"] === "string" ? { role: search["role"] } : {}),
+  }),
   head: () => ({
     meta: [
       { title: "战略岗位视图 · 岗位与人才管理系统" },
@@ -96,6 +99,7 @@ function Index() {
 
 function StrategyBoard() {
   const { t } = useI18n();
+  const { role: linkedRoleId } = Route.useSearch();
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
   const orgNodes = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
@@ -115,6 +119,21 @@ function StrategyBoard() {
   useEffect(() => {
     if (data && !activeId && data.directions[0]) setActiveId(data.directions[0].id);
   }, [data, activeId]);
+
+  useEffect(() => {
+    const role = data?.roles.find((r) => r.id === linkedRoleId);
+    if (role) setActiveId(role.direction_id);
+  }, [data, linkedRoleId]);
+
+  useEffect(() => {
+    if (!linkedRoleId || !data?.roles.some((r) => r.id === linkedRoleId && r.direction_id === activeId)) return;
+    const frame = requestAnimationFrame(() => {
+      const card = document.getElementById(`position-${linkedRoleId}`);
+      card?.scrollIntoView({ block: "center" });
+      card?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [activeId, data, linkedRoleId]);
 
   const invalidate = () => qc.invalidateQueries({ refetchType: "all" });
 
@@ -247,6 +266,7 @@ function StrategyBoard() {
             {group.length === 0 ? <p className="text-xs text-muted-foreground">{t("idx.ct.none")}</p> : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {group.map((role) => (
+              <div key={role.id} id={`position-${role.id}`} tabIndex={-1} className={linkedRoleId === role.id ? "rounded-lg ring-2 ring-brand ring-offset-2 ring-offset-background" : ""}>
               <RoleCard
                 key={role.id}
                 role={role}
@@ -272,6 +292,7 @@ function StrategyBoard() {
                 onOpen={() => setOpenRoleId(role.id)}
                 onSaved={invalidate}
               />
+              </div>
             ))}
           </div>
             )}

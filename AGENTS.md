@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Architecture rules
+- Action Center opens details from permission-scoped action/workspace data; related position links select and focus the matching direction/card, keeping existing approval controls and access checks unchanged.
 - Organization creation derives parent choices from current node types, never fixed IDs or child counts; Labs support multiple Teams and each Lab has a direct Team creation action.
 - Recruiting reuses the strategic RoleMenu for role edits and archives the same role record; this keeps cross-page changes consistent and preserves candidate history.
 - Auth is app-owned (`app_users`/`app_sessions`, PBKDF2 hashes, token in localStorage sent as `x-app-session`); do not use Supabase Auth — the app must run on-prem without it.
