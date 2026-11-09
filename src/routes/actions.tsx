@@ -178,6 +178,7 @@ function ActionsBoard() {
           return (
             <article key={a.id} className="flex flex-wrap items-start gap-3 px-5 py-4">
               <button
+                disabled={a.source_kind === "position_approval"}
                 onClick={() => move.mutate({ id: a.id, status: done ? "todo" : "done" })}
                 className={`mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border transition-colors ${
                   done ? "border-ok bg-ok/20 text-ok" : "border-border hover:border-brand"
@@ -275,7 +276,7 @@ function ActionsBoard() {
                 <Button variant="outline" size="sm" onClick={() => setSelectedId(a.id)}>
                   {t("act.open")}
                 </Button>
-                {!done && (
+                {!done && a.source_kind !== "position_approval" && (
                   <Select
                     value={a.status}
                     onValueChange={(v) => move.mutate({ id: a.id, status: v as ActionStatus })}
@@ -291,7 +292,7 @@ function ActionsBoard() {
                     </SelectContent>
                   </Select>
                 )}
-                <ConfirmAction
+                {a.source_kind !== "position_approval" && <ConfirmAction
                   title={t("act.delete.confirmTitle")}
                   description={<p>{t("act.delete.desc")}</p>}
                   confirmLabel={t("act.delete.confirmLabel")}
@@ -300,7 +301,7 @@ function ActionsBoard() {
                   <Button variant="ghost" size="sm" className="text-muted-foreground">
                     <Trash2 className="size-3.5" />
                   </Button>
-                </ConfirmAction>
+                </ConfirmAction>}
               </div>
             </article>
           );

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { admin, getSessionUser, managerScope, type AppUser } from "./auth.server";
 import { onboardingDateSchema } from "./candidate-onboarding";
 import { missingRoleOwners, missingRoleOwnersOnUpdate } from "./role-owners";
-import { isOwnerRole } from "./app-roles";
+import { isOwnerRole, canApprovePositions, positionApprovalAction } from "./app-roles";
 
 const TABLES = [
   "actions",
@@ -80,6 +80,7 @@ export const dbQuery = createServerFn({ method: "POST" })
     // Stamp the real actor on audit entries.
     const stamp = (row: any) => {
       if (!row || typeof row !== "object") return row;
+      if (spec.table === "actions") return positionApprovalAction(row);
       if (spec.table === "audit_log" || spec.table === "candidate_events") return { ...row, actor: user.name };
       if (spec.table === "team_achievements") return { ...row, created_by: row.created_by ?? user.name };
       if (spec.table === "reference_letters") {
@@ -105,22 +106,26 @@ export const dbQuery = createServerFn({ method: "POST" })
     if (spec.table === "people" && spec.op === "insert" && Array.isArray(payload) && !isOwnerRole(user.role))
       return fail("Only the Owner can bulk import people", "403");
 
-    // Positions created by non-Owners wait for Owner approval; their next step (assign/sourcing) is stored as a request.
+    // Non-admin creation waits for HRD approval; assignment/sourcing remains a request.
     if (spec.table === "roles" && spec.op === "insert" && !isOwnerRole(user.role) && payload && !Array.isArray(payload)) {
       payload = { ...payload, approval_status: "pending", recruiting_archived: true, requested_by: user.name };
     }
-    if (spec.table === "roles" && spec.op === "update" && !isOwnerRole(user.role) && payload && !Array.isArray(payload)) {
-      if ("approval_status" in payload) return fail("Only the Owner can approve positions", "403");
+    if (spec.table === "roles" && spec.op !== "select" && spec.op !== "insert" && payload) {
+      const rows = Array.isArray(payload) ? payload : [payload];
+      if (!canApprovePositions(user.role) && rows.some((r: any) => r && "approval_status" in r))
+        return fail("Only the HR Director can approve positions", "403");
+    }
+    if (spec.table === "roles" && spec.op === "update" && !canApprovePositions(user.role) && payload && !Array.isArray(payload)) {
       const { data: targets, error } = await applyFilters(db.from("roles").select("approval_status"), spec.filters);
       if (error) return fail("Could not verify position approval", "400");
       if ((targets ?? []).some((r: any) => r.approval_status === "pending") && (payload as any).recruiting_archived === false)
-        return fail("This position is waiting for Owner approval", "403");
+        return fail("This position is waiting for HR Director approval", "403");
     }
-    if (spec.table === "people" && spec.op !== "select" && !isOwnerRole(user.role) && payload) {
+    if (spec.table === "people" && spec.op !== "select" && !canApprovePositions(user.role) && payload) {
       const ids = (Array.isArray(payload) ? payload : [payload]).map((r: any) => r?.role_id).filter((x: unknown): x is string => typeof x === "string");
       if (ids.length) {
         const { data: pend } = await db.from("roles").select("id").in("id", ids).eq("approval_status", "pending");
-        if ((pend ?? []).length) return fail("This position is waiting for Owner approval", "403");
+        if ((pend ?? []).length) return fail("This position is waiting for HR Director approval", "403");
       }
     }
     const recruitingOnlyInsert = (Array.isArray(payload) ? payload : [payload]).every((r: any) => r?.recruiting_only === true);
@@ -140,9 +145,11 @@ export const dbQuery = createServerFn({ method: "POST" })
     if (spec.table === "directions" && spec.op !== "select" && !isOwnerRole(user.role))
       return fail("Only the Owner can change strategy directions", "403");
     if (user.role === "recruiter") {
-      if (!RECRUITER_READ.has(spec.table)) return fail("Recruiters can only access Positions and Recruiting", "403");
+      const approvalTaskInsert = spec.table === "actions" && spec.op === "insert" && payload
+        && (Array.isArray(payload) ? payload : [payload]).every((row: any) => row?.source_kind === "position_approval");
+      if (!RECRUITER_READ.has(spec.table) && !approvalTaskInsert) return fail("Recruiters can only access Positions and Recruiting", "403");
       const roleWrite = spec.table === "roles" && (spec.op === "insert" || spec.op === "update");
-      if (spec.op !== "select" && spec.table !== "candidates" && spec.table !== "candidate_events" && !roleWrite)
+      if (spec.op !== "select" && spec.table !== "candidates" && spec.table !== "candidate_events" && !roleWrite && !approvalTaskInsert)
         return fail("Recruiters can only maintain candidates and hiring roles", "403");
       // Recruiters may only fully archive recruiting-only roles; strategic positions are hidden from Recruiting instead.
       if (spec.table === "roles" && spec.op === "update" && payload && "archived" in payload) {
@@ -240,8 +247,20 @@ export const dbQuery = createServerFn({ method: "POST" })
       if ((rows ?? []).some((r: any) => !visible(r))) return fail("This to-do is outside your scope", "403");
     }
 
+    if (spec.table === "actions" && spec.op !== "select" && spec.op !== "insert" && !canApprovePositions(user.role)) {
+      const { data: tasks, error: readError } = await applyFilters(db.from("actions").select("source_kind"), spec.filters);
+      if (readError) return fail("Could not verify approval task permissions", "403");
+      if ((tasks ?? []).some((task: any) => task.source_kind === "position_approval")
+        || (Array.isArray(payload) ? payload : [payload]).some((task: any) => task?.source_kind === "position_approval"))
+        return fail("Only the HR Director can manage position approval tasks", "403");
+    }
+
     const { data, error, count } = await q;
     let out: any = data ?? null;
+    if (spec.table === "actions" && out) {
+      const normalize = (row: any) => positionApprovalAction(row);
+      out = Array.isArray(out) ? out.map(normalize) : normalize(out);
+    }
     if (scope && spec.table === "actions" && spec.op === "select" && out) {
       const visible = await actionVisibility(db, user, scope);
       out = Array.isArray(out) ? out.filter(visible) : visible(out) ? out : null;

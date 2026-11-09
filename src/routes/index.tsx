@@ -1,4 +1,4 @@
-import { isOwnerRole } from "@/lib/app-roles";
+import { isOwnerRole, canApprovePositions, POSITION_APPROVAL_OWNER } from "@/lib/app-roles";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { EMPLOYMENT_MODES, employmentModeLabel, useLocations } from "@/lib/locations";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -1088,7 +1088,7 @@ function NewRoleDialog({ directionId, orgNodes, onDone, onAssign }: { directionI
           source_kind: "position_approval",
           source_key: id,
           role_id: id,
-          owner: "Owner",
+          owner: POSITION_APPROVAL_OWNER,
           priority: "high",
           status: "todo",
         });
@@ -1343,7 +1343,7 @@ function PendingApproval({ role, onDone }: { role: Role; onDone: () => void }) {
     <div className="mt-2 space-y-1.5 rounded-md border border-warn/40 bg-warn/10 p-2 text-[11px]">
       <div className="font-medium text-warn">{t("idx.pendingApproval")}{role.requested_by ? ` · ${role.requested_by}` : ""}</div>
       <div className="text-muted-foreground">{summary}</div>
-      {isOwnerRole(user?.role) && (
+      {canApprovePositions(user?.role) && (
         <div className="flex gap-1.5 pt-0.5">
           <ConfirmAction title={t("idx.approve")} description={<p>{summary}</p>} confirmLabel={t("idx.approve")} onConfirm={() => approve.mutate()}>
             <Button size="sm" className="h-6 px-2 text-[11px]" disabled={approve.isPending}>{t("idx.approve")}</Button>

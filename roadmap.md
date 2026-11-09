@@ -1,3 +1,5 @@
+- [x] Route existing and new position approvals to HR Director and enforce HRD-only approval handling; 22 related tests passed.
+- [ ] Verify HRD approval and assignment/sourcing through the signed-in UI (blocked: no app-owned signed-in session available).
 - [x] Add Action Center detail dialogs and direct links to the associated position, person or reference letter.
 - [x] Add HR Director with Owner-equivalent permissions across user management, data access, imports and position approval.
 - [ ] Verify HR Director user creation, sign-in and approval end-to-end (blocked: no app-owned signed-in session available).
