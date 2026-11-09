@@ -1,3 +1,4 @@
+import { isOwnerRole } from "@/lib/app-roles";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { EMPLOYMENT_MODES, employmentModeLabel, useLocations } from "@/lib/locations";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -1022,7 +1023,7 @@ function NewRoleDialog({ directionId, orgNodes, onDone, onAssign }: { directionI
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"form" | "next" | "sourcing" | "assign">("form");
-  const isOwner = user?.role === "owner";
+  const isOwner = isOwnerRole(user?.role);
   const [assignee, setAssignee] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
   const empty = {
@@ -1150,7 +1151,7 @@ function NewRoleDialog({ directionId, orgNodes, onDone, onAssign }: { directionI
     onError: (e: Error) => toast.error(e.message),
   });
 
-  if (!(user?.role === "owner" || user?.role === "hr" || user?.role === "recruiter")) return null;
+  if (!(isOwnerRole(user?.role) || user?.role === "hr" || user?.role === "recruiter")) return null;
 
   return (
     <Dialog open={open} onOpenChange={(v) => (v ? setOpen(true) : close())}>
@@ -1342,7 +1343,7 @@ function PendingApproval({ role, onDone }: { role: Role; onDone: () => void }) {
     <div className="mt-2 space-y-1.5 rounded-md border border-warn/40 bg-warn/10 p-2 text-[11px]">
       <div className="font-medium text-warn">{t("idx.pendingApproval")}{role.requested_by ? ` · ${role.requested_by}` : ""}</div>
       <div className="text-muted-foreground">{summary}</div>
-      {user?.role === "owner" && (
+      {isOwnerRole(user?.role) && (
         <div className="flex gap-1.5 pt-0.5">
           <ConfirmAction title={t("idx.approve")} description={<p>{summary}</p>} confirmLabel={t("idx.approve")} onConfirm={() => approve.mutate()}>
             <Button size="sm" className="h-6 px-2 text-[11px]" disabled={approve.isPending}>{t("idx.approve")}</Button>

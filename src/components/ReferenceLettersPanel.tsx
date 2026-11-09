@@ -1,3 +1,4 @@
+import { isOwnerRole } from "@/lib/app-roles";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileText, Download, Plus } from "lucide-react";
@@ -47,7 +48,7 @@ async function fetchAllPeople() {
 export function ReferenceLettersPanel({ initialOpenId }: { initialOpenId?: string | undefined } = {}) {
   const { t } = useI18n();
   const { user } = useAuth();
-  const isHr = user?.role === "owner" || user?.role === "hr";
+  const isHr = isOwnerRole(user?.role) || user?.role === "hr";
   const people = useQuery({ queryKey: ["people-all"], queryFn: fetchAllPeople });
   const nodes = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
   const letters = useQuery({ queryKey: ["reference-letters"], queryFn: fetchReferenceLetters });
@@ -281,9 +282,9 @@ function LetterDialog({
   const qc = useQueryClient();
   const growth = useQuery({ queryKey: ["growth-data"], queryFn: fetchGrowthData });
   const tpl = useQuery({ queryKey: ["ref-templates"], queryFn: fetchRefTemplates });
-  const isHr = user?.role === "owner" || user?.role === "hr";
+  const isHr = isOwnerRole(user?.role) || user?.role === "hr";
   const sup = people.get(letter.supervisor_person_id ?? "");
-  const canWrite = (user?.role === "owner" || (user?.role === "manager" && sup?.name === user.name)) && letter.status === "requested";
+  const canWrite = (isOwnerRole(user?.role) || (user?.role === "manager" && sup?.name === user.name)) && letter.status === "requested";
   const [body, setBody] = useState(letter.supervisor_text ?? "");
   const [closing, setClosing] = useState(letter.closing_text ?? "");
   const [intro, setIntro] = useState(letter.intro_text);

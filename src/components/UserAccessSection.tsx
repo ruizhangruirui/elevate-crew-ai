@@ -6,6 +6,7 @@ import { KeyRound, Pencil, Plus, Trash2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { createUser, deleteUser, listUsers, resetUserPassword, updateUser } from "@/lib/auth.functions";
 import { useAuth } from "@/hooks/useAuth";
+import { APP_ROLES, type AppRole } from "@/lib/app-roles";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type Node = { id: string; name: string; type: string; archived: boolean };
-type Role = "owner" | "hr" | "manager" | "recruiter";
+type Role = AppRole;
 type U = {
   id: string;
   email: string;
@@ -120,7 +121,7 @@ export function UserAccessSection({ nodes }: { nodes: Node[] }) {
       </Table>
 
       <div className="mt-8 grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-        {(["owner", "hr", "manager", "recruiter"] as const).map((r) => (
+        {APP_ROLES.map((r) => (
           <div key={r} className="rounded-lg border border-border/60 p-4">
             <p className="text-sm font-medium">{roleLabel(r)}</p>
             <p className="mt-1 text-xs text-muted-foreground">{t(`access.roleDesc.${r}`)}</p>
@@ -207,7 +208,7 @@ function UserDialog({
               <Select value={role} onValueChange={(v) => setRole(v as Role)} disabled={isSelf}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {(["owner", "hr", "manager", "recruiter"] as const).map((r) => (
+                  {APP_ROLES.map((r) => (
                     <SelectItem key={r} value={r}>{t(`access.role.${r}`)}</SelectItem>
                   ))}
                 </SelectContent>

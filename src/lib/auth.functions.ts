@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { APP_ROLES, isOwnerRole } from "./app-roles";
 import {
   admin,
   createSession,
@@ -12,7 +13,7 @@ import {
 
 const email = z.string().trim().toLowerCase().email().max(255);
 const password = z.string().min(8, "Password must be at least 8 characters").max(128);
-const role = z.enum(["owner", "hr", "manager", "recruiter"]);
+const role = z.enum(APP_ROLES);
 const USER_COLS = "id,email,name,role,scope_node_ids,status,must_change_password,last_login_at,created_at";
 
 async function audit(actor: string, action: string, detail: string) {
@@ -141,7 +142,7 @@ export const updateUser = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const me = await requireUser(["owner"]);
-    if (data.id === me.id && (data.role !== "owner" || data.status !== "active"))
+    if (data.id === me.id && (!isOwnerRole(data.role) || data.status !== "active"))
       throw new Error("You cannot demote or disable your own owner account");
     const db = await admin();
     const { data: prev } = await db.from("app_users").select("email").eq("id", data.id).single();

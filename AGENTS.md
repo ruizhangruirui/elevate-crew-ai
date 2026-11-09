@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Architecture rules
+- Role identity stays distinct; browser gates and server authorization share app-roles helpers so permission-equivalent roles cannot drift.
 - Action Center opens details from permission-scoped action/workspace data; related position links select and focus the matching direction/card, keeping existing approval controls and access checks unchanged.
 - Organization creation derives parent choices from current node types, never fixed IDs or child counts; Labs support multiple Teams and each Lab has a direct Team creation action.
 - Recruiting reuses the strategic RoleMenu for role edits and archives the same role record; this keeps cross-page changes consistent and preserves candidate history.

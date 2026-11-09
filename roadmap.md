@@ -1,4 +1,6 @@
 - [x] Add Action Center detail dialogs and direct links to the associated position, person or reference letter.
+- [x] Add HR Director with Owner-equivalent permissions across user management, data access, imports and position approval.
+- [ ] Verify HR Director user creation, sign-in and approval end-to-end (blocked: no app-owned signed-in session available).
 - [ ] Verify signed-in Action Center details and position approval navigation (blocked: preview redirects to app-owned sign-in; no app session available).
 - [x] Add Recruiting role editing and confirmed, reversible removal using the shared strategic role controls.
 - [x] Preserve Excel role values as Appointed Role even when unmatched; keep Job Title separate and existing Staff ID updates partial.

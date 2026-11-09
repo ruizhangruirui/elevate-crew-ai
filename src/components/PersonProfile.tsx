@@ -1,3 +1,4 @@
+import { isOwnerRole } from "@/lib/app-roles";
 import { supervisorOf } from "@/lib/supervisor";
 import { useMemo, useState } from "react";
 import { useLocations } from "@/lib/locations";
@@ -409,8 +410,8 @@ export function PersonProfile({
   const teammates = role ? people.filter((p) => p.role_id === role.id && p.id !== person.id) : [];
   const cov = role ? coverageOf(role, people) : null;
 
-  const canHr = user?.role === "owner" || user?.role === "hr";
-  const canMgr = user?.role === "owner" || user?.role === "manager";
+  const canHr = isOwnerRole(user?.role) || user?.role === "hr";
+  const canMgr = isOwnerRole(user?.role) || user?.role === "manager";
   const nodes = orgNodes.data ?? [];
   const { data: locationOpts = [] } = useLocations();
   const { lab, team } = labTeamOf(nodes, person.org_node_id);

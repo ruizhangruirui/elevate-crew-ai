@@ -3,6 +3,7 @@ import { z } from "zod";
 import { admin, getSessionUser, managerScope, type AppUser } from "./auth.server";
 import { onboardingDateSchema } from "./candidate-onboarding";
 import { missingRoleOwners, missingRoleOwnersOnUpdate } from "./role-owners";
+import { isOwnerRole } from "./app-roles";
 
 const TABLES = [
   "actions",
@@ -101,21 +102,21 @@ export const dbQuery = createServerFn({ method: "POST" })
     }
 
     if (spec.table === "access_users" && spec.op !== "select") return fail("access_users is deprecated", "403");
-    if (spec.table === "people" && spec.op === "insert" && Array.isArray(payload) && user.role !== "owner")
+    if (spec.table === "people" && spec.op === "insert" && Array.isArray(payload) && !isOwnerRole(user.role))
       return fail("Only the Owner can bulk import people", "403");
 
     // Positions created by non-Owners wait for Owner approval; their next step (assign/sourcing) is stored as a request.
-    if (spec.table === "roles" && spec.op === "insert" && user.role !== "owner" && payload && !Array.isArray(payload)) {
+    if (spec.table === "roles" && spec.op === "insert" && !isOwnerRole(user.role) && payload && !Array.isArray(payload)) {
       payload = { ...payload, approval_status: "pending", recruiting_archived: true, requested_by: user.name };
     }
-    if (spec.table === "roles" && spec.op === "update" && user.role !== "owner" && payload && !Array.isArray(payload)) {
+    if (spec.table === "roles" && spec.op === "update" && !isOwnerRole(user.role) && payload && !Array.isArray(payload)) {
       if ("approval_status" in payload) return fail("Only the Owner can approve positions", "403");
       const { data: targets, error } = await applyFilters(db.from("roles").select("approval_status"), spec.filters);
       if (error) return fail("Could not verify position approval", "400");
       if ((targets ?? []).some((r: any) => r.approval_status === "pending") && (payload as any).recruiting_archived === false)
         return fail("This position is waiting for Owner approval", "403");
     }
-    if (spec.table === "people" && spec.op !== "select" && user.role !== "owner" && payload) {
+    if (spec.table === "people" && spec.op !== "select" && !isOwnerRole(user.role) && payload) {
       const ids = (Array.isArray(payload) ? payload : [payload]).map((r: any) => r?.role_id).filter((x: unknown): x is string => typeof x === "string");
       if (ids.length) {
         const { data: pend } = await db.from("roles").select("id").in("id", ids).eq("approval_status", "pending");
@@ -125,7 +126,7 @@ export const dbQuery = createServerFn({ method: "POST" })
     const recruitingOnlyInsert = (Array.isArray(payload) ? payload : [payload]).every((r: any) => r?.recruiting_only === true);
     // HR/Recruiters add single positions from Positions (owner rules enforced by missingRoleOwners below).
     const hiringPositionInsert = !Array.isArray(payload);
-    if (spec.table === "roles" && spec.op === "insert" && user.role !== "owner" && !((user.role === "hr" || user.role === "recruiter") && (recruitingOnlyInsert || hiringPositionInsert)))
+    if (spec.table === "roles" && spec.op === "insert" && !isOwnerRole(user.role) && !((user.role === "hr" || user.role === "recruiter") && (recruitingOnlyInsert || hiringPositionInsert)))
       return fail("Only the Owner can add strategic roles", "403");
     // Every hiring position must name its recruiter and hiring supervisor at creation time.
     if (spec.table === "roles" && spec.op === "insert" && missingRoleOwners(payload))
@@ -136,7 +137,7 @@ export const dbQuery = createServerFn({ method: "POST" })
       if (error) return fail("Could not verify position owners", "400");
       if (missingRoleOwnersOnUpdate(payload, targets ?? [])) return fail("Each position needs a recruiter and a supervisor", "400");
     }
-    if (spec.table === "directions" && spec.op !== "select" && user.role !== "owner")
+    if (spec.table === "directions" && spec.op !== "select" && !isOwnerRole(user.role))
       return fail("Only the Owner can change strategy directions", "403");
     if (user.role === "recruiter") {
       if (!RECRUITER_READ.has(spec.table)) return fail("Recruiters can only access Positions and Recruiting", "403");
@@ -246,7 +247,7 @@ export const dbQuery = createServerFn({ method: "POST" })
       out = Array.isArray(out) ? out.filter(visible) : visible(out) ? out : null;
     }
     // Home address is HR-only: strip it for every other role.
-    if (spec.table === "people" && out && user.role !== "owner" && user.role !== "hr") {
+    if (spec.table === "people" && out && !isOwnerRole(user.role) && user.role !== "hr") {
       const strip = (r: any) => { if (r && typeof r === "object") delete r.address; return r; };
       out = Array.isArray(out) ? out.map(strip) : strip(out);
     }
@@ -262,7 +263,7 @@ const ASSESSMENT_FIELDS = new Set(["assessed_skills", "assessed_at", "performanc
  * Owner may edit both.
  */
 function checkSection(user: AppUser, spec: DbSpec, payload: any): string | null {
-  if (spec.op === "select" || user.role === "owner") return null;
+  if (spec.op === "select" || isOwnerRole(user.role)) return null;
   const rows: any[] = payload === undefined ? [] : Array.isArray(payload) ? payload : [payload];
   if (spec.table === "reference_letters") {
     const MGR = new Set(["supervisor_text", "closing_text", "signature_mode", "supervisor_signature", "status", "submitted_by", "submitted_at"]);

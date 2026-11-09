@@ -1,3 +1,4 @@
+import { isOwnerRole } from "@/lib/app-roles";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
@@ -137,8 +138,8 @@ function safeUrl(u: string | null) {
 function RecruitingBody() {
   const { t } = useI18n();
   const { user } = useAuth();
-  const canEdit = user?.role === "owner" || user?.role === "hr" || user?.role === "recruiter";
-  const canEditRole = user?.role === "owner" || user?.role === "hr" || user?.role === "recruiter";
+  const canEdit = isOwnerRole(user?.role) || user?.role === "hr" || user?.role === "recruiter";
+  const canEditRole = isOwnerRole(user?.role) || user?.role === "hr" || user?.role === "recruiter";
   const qc = useQueryClient();
   const navigate = useNavigate({ from: "/recruiting" });
   const { role: roleId } = Route.useSearch();

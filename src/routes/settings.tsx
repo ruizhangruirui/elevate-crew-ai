@@ -1,3 +1,4 @@
+import { isOwnerRole } from "@/lib/app-roles";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -176,7 +177,7 @@ function SettingsBody() {
   const { t } = useI18n();
   const { user } = useAuth();
   const visible = SECTIONS.filter((s) =>
-    user?.role === "owner"
+    isOwnerRole(user?.role)
       ? true
       : user?.role === "hr"
         ? s !== "权限管理" && s !== "战略方向"
@@ -219,7 +220,7 @@ function SettingsBody() {
         ) : section === "战略方向" ? (
           <StrategySection />
         ) : section === "人员管理" ? (
-          <PeopleOpsSection isOwner={user?.role === "owner"} />
+          <PeopleOpsSection isOwner={isOwnerRole(user?.role)} />
         ) : section === "权限管理" ? (
           <UserAccessSection nodes={data.orgNodes} />
         ) : section === "人才配置" ? (

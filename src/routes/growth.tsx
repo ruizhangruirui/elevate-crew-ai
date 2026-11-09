@@ -1,3 +1,4 @@
+import { isOwnerRole } from "@/lib/app-roles";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
@@ -80,7 +81,7 @@ function GrowthPage() {
 
   const loading = ws.isLoading || growth.isLoading;
   const { user } = useAuth();
-  const canAssess = user?.role === "manager" || user?.role === "owner";
+  const canAssess = user?.role === "manager" || isOwnerRole(user?.role);
   const [reviewFor, setReviewFor] = useState<string | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
   const openReview = (id: string | null) => {
@@ -99,7 +100,7 @@ function GrowthPage() {
             <TabsTrigger value="team">{t("growth.tab.team")}</TabsTrigger>
             <TabsTrigger value="flow">{t("growth.tab.flow")}</TabsTrigger>
             <TabsTrigger value="reference">{t("ref.tab")}</TabsTrigger>
-            {(user?.role === "owner" || user?.role === "hr") && <TabsTrigger value="certificate">{t("cert.tab")}</TabsTrigger>}
+            {(isOwnerRole(user?.role) || user?.role === "hr") && <TabsTrigger value="certificate">{t("cert.tab")}</TabsTrigger>}
           </TabsList>
           <TabsContent value="performance" className="space-y-8">
           {canAssess && <div className="flex justify-end">

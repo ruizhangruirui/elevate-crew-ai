@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { getMe, logout } from "@/lib/auth.functions";
 import { clearToken, getToken } from "@/lib/session-client";
+import { isOwnerRole } from "@/lib/app-roles";
 
 export type CurrentUser = NonNullable<Awaited<ReturnType<typeof getMe>>>;
 
@@ -19,8 +20,8 @@ export function useAuth() {
     session: user,
     user,
     loading: !hydrated || q.isLoading,
-    isOwner: user?.role === "owner",
-    canManageStructure: user?.role === "owner" || user?.role === "hr",
+    isOwner: isOwnerRole(user?.role),
+    canManageStructure: isOwnerRole(user?.role) || user?.role === "hr",
   };
 }
 

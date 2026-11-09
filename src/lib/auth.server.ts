@@ -2,7 +2,8 @@ import { getRequestHeader } from "@tanstack/react-start/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
-export type AppRole = "owner" | "hr" | "manager" | "recruiter";
+import { roleAllowed, type AppRole } from "./app-roles";
+export type { AppRole } from "./app-roles";
 export type AppUser = {
   id: string;
   email: string;
@@ -106,7 +107,7 @@ export async function getSessionUser(): Promise<AppUser | null> {
 export async function requireUser(roles?: AppRole[]) {
   const u = await getSessionUser();
   if (!u) throw new Error("Unauthorized: please sign in");
-  if (roles && !roles.includes(u.role)) throw new Error("Forbidden: insufficient permission");
+  if (roles && !roleAllowed(u.role, roles)) throw new Error("Forbidden: insufficient permission");
   return u;
 }
 

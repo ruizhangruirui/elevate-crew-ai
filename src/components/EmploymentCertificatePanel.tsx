@@ -1,3 +1,4 @@
+import { isOwnerRole } from "@/lib/app-roles";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Download } from "lucide-react";
@@ -31,7 +32,7 @@ async function fetchPeople() {
 export function EmploymentCertificatePanel() {
   const { t } = useI18n();
   const { user } = useAuth();
-  const isHr = user?.role === "owner" || user?.role === "hr";
+  const isHr = isOwnerRole(user?.role) || user?.role === "hr";
   const people = useQuery({ queryKey: ["people-all"], queryFn: fetchPeople });
   const cfg = useQuery({ queryKey: ["cert-settings"], queryFn: fetchCertSettings });
   const [personId, setPersonId] = useState("");
