@@ -39,7 +39,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
   DialogContent,
@@ -416,7 +415,6 @@ function RoleCard({
   onSaved: () => void;
 }) {
   const { t } = useI18n();
-  const pct = Math.min(100, Math.round((filled / Math.max(1, role.target_count)) * 100));
   const state = gap === 0 ? "full" : filled === 0 ? "empty" : "partial";
   const stateStyle =
     state === "full"
@@ -424,7 +422,8 @@ function RoleCard({
       : state === "partial"
         ? "bg-warn/12 text-warn"
         : "bg-danger/12 text-danger";
-  const stateLabel = state === "full" ? "Fully Covered" : state === "partial" ? "Partially Covered" : "Not Covered";
+  const stateLabel =
+    state === "full" ? t("idx.stateFull") : state === "partial" ? t("idx.statePartial") : t("idx.stateNone");
 
   return (
     <article className="panel group relative flex h-full flex-col p-3.5">
@@ -448,16 +447,8 @@ function RoleCard({
         <span>
           {t("idx.targetLevel")} L{role.level_min}–{role.level_max}
         </span>
-        <span>
-          {t("idx.currentCoverage")} {filled}/{role.target_count}
-        </span>
-        {state !== "empty" && <span className={gap > 0 ? "text-danger" : "text-ok"}>Gap {gap}</span>}
         {role.employment_mode && <span>{employmentModeLabel(t, role.employment_mode)}</span>}
         {role.location && <span>{role.location}</span>}
-      </div>
-
-      <div className="mt-2">
-        <Progress value={pct} className="h-1" />
       </div>
 
       {teams.length > 0 && (
