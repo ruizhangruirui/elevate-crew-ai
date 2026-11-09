@@ -234,7 +234,7 @@ export function RoleDetailSheet({
               />
             ) : (
               <>
-                <p className="text-sm leading-relaxed text-muted-foreground">
+                <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
                   {role.description || t("sheet.role.noDescription")}
                 </p>
                 <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">

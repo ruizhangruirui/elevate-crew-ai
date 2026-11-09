@@ -48,7 +48,14 @@ export type Role = {
   location?: string | null;
   recruiter_person_id?: string | null;
   supervisor_person_id?: string | null;
+  approval_status?: string;
+  approval_request?: ApprovalRequest | null;
+  requested_by?: string | null;
 };
+
+export type ApprovalRequest =
+  | { kind: "assign"; person_id: string }
+  | { kind: "sourcing"; recruiter: string; supervisor: string; visible_to: string[] };
 
 export type Person = {
   id: string;

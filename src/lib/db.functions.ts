@@ -104,6 +104,24 @@ export const dbQuery = createServerFn({ method: "POST" })
     if (spec.table === "people" && spec.op === "insert" && Array.isArray(payload) && user.role !== "owner")
       return fail("Only the Owner can bulk import people", "403");
 
+    // Positions created by non-Owners wait for Owner approval; their next step (assign/sourcing) is stored as a request.
+    if (spec.table === "roles" && spec.op === "insert" && user.role !== "owner" && payload && !Array.isArray(payload)) {
+      payload = { ...payload, approval_status: "pending", recruiting_archived: true, requested_by: user.name };
+    }
+    if (spec.table === "roles" && spec.op === "update" && user.role !== "owner" && payload && !Array.isArray(payload)) {
+      if ("approval_status" in payload) return fail("Only the Owner can approve positions", "403");
+      const { data: targets, error } = await applyFilters(db.from("roles").select("approval_status"), spec.filters);
+      if (error) return fail("Could not verify position approval", "400");
+      if ((targets ?? []).some((r: any) => r.approval_status === "pending") && (payload as any).recruiting_archived === false)
+        return fail("This position is waiting for Owner approval", "403");
+    }
+    if (spec.table === "people" && spec.op !== "select" && user.role !== "owner" && payload) {
+      const ids = (Array.isArray(payload) ? payload : [payload]).map((r: any) => r?.role_id).filter((x: unknown): x is string => typeof x === "string");
+      if (ids.length) {
+        const { data: pend } = await db.from("roles").select("id").in("id", ids).eq("approval_status", "pending");
+        if ((pend ?? []).length) return fail("This position is waiting for Owner approval", "403");
+      }
+    }
     const recruitingOnlyInsert = (Array.isArray(payload) ? payload : [payload]).every((r: any) => r?.recruiting_only === true);
     // HR/Recruiters add single positions from Positions (owner rules enforced by missingRoleOwners below).
     const hiringPositionInsert = !Array.isArray(payload);

@@ -1095,6 +1095,8 @@ export type Database = {
       }
       roles: {
         Row: {
+          approval_request: Json | null
+          approval_status: string
           archived: boolean
           contract_type: string
           created_at: string
@@ -1117,6 +1119,7 @@ export type Database = {
           recruiter_person_id: string | null
           recruiting_archived: boolean
           recruiting_only: boolean
+          requested_by: string | null
           skills: Json
           sort_order: number
           supervisor_person_id: string | null
@@ -1126,6 +1129,8 @@ export type Database = {
           visible_to_person_ids: string[]
         }
         Insert: {
+          approval_request?: Json | null
+          approval_status?: string
           archived?: boolean
           contract_type?: string
           created_at?: string
@@ -1148,6 +1153,7 @@ export type Database = {
           recruiter_person_id?: string | null
           recruiting_archived?: boolean
           recruiting_only?: boolean
+          requested_by?: string | null
           skills?: Json
           sort_order?: number
           supervisor_person_id?: string | null
@@ -1157,6 +1163,8 @@ export type Database = {
           visible_to_person_ids?: string[]
         }
         Update: {
+          approval_request?: Json | null
+          approval_status?: string
           archived?: boolean
           contract_type?: string
           created_at?: string
@@ -1179,6 +1187,7 @@ export type Database = {
           recruiter_person_id?: string | null
           recruiting_archived?: boolean
           recruiting_only?: boolean
+          requested_by?: string | null
           skills?: Json
           sort_order?: number
           supervisor_person_id?: string | null

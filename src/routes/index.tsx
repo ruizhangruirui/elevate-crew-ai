@@ -417,7 +417,8 @@ function RoleCard({
       </div>
 
       <h3 className="mt-2.5 font-display text-sm font-semibold leading-snug">{role.title}</h3>
-      <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+      {role.approval_status === "pending" && <PendingApproval role={role} onDone={onSaved} />}
+      <p className="mt-1 line-clamp-3 whitespace-pre-line text-xs leading-relaxed text-muted-foreground">
         {role.description}
       </p>
 
@@ -999,7 +1000,9 @@ function NewRoleDialog({ directionId, orgNodes, onDone, onAssign }: { directionI
   const { user } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState<"form" | "next" | "sourcing">("form");
+  const [step, setStep] = useState<"form" | "next" | "sourcing" | "assign">("form");
+  const isOwner = user?.role === "owner";
+  const [assignee, setAssignee] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
   const empty = {
     title: "",
@@ -1025,6 +1028,7 @@ function NewRoleDialog({ directionId, orgNodes, onDone, onAssign }: { directionI
     setRecruiter(null);
     setSupervisor(null);
     setVisibleTo([]);
+    setAssignee(null);
   };
   const close = () => {
     setOpen(false);
@@ -1054,10 +1058,23 @@ function NewRoleDialog({ directionId, orgNodes, onDone, onAssign }: { directionI
         .select("id")
         .single();
       if (error) throw error;
-      return (data as { id: string }).id;
+      const id = (data as { id: string }).id;
+      if (!isOwner) {
+        await supabase.from("actions").insert({
+          title: `${t("idx.approvalTodo")}: ${form.title.trim()}`,
+          detail: `${t("idx.requestedBy")} ${user?.name ?? ""}`,
+          source_kind: "position_approval",
+          source_key: id,
+          role_id: id,
+          owner: "Owner",
+          priority: "high",
+          status: "todo",
+        });
+      }
+      return id;
     },
     onSuccess: (id) => {
-      toastSaved(t("idx.roleCreated"));
+      toastSaved(isOwner ? t("idx.roleCreated") : t("idx.sentForApproval"));
       setCreatedId(id);
       setStep("next");
       onDone();
@@ -1068,6 +1085,14 @@ function NewRoleDialog({ directionId, orgNodes, onDone, onAssign }: { directionI
   const startSourcing = useMutation({
     mutationFn: async () => {
       if (!createdId) throw new Error("Create a position before starting sourcing.");
+      if (!isOwner) {
+        const { error } = await supabase
+          .from("roles")
+          .update({ approval_request: { kind: "sourcing", recruiter, supervisor, visible_to: visibleTo } })
+          .eq("id", createdId);
+        if (error) throw error;
+        return null;
+      }
       const { error } = await supabase
         .from("roles")
         .update({ recruiting_archived: false, recruiter_person_id: recruiter, supervisor_person_id: supervisor, visible_to_person_ids: visibleTo })
@@ -1076,10 +1101,30 @@ function NewRoleDialog({ directionId, orgNodes, onDone, onAssign }: { directionI
       return createdId;
     },
     onSuccess: (id) => {
+      if (!id) {
+        toastSaved(t("idx.sentForApproval"));
+        onDone();
+        close();
+        return;
+      }
       toastSaved(t("rec.roleAdded"));
       onDone();
       close();
       void navigate({ to: "/recruiting", search: { role: id } });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const requestAssign = useMutation({
+    mutationFn: async () => {
+      if (!createdId || !assignee) throw new Error("Choose a person");
+      const { error } = await supabase.from("roles").update({ approval_request: { kind: "assign", person_id: assignee } }).eq("id", createdId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toastSaved(t("idx.sentForApproval"));
+      onDone();
+      close();
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -1127,7 +1172,7 @@ function NewRoleDialog({ directionId, orgNodes, onDone, onAssign }: { directionI
               </div>
               <div className="space-y-2">
                 <Label>{t("idx.roleDescription")}</Label>
-                <Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+                <Textarea rows={6} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-2">
@@ -1166,10 +1211,12 @@ function NewRoleDialog({ directionId, orgNodes, onDone, onAssign }: { directionI
         )}
         {step === "next" && (
           <div className="space-y-3">
+            {!isOwner && <p className="rounded-md bg-warn/10 px-3 py-2 text-xs text-warn">{t("idx.approvalNote")}</p>}
             <button
               type="button"
               className="card-glass w-full rounded-lg border p-4 text-left transition hover:border-primary"
               onClick={() => {
+                if (!isOwner) return setStep("assign");
                 const id = createdId!;
                 close();
                 onAssign(id);
@@ -1208,11 +1255,85 @@ function NewRoleDialog({ directionId, orgNodes, onDone, onAssign }: { directionI
             />
           </>
         )}
+        {step === "assign" && (
+          <>
+            <PersonPicker label={t("idx.nextAssign")} value={assignee} onChange={setAssignee} clearLabel={t("ui.clear")} />
+            <FormActions onCancel={() => setStep("next")} onSave={() => requestAssign.mutate()} pending={requestAssign.isPending} disabled={!assignee} />
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
 }
 
+
+function PendingApproval({ role, onDone }: { role: Role; onDone: () => void }) {
+  const { t } = useI18n();
+  const { user } = useAuth();
+  const req = role.approval_request ?? null;
+  const { data: names = {} } = useQuery({
+    queryKey: ["approval-names", role.id, req],
+    enabled: !!req,
+    queryFn: async () => {
+      const ids = !req ? [] : req.kind === "assign" ? [req.person_id] : [req.recruiter, req.supervisor];
+      const { data } = await supabase.from("people").select("id,name").in("id", ids);
+      return Object.fromEntries(((data ?? []) as { id: string; name: string }[]).map((p) => [p.id, p.name])) as Record<string, string>;
+    },
+  });
+  const closeTodos = async (status: "done" | "cancelled") => {
+    await supabase
+      .from("actions")
+      .update({ status, completed_at: new Date().toISOString() })
+      .eq("source_kind", "position_approval")
+      .eq("role_id", role.id);
+  };
+  const approve = useMutation({
+    mutationFn: async () => {
+      const patch: Record<string, unknown> = { approval_status: "approved", approval_request: null };
+      if (req?.kind === "sourcing")
+        Object.assign(patch, { recruiting_archived: false, recruiter_person_id: req.recruiter, supervisor_person_id: req.supervisor, visible_to_person_ids: req.visible_to });
+      const { error } = await supabase.from("roles").update(patch).eq("id", role.id);
+      if (error) throw error;
+      if (req?.kind === "assign") {
+        const { error: e2 } = await supabase.from("people").update({ role_id: role.id }).eq("id", req.person_id);
+        if (e2) throw e2;
+      }
+      await closeTodos("done");
+    },
+    onSuccess: () => { toastSaved(t("idx.approved")); onDone(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const reject = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("roles").update({ approval_status: "rejected", archived: true }).eq("id", role.id);
+      if (error) throw error;
+      await closeTodos("cancelled");
+    },
+    onSuccess: () => { toastSaved(t("idx.rejected")); onDone(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const summary = !req
+    ? t("idx.reqNone")
+    : req.kind === "assign"
+      ? `${t("idx.nextAssign")}: ${names[req.person_id] ?? "…"}`
+      : `${t("idx.nextSourcing")}: ${t("idx.roleRecruiter")} ${names[req.recruiter] ?? "…"} · ${t("idx.roleSupervisor")} ${names[req.supervisor] ?? "…"}`;
+  return (
+    <div className="mt-2 space-y-1.5 rounded-md border border-warn/40 bg-warn/10 p-2 text-[11px]">
+      <div className="font-medium text-warn">{t("idx.pendingApproval")}{role.requested_by ? ` · ${role.requested_by}` : ""}</div>
+      <div className="text-muted-foreground">{summary}</div>
+      {user?.role === "owner" && (
+        <div className="flex gap-1.5 pt-0.5">
+          <ConfirmAction title={t("idx.approve")} description={<p>{summary}</p>} confirmLabel={t("idx.approve")} onConfirm={() => approve.mutate()}>
+            <Button size="sm" className="h-6 px-2 text-[11px]" disabled={approve.isPending}>{t("idx.approve")}</Button>
+          </ConfirmAction>
+          <ConfirmAction title={t("idx.reject")} description={<p>{t("idx.rejectDesc")}</p>} confirmLabel={t("idx.reject")} onConfirm={() => reject.mutate()}>
+            <Button size="sm" variant="outline" className="h-6 px-2 text-[11px]" disabled={reject.isPending}>{t("idx.reject")}</Button>
+          </ConfirmAction>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function ModeLocationFields({
   mode,

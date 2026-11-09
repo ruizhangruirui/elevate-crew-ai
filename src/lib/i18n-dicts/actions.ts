@@ -79,6 +79,7 @@ export const actionsDict: Dict = {
   "act.source.ai": { zh: "AI 诊断", en: "AI Diagnosis" },
   "act.source.data": { zh: "数据补全", en: "Data Completion" },
   "act.source.manual": { zh: "手动创建", en: "Manual" },
+  "act.source.position_approval": { zh: "岗位审批", en: "Position approval" },
   "act.status.todo": { zh: "待办", en: "To Do" },
   "act.status.doing": { zh: "进行中", en: "In Progress" },
   "act.status.done": { zh: "已完成", en: "Done" },
