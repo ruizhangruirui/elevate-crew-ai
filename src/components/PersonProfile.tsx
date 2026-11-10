@@ -32,7 +32,7 @@ import { recordJoin } from "@/lib/lifecycle";
 import { ArchivePersonDialog } from "@/components/ArchivePersonDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { ContractFilesPanel } from "@/components/ContractFilesPanel";
-import { allowsFixedTerm, fixedTermFields, contractLabel, CONTRACTS, labTeamOf, tenureLabel, tenureMonths } from "@/lib/contract";
+import { allowsFixedTerm, fixedTermFields, contractLabel, CONTRACTS, labTeamOf, roleExpected, tenureLabel, tenureMonths } from "@/lib/contract";
 import { badgeImportance } from "@/lib/importance";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { Button } from "@/components/ui/button";
@@ -752,7 +752,7 @@ export function PersonProfile({
               {(person as any).fixed_term && <Fact label={t("cm.endDate")} value={formatDate((person as any).contract_end_on)} />}
               <Fact label={t("loc.location")} value={person.location || "—"} />
               <Fact label={t("sheet.person.level")} value={person.level != null ? `L${person.level}` : "—"} />
-              <Fact label={t("pp.f.role")} value={person.appointed_role_title || role?.title || t("sheet.person.notAssigned")} />
+              <Fact label={t("pp.f.role")} value={person.appointed_role_title || role?.title || (roleExpected(person.contract_type) ? t("sheet.person.notAssigned") : "—")} />
               <Fact label={t("pp.f.offerTitle")} value={person.offer_title || "—"} />
               <Fact label={t("pp.f.supervisor")} value={supervisor?.name ?? "—"} tone={supervisor ? undefined : "warn"} />
               <Fact label={t("pp.f.companyEmail")} value={person.company_email || "—"} />
@@ -816,7 +816,12 @@ export function PersonProfile({
             }
           >
             {!role ? (
-              <p className="text-sm text-muted-foreground">{t("sheet.person.noRoleAssignedHint")}</p>
+              <p className="text-sm text-muted-foreground">
+                {person.appointed_role_title ||
+                  (roleExpected(person.contract_type)
+                    ? t("sheet.person.noRoleAssignedHint")
+                    : "—")}
+              </p>
             ) : (
               <div className="space-y-2">
                 <p className="text-sm font-medium">

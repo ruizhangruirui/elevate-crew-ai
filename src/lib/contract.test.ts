@@ -1,6 +1,18 @@
 import { describe, it } from "node:test";
 import { strictEqual, deepStrictEqual } from "node:assert/strict";
-import { allowsFixedTerm, daysUntil, fixedTermFields } from "./contract";
+import { allowsFixedTerm, daysUntil, fixedTermFields, roleExpected } from "./contract";
+
+describe("role expectation by contract", () => {
+  it("interns and leased staff are never flagged as role-less", () => {
+    strictEqual(roleExpected("Intern"), false);
+    strictEqual(roleExpected("Leased via Hays"), false);
+    strictEqual(roleExpected("Leased via Connect 44"), false);
+    strictEqual(roleExpected("Employee"), true);
+    strictEqual(roleExpected("Consultant"), true);
+    strictEqual(roleExpected(null), true);
+    strictEqual(roleExpected(undefined), true);
+  });
+});
 
 describe("fixed-term contracts", () => {
   it("only leased staff and interns can be fixed-term", () => {

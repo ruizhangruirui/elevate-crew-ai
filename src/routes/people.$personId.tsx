@@ -8,6 +8,7 @@ import { RoleDetailSheet } from "@/components/RoleDetailSheet";
 import { useI18n } from "@/lib/i18n";
 import { fetchWorkspace } from "@/lib/talent";
 import { fetchArchivedPeople } from "@/lib/lifecycle";
+import { roleExpected } from "@/lib/contract";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/people/$personId")({
@@ -63,7 +64,13 @@ function PersonPage() {
     <AppShell
       title={person?.name ?? t("ppl.loading")}
       subtitle={
-        role ? `${direction?.title ?? ""} · ${role.title}` : t("sheet.person.unassignedRole")
+        role
+          ? `${direction?.title ?? ""} · ${role.title}`
+          : person && !roleExpected(person.contract_type)
+            ? (person.appointed_role_title ?? "")
+            : person
+              ? t("sheet.person.unassignedRole")
+              : ""
       }
     >
       <div className="space-y-4">

@@ -25,6 +25,11 @@ export function contractLabel(t: (k: string) => string, value?: string | null): 
 /** Leased staff and interns are not expected to hold strategic roles. */
 export const PERIPHERAL_CONTRACTS = new Set<string>(["Leased via Connect 44", "Leased via Hays", "Intern"]);
 
+/** Interns and leased staff carry no position, so never flag them as role-less. */
+export function roleExpected(contract?: string | null): boolean {
+  return !PERIPHERAL_CONTRACTS.has(contract ?? "");
+}
+
 /** Whole months between hire date and today. */
 export function tenureMonths(hireDate?: string | null): number | null {
   if (!hireDate) return null;

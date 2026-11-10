@@ -1,4 +1,5 @@
 import { db as supabase } from "@/lib/db-client";
+import { roleExpected } from "./contract";
 import type { Direction, Person, Role } from "./talent";
 import { buildCapabilities } from "./capability";
 
@@ -162,7 +163,7 @@ export function completeness(people: Person[]) {
     .filter((p) => p.status !== "left")
     .map((p) => {
       const missing: MissingField[] = [];
-      if (!p.role_id) missing.push("role");
+      if (!p.role_id && roleExpected(p.contract_type)) missing.push("role");
       if (!p.org_node_id) missing.push("node");
       if (p.level == null) missing.push("level");
       if (!p.performance) missing.push("performance");

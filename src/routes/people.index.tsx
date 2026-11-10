@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import { Eye, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/lib/i18n";
-import { CONTRACTS, contractLabel, labTeamOf } from "@/lib/contract";
+import { CONTRACTS, contractLabel, labTeamOf, roleExpected } from "@/lib/contract";
 import { badgeImportance, IMPORTANCE_TONE } from "@/lib/importance";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { fetchArchivedPeople, fetchLifecycleEvents, recordJoin, restorePerson } from "@/lib/lifecycle";
@@ -161,11 +161,13 @@ function PeopleBody() {
     return true;
   });
 
-  const roleName = (id: string | null) =>
-    data.roles.find((r) => r.id === id)?.title ?? t("ppl.role.noRole");
+  // Interns and leased staff carry no position, so they are never labelled role-less.
+  const roleLabel = (p: (typeof data.people)[number]) =>
+    data.roles.find((r) => r.id === p.role_id)?.title ??
+    (roleExpected(p.contract_type) ? t("ppl.role.noRole") : null);
   const onboard = data.people.filter((p) => p.status === "onboard");
   const candidates = data.people.filter((p) => p.status === "candidate");
-  const unassigned = data.people.filter((p) => !p.role_id);
+  const unassigned = data.people.filter((p) => !p.role_id && roleExpected(p.contract_type));
   const incomplete = new Map(
     completeness(data.people).rows.map((r) => [r.person.id, r.missing.length]),
   );
@@ -364,7 +366,7 @@ function PeopleBody() {
                     const { lab, team } = labTeamOf(orgNodes ?? [], p.org_node_id);
                     const orgPath = [lab?.name, team?.name].filter(Boolean).join(" · ");
                     return [
-                      p.appointed_role_title || roleName(p.role_id),
+                      p.appointed_role_title || roleLabel(p),
                       contractLabel(t, p.contract_type),
                       orgPath || null,
                     ]
