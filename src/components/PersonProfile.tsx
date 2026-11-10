@@ -31,7 +31,8 @@ import { useI18n } from "@/lib/i18n";
 import { recordJoin } from "@/lib/lifecycle";
 import { ArchivePersonDialog } from "@/components/ArchivePersonDialog";
 import { useAuth } from "@/hooks/useAuth";
-import { contractLabel, CONTRACTS, labTeamOf, tenureLabel, tenureMonths } from "@/lib/contract";
+import { ContractFilesPanel } from "@/components/ContractFilesPanel";
+import { allowsFixedTerm, fixedTermFields, contractLabel, CONTRACTS, labTeamOf, tenureLabel, tenureMonths } from "@/lib/contract";
 import { badgeImportance } from "@/lib/importance";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { Button } from "@/components/ui/button";
@@ -425,6 +426,8 @@ export function PersonProfile({
     name: "",
     org_node_id: "none",
     contract_type: "unset",
+    fixed_term: false,
+    contract_end_on: "",
     hire_date: "",
     location: "",
     level: "",
@@ -451,6 +454,8 @@ export function PersonProfile({
       name: person.name,
       org_node_id: person.org_node_id ?? "none",
       contract_type: person.contract_type || "unset",
+      fixed_term: !!(person as any).fixed_term,
+      contract_end_on: (person as any).contract_end_on ?? "",
       hire_date: person.hire_date ?? "",
       location: person.location ?? "",
       level: person.level != null ? String(person.level) : "",
@@ -487,11 +492,14 @@ export function PersonProfile({
         if (!form.name.trim()) throw new Error(t("pp.err.name"));
         const contract = form.contract_type === "unset" ? null : form.contract_type;
         const nextNode = form.org_node_id === "none" ? null : form.org_node_id;
+        const term = fixedTermFields(contract, form.fixed_term, form.contract_end_on || null);
+        if ("error" in term) throw new Error(t(term.error));
         payload = {
           staff_id: form.staff_id.trim() || null,
           name: form.name.trim(),
           org_node_id: nextNode,
           contract_type: contract,
+          ...term,
           hire_date: form.hire_date || null,
           location: form.location || null,
           level: form.level ? Number(form.level) : null,
@@ -511,6 +519,7 @@ export function PersonProfile({
         cmp(t("ppl.field.name"), person.name, form.name.trim());
         cmp(t("sheet.person.team"), nodeName(person.org_node_id ?? null), nodeName(nextNode));
         cmp(t("sheet.person.contractType"), contractLabel(t, person.contract_type) ?? "", contractLabel(t, contract) ?? "");
+        cmp(t("cm.endDate"), (person as any).contract_end_on ?? "", term.contract_end_on ?? "");
         cmp(t("pp.f.hireDate"), person.hire_date ?? "", form.hire_date);
         cmp(t("loc.location"), person.location ?? "", form.location);
         cmp(t("sheet.person.level"), person.level != null ? String(person.level) : "", form.level);
@@ -635,6 +644,21 @@ export function PersonProfile({
                   ...CONTRACTS.map((c) => [c, contractLabel(t, c) ?? c] as [string, string]),
                 ])}
               </div>
+              {allowsFixedTerm(form.contract_type) && (
+                <div className="space-y-1.5">
+                  <Label>{t("cm.fixedTerm")}</Label>
+                  {sel(form.fixed_term ? "yes" : "no", (v) => setForm({ ...form, fixed_term: v === "yes" }), [
+                    ["no", t("common.no")],
+                    ["yes", t("common.yes")],
+                  ])}
+                </div>
+              )}
+              {allowsFixedTerm(form.contract_type) && form.fixed_term && (
+                <div className="space-y-1.5">
+                  <Label>{t("cm.endDate")}</Label>
+                  <Input type="date" value={form.contract_end_on} onChange={(e) => setForm({ ...form, contract_end_on: e.target.value })} />
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label>{t("pp.f.hireDate")}</Label>
                 <Input type="date" value={form.hire_date} onChange={(e) => setForm({ ...form, hire_date: e.target.value })} />
@@ -720,6 +744,10 @@ export function PersonProfile({
               <Fact label={t("pp.f.lab")} value={lab?.name ?? "—"} tone={lab ? undefined : "warn"} />
               <Fact label={t("sheet.person.team")} value={team?.name ?? "—"} />
               <Fact label={t("sheet.person.contractType")} value={contractLabel(t, person.contract_type) || "—"} />
+              {allowsFixedTerm(person.contract_type) && (
+                <Fact label={t("cm.fixedTerm")} value={(person as any).fixed_term ? t("common.yes") : t("common.no")} />
+              )}
+              {(person as any).fixed_term && <Fact label={t("cm.endDate")} value={(person as any).contract_end_on ?? "—"} />}
               <Fact label={t("pp.f.hireDate")} value={person.hire_date ?? "—"} />
               <Fact label={t("loc.location")} value={person.location || "—"} />
               <Fact label={t("sheet.person.level")} value={person.level != null ? `L${person.level}` : "—"} />
@@ -749,6 +777,7 @@ export function PersonProfile({
             {person.note && <p className="mt-2 text-xs text-muted-foreground">{person.note}</p>}
           </>
         )}
+        {canHr && editing !== "basic" && <ContractFilesPanel personId={person.id} />}
         {canHr && editing !== "basic" && (
           <div className="mt-4 flex items-center justify-end border-t border-border/40 pt-2.5">
             <ArchivePersonDialog personId={person.id} personName={person.name} onDone={() => navigate({ to: "/people" })}>

@@ -56,3 +56,26 @@ export function labTeamOf(nodes: Node[], nodeId?: string | null): { lab: Node | 
   }
   return { lab, team };
 }
+
+/** Only leased staff and interns can be on a fixed-term contract. */
+export function allowsFixedTerm(contract?: string | null): boolean {
+  return !!contract && PERIPHERAL_CONTRACTS.has(contract);
+}
+
+/** Normalise fixed-term fields before saving; returns an error key when invalid. */
+export function fixedTermFields(
+  contract: string | null,
+  fixedTerm: boolean,
+  endOn: string | null,
+): { fixed_term: boolean; contract_end_on: string | null } | { error: string } {
+  if (!allowsFixedTerm(contract) || !fixedTerm) return { fixed_term: false, contract_end_on: null };
+  if (!endOn || !/^\d{4}-\d{2}-\d{2}$/.test(endOn)) return { error: "cm.err.endDate" };
+  return { fixed_term: true, contract_end_on: endOn };
+}
+
+/** Whole days from today until the date (negative when past). */
+export function daysUntil(date: string, today = new Date()): number {
+  const d = new Date(`${date}T00:00:00`);
+  const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  return Math.round((d.getTime() - t0.getTime()) / 86400000);
+}

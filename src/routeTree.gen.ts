@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ActionsRouteImport } from './routes/actions'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CapabilityRouteImport } from './routes/capability'
+import { Route as ContractsRouteImport } from './routes/contracts'
 import { Route as GrowthRouteImport } from './routes/growth'
 import { Route as OrgRouteImport } from './routes/org'
 import { Route as RecruitingRouteImport } from './routes/recruiting'
@@ -38,6 +39,11 @@ const AuthRoute = AuthRouteImport.update({
 const CapabilityRoute = CapabilityRouteImport.update({
   id: '/capability',
   path: '/capability',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContractsRoute = ContractsRouteImport.update({
+  id: '/contracts',
+  path: '/contracts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GrowthRoute = GrowthRouteImport.update({
@@ -76,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/actions': typeof ActionsRoute
   '/auth': typeof AuthRoute
   '/capability': typeof CapabilityRoute
+  '/contracts': typeof ContractsRoute
   '/growth': typeof GrowthRoute
   '/org': typeof OrgRoute
   '/recruiting': typeof RecruitingRoute
@@ -88,6 +95,7 @@ export interface FileRoutesByTo {
   '/actions': typeof ActionsRoute
   '/auth': typeof AuthRoute
   '/capability': typeof CapabilityRoute
+  '/contracts': typeof ContractsRoute
   '/growth': typeof GrowthRoute
   '/org': typeof OrgRoute
   '/recruiting': typeof RecruitingRoute
@@ -101,6 +109,7 @@ export interface FileRoutesById {
   '/actions': typeof ActionsRoute
   '/auth': typeof AuthRoute
   '/capability': typeof CapabilityRoute
+  '/contracts': typeof ContractsRoute
   '/growth': typeof GrowthRoute
   '/org': typeof OrgRoute
   '/recruiting': typeof RecruitingRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/actions'
     | '/auth'
     | '/capability'
+    | '/contracts'
     | '/growth'
     | '/org'
     | '/recruiting'
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/actions'
     | '/auth'
     | '/capability'
+    | '/contracts'
     | '/growth'
     | '/org'
     | '/recruiting'
@@ -139,6 +150,7 @@ export interface FileRouteTypes {
     | '/actions'
     | '/auth'
     | '/capability'
+    | '/contracts'
     | '/growth'
     | '/org'
     | '/recruiting'
@@ -152,6 +164,7 @@ export interface RootRouteChildren {
   ActionsRoute: typeof ActionsRoute
   AuthRoute: typeof AuthRoute
   CapabilityRoute: typeof CapabilityRoute
+  ContractsRoute: typeof ContractsRoute
   GrowthRoute: typeof GrowthRoute
   OrgRoute: typeof OrgRoute
   RecruitingRoute: typeof RecruitingRoute
@@ -188,6 +201,13 @@ declare module '@tanstack/react-router' {
       path: '/capability'
       fullPath: '/capability'
       preLoaderRoute: typeof CapabilityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contracts': {
+      id: '/contracts'
+      path: '/contracts'
+      fullPath: '/contracts'
+      preLoaderRoute: typeof ContractsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/growth': {
@@ -240,6 +260,7 @@ const rootRouteChildren: RootRouteChildren = {
   ActionsRoute: ActionsRoute,
   AuthRoute: AuthRoute,
   CapabilityRoute: CapabilityRoute,
+  ContractsRoute: ContractsRoute,
   GrowthRoute: GrowthRoute,
   OrgRoute: OrgRoute,
   RecruitingRoute: RecruitingRoute,

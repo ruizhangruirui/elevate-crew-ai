@@ -38,3 +38,4 @@
 - Recruiting "Visible to" (roles.visible_to_person_ids) grants read-only access to that position and its candidates in dbQuery scope filters; accounts link to people by company email (name fallback), keeping sharing server-enforced.
 - Hiring positions are created from Positions under a direction as regular roles (HR/Recruiter allowed when recruiter + supervisor are named) and appear in Recruiting automatically; Recruiting has no separate add-role entry.
 - Non-admin position creation stores pending status and the requested next step; shared app-roles helpers enforce the delegated approver in both UI and dbQuery, normalize legacy approval task ownership on read, and block pending assignment/sourcing so administration cannot bypass approval.
+- Contract files are stored as base64 in person_contracts (HR/Owner-only in dbQuery, max 10 MB) so uploads work in both cloud and on-prem PostgreSQL modes without separate file storage.

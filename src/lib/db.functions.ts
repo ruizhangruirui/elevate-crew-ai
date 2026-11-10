@@ -27,6 +27,7 @@ const TABLES = [
   "team_achievements",
   "team_achievement_contributors",
   "reference_letters",
+  "person_contracts",
 ] as const;
 
 const FILTERS = ["eq", "neq", "gt", "gte", "lt", "lte", "in", "is", "like", "ilike", "contains", "not", "or", "match", "filter"] as const;
@@ -40,6 +41,7 @@ const PERSON_TABLES = new Set([
   "org_activity_participants",
   "audit_log",
   "reference_letters",
+  "person_contracts",
 ]);
 /** Structure tables managers may read but never change. */
 const MANAGER_READONLY = new Set(["org_nodes", "roles", "directions", "orgs", "config_items", "access_users", "capability_snapshots", "candidates", "candidate_events"]);
@@ -82,6 +84,7 @@ export const dbQuery = createServerFn({ method: "POST" })
       if (!row || typeof row !== "object") return row;
       if (spec.table === "actions") return positionApprovalAction(row);
       if (spec.table === "audit_log" || spec.table === "candidate_events") return { ...row, actor: user.name };
+      if (spec.table === "person_contracts") return { ...row, uploaded_by: user.name };
       if (spec.table === "team_achievements") return { ...row, created_by: row.created_by ?? user.name };
       if (spec.table === "reference_letters") {
         const r = { ...row };
@@ -102,6 +105,14 @@ export const dbQuery = createServerFn({ method: "POST" })
       }
     }
 
+    // Contract files are confidential: only HR and Owner-level roles may read or change them.
+    if (spec.table === "person_contracts") {
+      if (!isOwnerRole(user.role) && user.role !== "hr") return fail("Contracts are only available to HR", "403");
+      if (spec.op === "update" || spec.op === "upsert") return fail("Upload a new contract instead", "400");
+      for (const row of payload === undefined ? [] : Array.isArray(payload) ? payload : [payload]) {
+        if (typeof row?.file_data !== "string" || row.file_data.length > 14_000_000) return fail("Contract file must be 10 MB or smaller", "400");
+      }
+    }
     if (spec.table === "access_users" && spec.op !== "select") return fail("access_users is deprecated", "403");
     if (spec.table === "people" && spec.op === "insert" && Array.isArray(payload) && !isOwnerRole(user.role))
       return fail("Only the Owner can bulk import people", "403");

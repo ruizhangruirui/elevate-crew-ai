@@ -676,8 +676,10 @@ export type Database = {
           assessed_skills: Json
           attrition_risk: string
           company_email: string | null
+          contract_end_on: string | null
           contract_type: string | null
           created_at: string
+          fixed_term: boolean
           hire_date: string | null
           id: string
           importance: string
@@ -714,8 +716,10 @@ export type Database = {
           assessed_skills?: Json
           attrition_risk?: string
           company_email?: string | null
+          contract_end_on?: string | null
           contract_type?: string | null
           created_at?: string
+          fixed_term?: boolean
           hire_date?: string | null
           id?: string
           importance?: string
@@ -752,8 +756,10 @@ export type Database = {
           assessed_skills?: Json
           attrition_risk?: string
           company_email?: string | null
+          contract_end_on?: string | null
           contract_type?: string | null
           created_at?: string
+          fixed_term?: boolean
           hire_date?: string | null
           id?: string
           importance?: string
@@ -854,6 +860,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "performance_records_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      person_contracts: {
+        Row: {
+          created_at: string
+          file_data: string
+          file_name: string
+          id: string
+          mime_type: string | null
+          person_id: string
+          size_bytes: number
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_data: string
+          file_name: string
+          id?: string
+          mime_type?: string | null
+          person_id: string
+          size_bytes?: number
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_data?: string
+          file_name?: string
+          id?: string
+          mime_type?: string | null
+          person_id?: string
+          size_bytes?: number
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "person_contracts_person_id_fkey"
             columns: ["person_id"]
             isOneToOne: false
             referencedRelation: "people"

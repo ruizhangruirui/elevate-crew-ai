@@ -17,6 +17,7 @@ import { lifecycleDict } from "./i18n-dicts/lifecycle";
 import { growthDict } from "./i18n-dicts/growth";
 import { recruitingDict } from "./i18n-dicts/recruiting";
 import { referenceDict } from "./i18n-dicts/reference";
+import { contractsDict } from "./i18n-dicts/contracts";
 
 export const dict: Dict = {
   ...coreDict,
@@ -31,6 +32,7 @@ export const dict: Dict = {
   ...growthDict,
   ...recruitingDict,
   ...referenceDict,
+  ...contractsDict,
 };
 
 type Ctx = { lang: Lang; setLang: (l: Lang) => void; t: (key: string) => string };

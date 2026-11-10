@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { LayoutGrid, Users, Settings, LogOut, Loader2, KeyRound, Network, FolderTree, ListChecks, TrendingUp, Briefcase } from "lucide-react";
+import { LayoutGrid, Users, Settings, LogOut, Loader2, KeyRound, Network, FolderTree, ListChecks, TrendingUp, Briefcase, FileClock } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAuth, useSignOut } from "@/hooks/useAuth";
 import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
@@ -11,6 +11,7 @@ const nav = [
   { to: "/recruiting", key: "nav.recruiting", icon: Briefcase },
   { to: "/org", key: "nav.org", icon: FolderTree },
   { to: "/people", key: "nav.people", icon: Users },
+  { to: "/contracts", key: "nav.contracts", icon: FileClock },
   { to: "/capability", key: "nav.capability", icon: Network },
   { to: "/growth", key: "nav.growth", icon: TrendingUp },
   { to: "/actions", key: "nav.actions", icon: ListChecks },
