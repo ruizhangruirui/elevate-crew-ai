@@ -30,6 +30,7 @@ import { db as supabase } from "@/lib/db-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { formatDate } from "@/lib/dates";
 import {
   Dialog,
   DialogContent,
@@ -439,7 +440,7 @@ function PeopleBody() {
                     <p className="font-display text-sm font-semibold">{a.name}</p>
                     <p className="text-xs text-muted-foreground">
                       {exit
-                        ? `${exit.effective_on} · ${t(`lc.reason.${exit.reason ?? "other"}`)}${exit.detail ? ` · ${exit.detail}` : ""}`
+                        ? `${formatDate(exit.effective_on)} · ${t(`lc.reason.${exit.reason ?? "other"}`)}${exit.detail ? ` · ${exit.detail}` : ""}`
                         : "—"}
                     </p>
                   </div>

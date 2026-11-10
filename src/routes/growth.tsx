@@ -19,6 +19,7 @@ import { perfLabel, ratingChipClass } from "@/components/GrowthSummary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BuildingPanel, HeadcountFlow } from "@/routes/capability";
 import { fetchOrgBuilding } from "@/lib/org-building";
+import { formatDate } from "@/lib/dates";
 import { ReferenceLettersPanel } from "@/components/ReferenceLettersPanel";
 import { EmploymentCertificatePanel } from "@/components/EmploymentCertificatePanel";
 
@@ -177,7 +178,7 @@ function GrowthPage() {
                             <span className="text-muted-foreground">· {m.title}</span>
                           </p>
                           <p className="mt-0.5 text-[11px] text-muted-foreground">
-                            {t(`pp.ms.kind.${m.kind}`)} · {m.effective_on}
+                            {t(`pp.ms.kind.${m.kind}`)} · {formatDate(m.effective_on)}
                             {m.from_level && m.to_level
                               ? ` · L${m.from_level} → L${m.to_level}`
                               : ""}

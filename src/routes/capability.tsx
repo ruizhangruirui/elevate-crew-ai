@@ -29,6 +29,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchOrgNodes, peopleInSubtree, type OrgNode } from "@/lib/org-tree";
 import { fetchArchivedPeople, fetchLifecycleEvents, flowStats } from "@/lib/lifecycle";
 import { fetchTeamAchievements, type TeamAchievement } from "@/lib/team-achievements";
+import { formatDate, formatMonthLabel } from "@/lib/dates";
 
 export const Route = createFileRoute("/capability")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -241,7 +242,7 @@ function AchievementPanel({ data, nodes, scope }: { data: Workspace; nodes: OrgN
   return (
     <section className="panel overflow-hidden">
       <div className="flex items-center gap-3 border-b border-border/50 px-5 py-4"><h2 className="font-display text-lg font-semibold">{t("achievement.title")}</h2><Button size="sm" className="ml-auto gap-1.5" onClick={() => { if (!result?.types.length) { toast.error(t("achievement.noTypes")); return; } setEditing(null); setOpen(true); }}><Plus className="size-4" />{t("achievement.add")}</Button></div>
-      {achievements.length === 0 ? <p className="px-5 py-8 text-sm text-muted-foreground">{t("achievement.empty")}</p> : <ul className="divide-y divide-border/40">{achievements.map((achievement) => { const contributorIds = (result?.contributors ?? []).filter((item) => item.achievement_id === achievement.id).map((item) => item.person_id); return <li key={achievement.id} className="px-5 py-4"><div className="flex flex-wrap items-center gap-2"><span className="rounded bg-brand/15 px-2 py-0.5 text-[10px] text-brand">{achievement.achievement_type}</span><strong className="text-sm">{achievement.title}</strong><span className="text-xs text-muted-foreground">{achievement.achieved_on}</span><div className="ml-auto flex gap-1"><Button size="icon" variant="ghost" className="size-8" onClick={() => { setEditing(achievement); setOpen(true); }}><Pencil className="size-3.5" /></Button><ConfirmAction title={t("achievement.deleteTitle")} description={t("achievement.deleteDesc")} onConfirm={() => remove.mutate(achievement.id)}><Button size="icon" variant="ghost" className="size-8 text-danger"><Trash2 className="size-3.5" /></Button></ConfirmAction></div></div><div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">{achievement.org_node_id && <span>{nodesById.get(achievement.org_node_id)?.name}</span>}{contributorIds.length > 0 && <span>{contributorIds.map((id) => peopleById.get(id)?.name).filter(Boolean).join("、")}</span>}{achievement.link && <a href={achievement.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-brand">{t("achievement.link")}<ExternalLink className="size-3" /></a>}</div>{achievement.note && <p className="mt-2 text-xs text-muted-foreground">{achievement.note}</p>}</li>; })}</ul>}
+      {achievements.length === 0 ? <p className="px-5 py-8 text-sm text-muted-foreground">{t("achievement.empty")}</p> : <ul className="divide-y divide-border/40">{achievements.map((achievement) => { const contributorIds = (result?.contributors ?? []).filter((item) => item.achievement_id === achievement.id).map((item) => item.person_id); return <li key={achievement.id} className="px-5 py-4"><div className="flex flex-wrap items-center gap-2"><span className="rounded bg-brand/15 px-2 py-0.5 text-[10px] text-brand">{achievement.achievement_type}</span><strong className="text-sm">{achievement.title}</strong><span className="text-xs text-muted-foreground">{formatDate(achievement.achieved_on)}</span><div className="ml-auto flex gap-1"><Button size="icon" variant="ghost" className="size-8" onClick={() => { setEditing(achievement); setOpen(true); }}><Pencil className="size-3.5" /></Button><ConfirmAction title={t("achievement.deleteTitle")} description={t("achievement.deleteDesc")} onConfirm={() => remove.mutate(achievement.id)}><Button size="icon" variant="ghost" className="size-8 text-danger"><Trash2 className="size-3.5" /></Button></ConfirmAction></div></div><div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">{achievement.org_node_id && <span>{nodesById.get(achievement.org_node_id)?.name}</span>}{contributorIds.length > 0 && <span>{contributorIds.map((id) => peopleById.get(id)?.name).filter(Boolean).join("、")}</span>}{achievement.link && <a href={achievement.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-brand">{t("achievement.link")}<ExternalLink className="size-3" /></a>}</div>{achievement.note && <p className="mt-2 text-xs text-muted-foreground">{achievement.note}</p>}</li>; })}</ul>}
       <AchievementDialog open={open} onOpenChange={setOpen} achievement={editing} contributorIds={editing ? (result?.contributors ?? []).filter((item) => item.achievement_id === editing.id).map((item) => item.person_id) : []} types={result?.types ?? []} nodes={allowedNodes} people={data.people} />
     </section>
   );
@@ -720,7 +721,7 @@ export function BuildingPanel({
                   </span>
                   <span className="font-medium">{a.title}</span>
                   <span className="text-xs tabular-nums text-muted-foreground">
-                    {a.happened_on}
+                    {formatDate(a.happened_on)}
                   </span>
                   <div className="ml-auto flex items-center gap-1">
                     <Button
@@ -999,7 +1000,7 @@ export function HeadcountFlow() {
                 />
               </div>
               <span className="text-[10px] tabular-nums text-muted-foreground">
-                {m.month.slice(5)}
+                {formatMonthLabel(m.month)}
               </span>
               <span className="text-[10px] tabular-nums text-muted-foreground">
                 +{m.joins} / -{m.exits}
@@ -1081,7 +1082,7 @@ export function HeadcountFlow() {
                 </span>
                 <span className="font-medium">{nameOf(e.person_id)}</span>
                 <span className="text-xs text-muted-foreground">
-                  {e.effective_on} · {t(`lc.reason.${e.reason ?? "other"}`)}
+                  {formatDate(e.effective_on)} · {t(`lc.reason.${e.reason ?? "other"}`)}
                   {e.detail ? ` · ${e.detail}` : ""}
                 </span>
               </li>

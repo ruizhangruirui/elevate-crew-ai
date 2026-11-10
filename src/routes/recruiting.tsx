@@ -27,6 +27,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { formatDate } from "@/lib/dates";
 
 export const Route = createFileRoute("/recruiting")({
   validateSearch: z.object({ role: z.string().optional() }),
@@ -347,8 +348,8 @@ function RecruitingBody() {
                   <td className="max-w-56 px-4 py-2"><Button variant="link" className="h-auto whitespace-normal p-0 text-left text-xs" onClick={() => navigate({ search: { role: candidate.role_id } })}>{position?.title}</Button>{position?.job_title && <p className="mt-0.5 text-muted-foreground">{position.job_title}</p>}</td>
                   <td className="px-4 py-2">{teamId ? nodeById.get(teamId)?.name : "—"}<p className="text-muted-foreground">{labOf(position?.org_node_id)?.name}</p></td>
                   <td className="px-4 py-2"><span className={`whitespace-nowrap rounded px-1.5 py-0.5 ${OUTCOME_TONE[candidate.outcome] ?? ""}`}>{t(`rec.overview.${candidate.outcome}`)}</span></td>
-                  <td className="whitespace-nowrap px-4 py-2 tabular-nums">{candidate.onboarding_on || "—"}</td>
-                  <td className="max-w-48 px-4 py-2">{candidate.next_step || "—"}{candidate.next_step_on && <p className="text-muted-foreground tabular-nums">{candidate.next_step_on}</p>}</td>
+                  <td className="whitespace-nowrap px-4 py-2 tabular-nums">{formatDate(candidate.onboarding_on)}</td>
+                  <td className="max-w-48 px-4 py-2">{candidate.next_step || "—"}{candidate.next_step_on && <p className="text-muted-foreground tabular-nums">{formatDate(candidate.next_step_on)}</p>}</td>
                   <td className="px-4 py-2">{candidate.recruiter || "—"}</td>
                 </tr>;
               })}
@@ -563,9 +564,9 @@ function RecruitingBody() {
                         </td>
                         <td className="max-w-48 px-3 py-1.5 text-xs">
                           <p className="truncate">{c.next_step || "—"}</p>
-                          {c.next_step_on && <p className="text-muted-foreground tabular-nums">{c.next_step_on}</p>}
+                          {c.next_step_on && <p className="text-muted-foreground tabular-nums">{formatDate(c.next_step_on)}</p>}
                           {c.outcome === "to_onboard" && c.onboarding_on && (
-                            <p className="whitespace-nowrap text-ok tabular-nums">{t("rec.f.startDate")}: {c.onboarding_on}</p>
+                            <p className="whitespace-nowrap text-ok tabular-nums">{t("rec.f.startDate")}: {formatDate(c.onboarding_on)}</p>
                           )}
                         </td>
                         <td className="px-3 py-1.5">
@@ -578,7 +579,7 @@ function RecruitingBody() {
                         <td className="px-3 py-1.5 text-xs">{c.recruiter || "—"}</td>
                         <td className="px-3 py-1.5 text-xs">{c.source || "—"}</td>
                         <td className="px-3 py-1.5 text-xs">{ctLabel(t, c.contract_type)}</td>
-                        <td className="px-3 py-1.5 text-xs tabular-nums text-muted-foreground">{c.updated_at.slice(0, 10)}</td>
+                        <td className="px-3 py-1.5 text-xs tabular-nums text-muted-foreground">{formatDate(c.updated_at)}</td>
                       </tr>
                     );
                   })}
@@ -880,7 +881,7 @@ function CandidateDialog({
                 <li key={e.id} className="rounded-lg border border-border/50 px-3 py-2 text-xs">
                   <p className="flex flex-wrap justify-between gap-2 text-muted-foreground">
                     <span className="font-medium text-foreground">{eventLabel(e)}</span>
-                    <span>{e.happened_on}{e.actor ? ` · ${e.actor}` : ""}</span>
+                    <span>{formatDate(e.happened_on)}{e.actor ? ` · ${e.actor}` : ""}</span>
                   </p>
                   {e.note && <p className="mt-1 whitespace-pre-wrap">{e.note}</p>}
                 </li>

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowUpRight, Award, TrendingUp } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import type { Person } from "@/lib/talent";
+import { formatDate } from "@/lib/dates";
 import { fetchGrowthData, latestRating, perfTone } from "@/lib/growth";
 
 export function perfLabel(t: (k: string) => string, key: string | null): string {
@@ -74,13 +75,13 @@ export function GrowthSummary({ person }: { person: Person }) {
           {lastPromo.from_level && lastPromo.to_level
             ? ` (L${lastPromo.from_level} → L${lastPromo.to_level})`
             : ""}{" "}
-          · {lastPromo.effective_on}
+          · {formatDate(lastPromo.effective_on)}
         </p>
       )}
       {awards[0] && (
         <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <Award className="size-3.5 text-brand" />
-          {awards[0].title} · {awards[0].effective_on}
+          {awards[0].title} · {formatDate(awards[0].effective_on)}
         </p>
       )}
 

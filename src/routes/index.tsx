@@ -39,6 +39,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { formatDate } from "@/lib/dates";
 import {
   Dialog,
   DialogContent,
@@ -472,7 +473,7 @@ function RoleCard({
         <p className="mt-1.5 flex flex-wrap items-center gap-1 text-[11px]">
           <span className="rounded bg-primary/12 px-1.5 py-0.5 font-medium text-primary">{t("idx.toOnboard")}</span>
           <span className="text-muted-foreground">
-            {toOnboard.map((c) => (c.onboarding_on ? `${c.name} (${c.onboarding_on})` : c.name)).join("、")}
+            {toOnboard.map((c) => (c.onboarding_on ? `${c.name} (${formatDate(c.onboarding_on)})` : c.name)).join("、")}
           </span>
         </p>
       )}

@@ -7,6 +7,7 @@ import { StatTile } from "@/components/StatTile";
 import { useI18n } from "@/lib/i18n";
 import { fetchWorkspace } from "@/lib/talent";
 import { fetchOrgNodes } from "@/lib/org-tree";
+import { formatDate } from "@/lib/dates";
 import { allowsFixedTerm, contractLabel, daysUntil, labTeamOf, PERIPHERAL_CONTRACTS } from "@/lib/contract";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -130,7 +131,7 @@ function ContractsBody() {
                   <td className="py-2 pr-3 font-medium">{p.name}{p.staff_id && <span className="ml-1.5 text-xs text-muted-foreground">{p.staff_id}</span>}</td>
                   <td className="py-2 pr-3 text-muted-foreground">{[l?.name, team?.name].filter(Boolean).join(" / ") || "—"}</td>
                   <td className="py-2 pr-3">{contractLabel(t, p.contract_type)}</td>
-                  <td className="py-2 pr-3">{p.contract_end_on ?? "—"}</td>
+                  <td className="py-2 pr-3">{formatDate(p.contract_end_on)}</td>
                   <td className="py-2 pr-3">
                     <span className={`rounded-md border px-2 py-0.5 text-xs ${TONE[st]}`}>
                       {days != null && days >= 0 ? t("cm.days").replace("{n}", String(days)) : t(`cm.st.${st}`)}

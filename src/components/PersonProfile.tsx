@@ -42,6 +42,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GrowthSummary } from "@/components/GrowthSummary";
+import { formatDate, formatDateTime } from "@/lib/dates";
 import {
   Select,
   SelectContent,
@@ -519,8 +520,8 @@ export function PersonProfile({
         cmp(t("ppl.field.name"), person.name, form.name.trim());
         cmp(t("sheet.person.team"), nodeName(person.org_node_id ?? null), nodeName(nextNode));
         cmp(t("sheet.person.contractType"), contractLabel(t, person.contract_type) ?? "", contractLabel(t, contract) ?? "");
-        cmp(t("pp.f.hireDate"), person.hire_date ?? "", form.hire_date);
-        cmp(t("cm.endDate"), (person as any).contract_end_on ?? "", term.contract_end_on ?? "");
+        cmp(t("pp.f.hireDate"), formatDate(person.hire_date), formatDate(form.hire_date));
+        cmp(t("cm.endDate"), formatDate((person as any).contract_end_on), formatDate(term.contract_end_on ?? null));
         cmp(t("loc.location"), person.location ?? "", form.location);
         cmp(t("sheet.person.level"), person.level != null ? String(person.level) : "", form.level);
         cmp(t("pp.f.role"), person.appointed_role_title || roles.find((r) => r.id === person.role_id)?.title || "", form.appointed_role_title.trim() || roles.find((r) => r.id === form.role_id)?.title || "");
@@ -744,11 +745,11 @@ export function PersonProfile({
               <Fact label={t("pp.f.lab")} value={lab?.name ?? "—"} tone={lab ? undefined : "warn"} />
               <Fact label={t("sheet.person.team")} value={team?.name ?? "—"} />
               <Fact label={t("sheet.person.contractType")} value={contractLabel(t, person.contract_type) || "—"} />
-              <Fact label={t("pp.f.hireDate")} value={person.hire_date ?? "—"} />
+              <Fact label={t("pp.f.hireDate")} value={formatDate(person.hire_date)} />
               {allowsFixedTerm(person.contract_type) && (
                 <Fact label={t("cm.fixedTerm")} value={(person as any).fixed_term ? t("common.yes") : t("common.no")} />
               )}
-              {(person as any).fixed_term && <Fact label={t("cm.endDate")} value={(person as any).contract_end_on ?? "—"} />}
+              {(person as any).fixed_term && <Fact label={t("cm.endDate")} value={formatDate((person as any).contract_end_on)} />}
               <Fact label={t("loc.location")} value={person.location || "—"} />
               <Fact label={t("sheet.person.level")} value={person.level != null ? `L${person.level}` : "—"} />
               <Fact label={t("pp.f.role")} value={person.appointed_role_title || role?.title || t("sheet.person.notAssigned")} />
@@ -1044,7 +1045,7 @@ export function PersonProfile({
                       </p>
                       {m.detail && <p className="mt-1 text-xs text-foreground/85">{m.detail}</p>}
                       <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                        {m.effective_on}
+                        {formatDate(m.effective_on)}
                         {m.issuer ? ` · ${m.issuer}` : ""}
                       </p>
                     </div>
@@ -1193,7 +1194,7 @@ export function PersonProfile({
                     {r.highlights && <p className="mt-1 text-xs text-ok">+ {r.highlights}</p>}
                     {r.improvements && <p className="mt-1 text-xs text-warn">△ {r.improvements}</p>}
                     <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                      {new Date(r.created_at).toLocaleString()}
+                      {formatDateTime(r.created_at)}
                       {r.reviewer ? ` · ${r.reviewer}` : ""}
                     </p>
                   </li>
@@ -1386,7 +1387,7 @@ export function PersonProfile({
                       <p className="text-sm">{h.action}</p>
                       {h.detail && <p className="text-xs text-muted-foreground">{h.detail}</p>}
                       <p className="mt-0.5 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                        {new Date(h.created_at).toLocaleString()} · {h.actor}
+                        {formatDateTime(h.created_at)} · {h.actor}
                       </p>
                     </div>
                   </li>

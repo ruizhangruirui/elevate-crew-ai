@@ -28,6 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { formatDateTime } from "@/lib/dates";
 import {
   Dialog,
   DialogContent,
@@ -720,7 +721,7 @@ function AuditSection({ rows }: { rows: AuditRow[] }) {
           {rows.map((r) => (
             <TableRow key={r.id}>
               <TableCell className="whitespace-nowrap text-muted-foreground">
-                {new Date(r.created_at).toLocaleString("zh-CN")}
+                {formatDateTime(r.created_at)}
               </TableCell>
               <TableCell>{r.actor}</TableCell>
               <TableCell>

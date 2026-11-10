@@ -19,6 +19,7 @@ import { supervisorOf } from "@/lib/supervisor";
 import { fetchGrowthData } from "@/lib/growth";
 import { fetchLifecycleEvents, reasonLabelKey } from "@/lib/lifecycle";
 import type { Person } from "@/lib/talent";
+import { formatDate } from "@/lib/dates";
 import {
   downloadDocx,
   downloadPdf,
@@ -85,7 +86,7 @@ export function ReferenceLettersPanel({ initialOpenId }: { initialOpenId?: strin
               <p className="truncate text-sm font-medium">{l.facts.name}</p>
               <p className="truncate text-xs text-muted-foreground">
                 {[l.facts.lab, l.facts.team].filter(Boolean).join(" / ")} · {t("ref.supervisor")}:{" "}
-                {byId.get(l.supervisor_person_id ?? "")?.name ?? "—"} · {l.created_at.slice(0, 10)}
+                {byId.get(l.supervisor_person_id ?? "")?.name ?? "—"} · {formatDate(l.created_at)}
               </p>
             </div>
             {isMine(l) && l.status === "requested" && (
@@ -463,8 +464,8 @@ function LetterDialog({
 
           <aside className="space-y-3 rounded-lg border border-border/50 bg-muted/20 p-3 text-xs">
             <p className="font-semibold">{t("ref.refInfo")}</p>
-            <RefList title={t("ref.promotions")} items={ms.filter((m) => m.kind === "promotion").map((m) => `${m.effective_on} · ${m.title}`)} />
-            <RefList title={t("ref.awards")} items={ms.filter((m) => m.kind !== "promotion").map((m) => `${m.effective_on} · ${m.title}`)} />
+            <RefList title={t("ref.promotions")} items={ms.filter((m) => m.kind === "promotion").map((m) => `${formatDate(m.effective_on)} · ${m.title}`)} />
+            <RefList title={t("ref.awards")} items={ms.filter((m) => m.kind !== "promotion").map((m) => `${formatDate(m.effective_on)} · ${m.title}`)} />
             <RefList title={t("ref.performance")} items={perf.map((r) => `${r.period} · ${r.rating}${r.summary ? ` — ${r.summary}` : ""}`)} />
           </aside>
         </div>

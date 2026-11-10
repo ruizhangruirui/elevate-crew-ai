@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { formatDate } from "@/lib/dates";
 import {
   Dialog,
   DialogContent,
@@ -230,7 +231,7 @@ function ActionsBoard() {
                   {a.due_on && (
                     <span className={`inline-flex items-center gap-1 ${over ? "text-danger" : ""}`}>
                       <CalendarDays className="size-3" />
-                      {a.due_on}
+                      {formatDate(a.due_on)}
                       {over && ` · ${t("act.overdueSuffix")}`}
                     </span>
                   )}
@@ -323,7 +324,7 @@ function ActionsBoard() {
                   [t("act.field.status"), t(`act.status.${selected.status}`)],
                   [t("act.field.priority"), t(`act.priority.${selected.priority}`)],
                   [t("act.field.owner"), selected.owner ?? "—"],
-                  [t("act.field.dueDate"), selected.due_on ?? "—"],
+                  [t("act.field.dueDate"), formatDate(selected.due_on)],
                 ]).map(([label, value]) => (
                   <div key={label}><dt className="text-xs text-muted-foreground">{label}</dt><dd className="mt-1 break-words">{value}</dd></div>
                 ))}

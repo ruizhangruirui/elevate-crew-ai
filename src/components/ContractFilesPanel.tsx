@@ -7,6 +7,7 @@ import { db } from "@/lib/db-client";
 import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { ConfirmAction } from "@/components/ConfirmAction";
+import { formatDate } from "@/lib/dates";
 
 const MAX_BYTES = 10 * 1024 * 1024;
 
@@ -120,7 +121,7 @@ export function ContractFilesPanel({ personId }: { personId: string }) {
               <FileText className="size-4 shrink-0 text-brand" />
               <span className="min-w-0 flex-1 truncate">{f.file_name}</span>
               <span className="hidden text-xs text-muted-foreground sm:inline">
-                {(f.size_bytes / 1024 / 1024).toFixed(1)} MB · {f.created_at.slice(0, 10)}{f.uploaded_by ? ` · ${f.uploaded_by}` : ""}
+                {(f.size_bytes / 1024 / 1024).toFixed(1)} MB · {formatDate(f.created_at)}{f.uploaded_by ? ` · ${f.uploaded_by}` : ""}
               </span>
               <Button size="icon" variant="ghost" className="size-7" aria-label={t("cm.file.preview")} onClick={() => openPreview(f)}>
                 <Eye className="size-3.5" />
