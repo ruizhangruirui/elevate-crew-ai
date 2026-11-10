@@ -300,7 +300,6 @@ export function RoleDetailSheet({
                   className="card-glass p-3"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <strong className="text-sm">{t("sheet.role.seat").replace("{n}", String(i + 1))}</strong>
                     <span
                       className={`rounded-md px-2 py-1 text-[11px] font-medium ${
                         owner ? "bg-ok/12 text-ok" : "bg-danger/12 text-danger"
