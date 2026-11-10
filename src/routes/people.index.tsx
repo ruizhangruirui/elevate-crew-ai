@@ -1,6 +1,20 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+// Filters survive opening a profile and coming back (per browser tab).
+function useSessionFilter(key: string, initial: string) {
+  const [value, setValue] = useState(initial);
+  useEffect(() => {
+    const saved = sessionStorage.getItem("people-filter:" + key);
+    if (saved !== null) setValue(saved);
+  }, [key]);
+  const update = (v: string) => {
+    setValue(v);
+    sessionStorage.setItem("people-filter:" + key, v);
+  };
+  return [value, update] as const;
+}
 import { toast } from "sonner";
 import { Plus, RotateCcw, Search, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
@@ -66,11 +80,11 @@ function PeopleBody() {
   const { data: lifecycle } = useQuery({ queryKey: ["lifecycle"], queryFn: fetchLifecycleEvents });
   const [showArchived, setShowArchived] = useState(false);
   const { data: orgNodes } = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
-  const [query, setQuery] = useState("");
-  const [labFilter, setLabFilter] = useState("all");
-  const [teamFilter, setTeamFilter] = useState("all");
-  const [contractFilter, setContractFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [query, setQuery] = useSessionFilter("query", "");
+  const [labFilter, setLabFilter] = useSessionFilter("labFilter", "all");
+  const [teamFilter, setTeamFilter] = useSessionFilter("teamFilter", "all");
+  const [contractFilter, setContractFilter] = useSessionFilter("contractFilter", "all");
+  const [statusFilter, setStatusFilter] = useSessionFilter("statusFilter", "all");
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const openPerson = (id: string) =>
