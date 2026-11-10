@@ -519,8 +519,8 @@ export function PersonProfile({
         cmp(t("ppl.field.name"), person.name, form.name.trim());
         cmp(t("sheet.person.team"), nodeName(person.org_node_id ?? null), nodeName(nextNode));
         cmp(t("sheet.person.contractType"), contractLabel(t, person.contract_type) ?? "", contractLabel(t, contract) ?? "");
-        cmp(t("cm.endDate"), (person as any).contract_end_on ?? "", term.contract_end_on ?? "");
         cmp(t("pp.f.hireDate"), person.hire_date ?? "", form.hire_date);
+        cmp(t("cm.endDate"), (person as any).contract_end_on ?? "", term.contract_end_on ?? "");
         cmp(t("loc.location"), person.location ?? "", form.location);
         cmp(t("sheet.person.level"), person.level != null ? String(person.level) : "", form.level);
         cmp(t("pp.f.role"), person.appointed_role_title || roles.find((r) => r.id === person.role_id)?.title || "", form.appointed_role_title.trim() || roles.find((r) => r.id === form.role_id)?.title || "");
@@ -644,6 +644,10 @@ export function PersonProfile({
                   ...CONTRACTS.map((c) => [c, contractLabel(t, c) ?? c] as [string, string]),
                 ])}
               </div>
+              <div className="space-y-1.5">
+                <Label>{t("pp.f.hireDate")}</Label>
+                <Input type="date" value={form.hire_date} onChange={(e) => setForm({ ...form, hire_date: e.target.value })} />
+              </div>
               {allowsFixedTerm(form.contract_type) && (
                 <div className="space-y-1.5">
                   <Label>{t("cm.fixedTerm")}</Label>
@@ -659,10 +663,6 @@ export function PersonProfile({
                   <Input type="date" value={form.contract_end_on} onChange={(e) => setForm({ ...form, contract_end_on: e.target.value })} />
                 </div>
               )}
-              <div className="space-y-1.5">
-                <Label>{t("pp.f.hireDate")}</Label>
-                <Input type="date" value={form.hire_date} onChange={(e) => setForm({ ...form, hire_date: e.target.value })} />
-              </div>
               <div className="space-y-1.5">
                 <Label>{t("loc.location")}</Label>
                 {sel(form.location || "none", (v) => setForm({ ...form, location: v === "none" ? "" : v }), [
@@ -744,11 +744,11 @@ export function PersonProfile({
               <Fact label={t("pp.f.lab")} value={lab?.name ?? "—"} tone={lab ? undefined : "warn"} />
               <Fact label={t("sheet.person.team")} value={team?.name ?? "—"} />
               <Fact label={t("sheet.person.contractType")} value={contractLabel(t, person.contract_type) || "—"} />
+              <Fact label={t("pp.f.hireDate")} value={person.hire_date ?? "—"} />
               {allowsFixedTerm(person.contract_type) && (
                 <Fact label={t("cm.fixedTerm")} value={(person as any).fixed_term ? t("common.yes") : t("common.no")} />
               )}
               {(person as any).fixed_term && <Fact label={t("cm.endDate")} value={(person as any).contract_end_on ?? "—"} />}
-              <Fact label={t("pp.f.hireDate")} value={person.hire_date ?? "—"} />
               <Fact label={t("loc.location")} value={person.location || "—"} />
               <Fact label={t("sheet.person.level")} value={person.level != null ? `L${person.level}` : "—"} />
               <Fact label={t("pp.f.role")} value={person.appointed_role_title || role?.title || t("sheet.person.notAssigned")} />

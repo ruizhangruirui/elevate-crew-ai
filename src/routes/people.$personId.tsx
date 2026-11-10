@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
@@ -33,8 +33,18 @@ function PersonPage() {
   const { personId } = Route.useParams();
   const { t } = useI18n();
   const qc = useQueryClient();
+  const router = useRouter();
+  const navigate = useNavigate();
   const { data } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
   const [activeRoleId, setActiveRoleId] = useState<string | null>(null);
+
+  // Return exactly one step: to wherever the visitor came from (list, org chart,
+  // contract monitor...). Only fall back to the people list when the profile was
+  // opened directly and there is no previous in-app page.
+  const goBack = () => {
+    if (router.history.canGoBack()) router.history.back();
+    else navigate({ to: "/people" });
+  };
 
   const person = data?.people.find((p) => p.id === personId) ?? null;
   const role = person?.role_id ? (data?.roles.find((r) => r.id === person.role_id) ?? null) : null;
@@ -50,10 +60,8 @@ function PersonPage() {
       }
     >
       <div className="space-y-4">
-        <Button asChild variant="ghost" size="sm" className="gap-1.5 -ml-2">
-          <Link to="/people">
-            <ArrowLeft className="size-4" /> {t("pp.back")}
-          </Link>
+        <Button variant="ghost" size="sm" className="gap-1.5 -ml-2" onClick={goBack}>
+          <ArrowLeft className="size-4" /> {t("pp.back")}
         </Button>
 
         {!data ? (
