@@ -1,0 +1,2 @@
+COMMENT ON COLUMN public.candidates.datalink_stage IS 'DEPRECATED: Datalink step tracking removed; approval runs in Datalink';
+COMMENT ON COLUMN public.candidates.datalink_updated_at IS 'DEPRECATED: Datalink step tracking removed';

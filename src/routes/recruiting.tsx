@@ -28,7 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDate } from "@/lib/dates";
-import { DATALINK_STAGES, DATALINK_URL, datalinkStep, needsDatalink } from "@/lib/datalink";
+import { DATALINK_URL, needsOfferApproval } from "@/lib/datalink";
 
 export const Route = createFileRoute("/recruiting")({
   validateSearch: z.object({ role: z.string().optional() }),
@@ -108,8 +108,6 @@ export type Candidate = {
   next_step: string | null;
   next_step_on: string | null;
   onboarding_on: string | null;
-  datalink_stage?: string | null;
-  datalink_updated_at?: string | null;
   notes: string | null;
   contract_type: string | null;
   priority: string;
@@ -550,7 +548,7 @@ function RecruitingBody() {
                             value={c.outcome}
                             disabled={!canEdit}
                             onValueChange={(v) => {
-                              if (v === "to_onboard") quickUpdate.mutate({ c, patch: { outcome: v } }, {
+                              if (v === "to_onboard" || v === "offer_accepted") quickUpdate.mutate({ c, patch: { outcome: v } }, {
                                 onSuccess: () => setEditing({ ...c, outcome: v }),
                               });
                               else quickUpdate.mutate({ c, patch: { outcome: v } });
@@ -569,13 +567,13 @@ function RecruitingBody() {
                         <td className="max-w-48 px-3 py-1.5 text-xs">
                           <p className="truncate">{c.next_step || "—"}</p>
                           {c.next_step_on && <p className="text-muted-foreground tabular-nums">{formatDate(c.next_step_on)}</p>}
-                          {c.outcome === "to_onboard" && c.onboarding_on && (
+                          {(c.outcome === "to_onboard" || c.outcome === "offer_accepted") && c.onboarding_on && (
                             <p className="whitespace-nowrap text-ok tabular-nums">{t("rec.f.startDate")}: {formatDate(c.onboarding_on)}</p>
                           )}
-                          {needsDatalink(c.outcome) && (
-                            <p className={`whitespace-nowrap ${c.datalink_stage === "completed" ? "text-ok" : "text-warn"}`}>
-                              Datalink: {c.datalink_stage ? t(`dl.s.${c.datalink_stage}`) : t("dl.notStarted")}
-                            </p>
+                          {needsOfferApproval(c.outcome) && (
+                            <a href={DATALINK_URL} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 whitespace-nowrap rounded bg-brand/12 px-1.5 py-0.5 font-medium text-brand hover:bg-brand/20">
+                              {t("dl.start")} <ExternalLink className="size-3" />
+                            </a>
                           )}
                         </td>
                         <td className="px-3 py-1.5">
@@ -655,7 +653,6 @@ function CandidateDialog({
     next_step: candidate?.next_step ?? "",
     next_step_on: candidate?.next_step_on ?? "",
     onboarding_on: candidate?.onboarding_on ?? "",
-    datalink_stage: candidate?.datalink_stage ?? "",
     notes: candidate?.notes ?? "",
     contract_type: candidate?.contract_type ?? "",
     priority: candidate?.priority ?? "medium",
@@ -698,8 +695,6 @@ function CandidateDialog({
       next_step: n(f.next_step),
       next_step_on: n(f.next_step_on),
       onboarding_on: onboardingDate(f.onboarding_on),
-      datalink_stage: f.datalink_stage || null,
-      ...((f.datalink_stage || null) !== (candidate?.datalink_stage ?? null) ? { datalink_updated_at: new Date().toISOString() } : {}),
       notes: n(f.notes),
       contract_type: n(f.contract_type),
       priority: f.priority || "medium",
@@ -865,35 +860,6 @@ function CandidateDialog({
           {field("next_step_on", t("rec.f.nextDate"), "date")}
           {candidate && field("onboarding_on", t("rec.f.startDate"), "date")}
           <div className="sm:col-span-3">{field("next_step", t("rec.c.next"))}</div>
-          {needsDatalink(f.outcome) && (
-            <div className="sm:col-span-3 space-y-2 rounded-md border border-brand/30 bg-brand/5 p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-semibold">{t("dl.title")}</p>
-                <a href={DATALINK_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-medium text-brand hover:underline">
-                  {t("dl.open")} <ExternalLink className="size-3.5" />
-                </a>
-              </div>
-              <p className="text-xs text-muted-foreground">{t("dl.hint")}</p>
-              <ol className="flex flex-wrap gap-1">
-                {DATALINK_STAGES.map((s, i) => {
-                  const cur = datalinkStep(f.datalink_stage);
-                  const tone = i < cur || (i === cur && s === "completed") ? "bg-ok/15 text-ok" : i === cur ? "bg-brand text-primary-foreground" : "bg-muted text-muted-foreground";
-                  return <li key={s} className={`rounded px-1.5 py-0.5 text-[11px] ${tone}`}>{i + 1}. {t(`dl.s.${s}`)}</li>;
-                })}
-              </ol>
-              <div className="flex flex-wrap items-center gap-2">
-                <Label className="text-xs">{t("dl.current")}</Label>
-                <Select value={f.datalink_stage || "none"} onValueChange={(v) => setF({ ...f, datalink_stage: v === "none" ? "" : v })} disabled={!canEdit}>
-                  <SelectTrigger className="h-8 w-64 text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">{t("dl.notStarted")}</SelectItem>
-                    {DATALINK_STAGES.map((s) => <SelectItem key={s} value={s}>{t(`dl.s.${s}`)}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                {candidate?.datalink_updated_at && <span className="text-xs text-muted-foreground">{t("dl.updated")} {formatDate(candidate.datalink_updated_at)}</span>}
-              </div>
-            </div>
-          )}
           <div className="sm:col-span-3 grid gap-3 sm:grid-cols-2">
             {field("cv_url", t("rec.f.cv"))}
             {field("linkedin_url", t("rec.f.linkedin"))}

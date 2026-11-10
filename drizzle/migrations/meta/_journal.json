@@ -218,6 +218,13 @@
       "when": 1794323765649,
       "tag": "0030_candidates_datalink_stage",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1794325766592,
+      "tag": "0031_deprecate_datalink_stage",
+      "breakpoints": true
     }
   ]
 }
