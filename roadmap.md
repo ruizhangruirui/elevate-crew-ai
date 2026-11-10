@@ -1,3 +1,4 @@
+- [x] Refine the role-profile drawer with a fixed title area, glass capability blocks, clearer type hierarchy and compact skill rows; preserve existing actions and data.
 - [x] Compact position cards, direction selectors and role-profile domains/knowledge/skills; remove profile headcount and coverage counters without changing assignment or staffing rules.
 - [ ] Verify compact Positions and role profile with a real app-owned login (blocked: no signed-in app session available).
 - [x] Route existing and new position approvals to HR Director and enforce HRD-only approval handling; 22 related tests passed.

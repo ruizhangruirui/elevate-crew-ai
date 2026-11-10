@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { UserPlus, UserMinus, Pencil, Sparkles, Loader2, Search } from "lucide-react";
+import { UserPlus, UserMinus, Pencil, Sparkles, Loader2, Search, Layers3, BookOpen, Compass, BriefcaseBusiness, type LucideIcon } from "lucide-react";
 import { db as supabase } from "@/lib/db-client";
 import { coverageOf, criticalityLabel, type Person, type Role, type Skill } from "@/lib/talent";
 import { analyzeRoleFit, generateRoleProfile, type FitResult } from "@/lib/ai.functions";
@@ -31,9 +31,9 @@ import {
 
 function Fact({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="min-w-0 border-l border-border/60 px-2 py-1">
-      <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
-      <p className="mt-0.5 break-words font-display text-sm font-semibold tabular-nums">{value}</p>
+    <div className="min-w-0 px-3 py-2">
+      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p className="mt-1 break-words font-display text-sm font-semibold tracking-normal tabular-nums">{value}</p>
     </div>
   );
 }
@@ -47,7 +47,7 @@ function TagList({ items, empty }: { items: string[]; empty?: string }) {
       {items.map((t) => (
         <span
           key={t}
-          className="max-w-full break-words rounded-md border border-brand/40 bg-brand/10 px-2 py-0.5 text-xs text-foreground"
+          className="max-w-full break-words rounded-md border border-brand/15 bg-background/70 px-2 py-1 text-xs leading-snug text-foreground"
         >
           {t}
         </span>
@@ -56,11 +56,14 @@ function TagList({ items, empty }: { items: string[]; empty?: string }) {
   );
 }
 
-function ProfileBlock({ title, items }: { title: string; items: string[] }) {
+function ProfileBlock({ title, items, icon: Icon }: { title: string; items: string[]; icon: LucideIcon }) {
   return (
-    <div className="min-w-0 border-t border-border/60 pt-2">
-      <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{title}</p>
-      <div className="mt-1.5">
+    <div className="card-glass min-w-0 p-3">
+      <div className="flex items-center gap-2">
+        <Icon className="size-4 shrink-0 text-brand-soft" aria-hidden="true" />
+        <h4 className="text-xs font-semibold tracking-normal">{title}</h4>
+      </div>
+      <div className="mt-2">
         <TagList items={items} />
       </div>
     </div>
@@ -69,12 +72,12 @@ function ProfileBlock({ title, items }: { title: string; items: string[] }) {
 
 function Module({ title, actions, children }: { title: string; actions?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="border-b border-border/60 pb-3">
+    <section className="border-b border-border/60 pb-5 last:border-b-0">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-display text-sm font-semibold">{title}</h3>
+        <h3 className="font-display text-base font-semibold tracking-normal">{title}</h3>
         {actions}
       </div>
-      <div className="mt-2">{children}</div>
+      <div className="mt-3">{children}</div>
     </section>
   );
 }
@@ -175,17 +178,20 @@ export function RoleDetailSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-2xl">
-        <SheetHeader className="text-left">
-          <SheetTitle className="font-display text-2xl">{role.title}</SheetTitle>
-          <SheetDescription>{t("sheet.role.headerDesc").replace("{direction}", directionTitle)}</SheetDescription>
+      <SheetContent side="right" className="flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+        <SheetHeader className="shrink-0 border-b border-brand/15 bg-brand/5 px-5 py-5 pr-12 text-left sm:px-6">
+          <SheetDescription className="flex items-center gap-1.5 text-xs text-brand-soft">
+            <BriefcaseBusiness className="size-3.5 shrink-0" aria-hidden="true" />
+            {directionTitle}
+          </SheetDescription>
+          <SheetTitle className="break-words font-display text-2xl leading-snug tracking-normal">{role.title}</SheetTitle>
         </SheetHeader>
 
-        <div className="mt-4 space-y-3 pb-6">
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5 sm:px-6">
           <Module
             title={t("sheet.role.profile")}
             actions={
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1.5">
                 <span
                   className={`rounded-md px-2 py-1 text-[11px] font-medium ${
                     role.criticality === "strategic_critical"
@@ -208,7 +214,7 @@ export function RoleDetailSheet({
                   confirmLabel={t("sheet.role.confirmRegenLabel")}
                   onConfirm={() => aiProfile.mutate()}
                 >
-                  <Button variant="outline" size="sm" className="gap-1.5" disabled={aiProfile.isPending}>
+                  <Button variant="outline" size="sm" className="h-7 gap-1.5 px-2 text-xs" disabled={aiProfile.isPending}>
                     {aiProfile.isPending ? (
                       <Loader2 className="size-3.5 animate-spin" />
                     ) : (
@@ -217,7 +223,7 @@ export function RoleDetailSheet({
                     {t("sheet.role.aiGenerateProfile")}
                   </Button>
                 </ConfirmAction>
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setEditing((v) => !v)}>
+                <Button variant="outline" size="sm" className="h-7 gap-1.5 px-2 text-xs" onClick={() => setEditing((v) => !v)}>
                   <Pencil className="size-3.5" /> {editing ? t("sheet.cancel") : t("sheet.role.editProfile")}
                 </Button>
               </div>
@@ -233,33 +239,33 @@ export function RoleDetailSheet({
               />
             ) : (
               <>
-                <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+                <p className="whitespace-pre-line break-words text-sm leading-relaxed text-muted-foreground">
                   {role.description || t("sheet.role.noDescription")}
                 </p>
-                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                <div className="mt-3 grid grid-cols-2 gap-y-1 divide-x divide-border/60 rounded-lg border border-border/60 bg-surface/60 sm:grid-cols-3">
                   <Fact label={t("sheet.role.direction")} value={directionTitle} />
                   <Fact label={t("pp.f.offerTitle")} value={role.job_title || "—"} />
                   <Fact label={t("sheet.role.targetLevel")} value={`${role.level_min}–${role.level_max}`} />
                 </div>
 
-                <div className="mt-3 grid gap-x-3 gap-y-2 sm:grid-cols-2">
-                  <ProfileBlock title={t("sheet.role.domains")} items={role.domains} />
-                  <ProfileBlock title={t("sheet.role.knowledge")} items={role.knowledge} />
-                  <ProfileBlock title="Leadership" items={role.leadership} />
-                  <ProfileBlock title={t("sheet.role.experience")} items={role.experience} />
+                <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
+                  <ProfileBlock title={t("sheet.role.domains")} items={role.domains} icon={Layers3} />
+                  <ProfileBlock title={t("sheet.role.knowledge")} items={role.knowledge} icon={BookOpen} />
+                  <ProfileBlock title="Leadership" items={role.leadership} icon={Compass} />
+                  <ProfileBlock title={t("sheet.role.experience")} items={role.experience} icon={BriefcaseBusiness} />
                 </div>
 
-                <div className="mt-3">
-                  <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{t("sheet.role.skillRequirements")}</p>
+                <div className="mt-4">
+                  <p className="text-xs font-semibold">{t("sheet.role.skillRequirements")}</p>
                   {role.skills.length ? (
                     <div className="mt-1.5 grid gap-1.5 sm:grid-cols-2">
                       {role.skills.map((s) => (
                         <div
                           key={s.skill}
-                          className="flex min-w-0 items-center justify-between gap-2 rounded-md border border-border/60 bg-surface-raised/40 px-2 py-1 text-xs"
+                          className="flex min-w-0 items-center justify-between gap-2 border-b border-border/50 px-1 py-2 text-xs"
                         >
                           <span className="min-w-0 break-words text-muted-foreground">{s.skill}</span>
-                          <strong className="font-display">{s.level}</strong>
+                          <strong className="flex size-6 shrink-0 items-center justify-center rounded-md bg-brand/10 font-display tracking-normal text-brand-soft">{s.level}</strong>
                         </div>
                       ))}
                     </div>
@@ -291,7 +297,7 @@ export function RoleDetailSheet({
               {seats.map((owner, i) => (
                 <div
                   key={i}
-                  className="rounded-lg border border-border/60 bg-surface-raised/40 p-2.5"
+                  className="card-glass p-3"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <strong className="text-sm">{t("sheet.role.seat").replace("{n}", String(i + 1))}</strong>
@@ -385,7 +391,7 @@ export function RoleDetailSheet({
           </Module>}
 
           <Module title={t("sheet.role.aiAssist")}>
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-brand/30 bg-brand/5 p-4">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-l-2 border-brand/40 bg-brand/5 px-3 py-2.5">
               <p className="text-xs text-muted-foreground">
                 {t("sheet.role.aiAssistDesc")}
               </p>
@@ -402,7 +408,7 @@ export function RoleDetailSheet({
             {fits.length > 0 && (
               <div className="mb-4 space-y-3">
                 {fits.map((f) => (
-                  <div key={f.person_id} className="rounded-xl border border-border/60 bg-surface-raised/40 p-4">
+                  <div key={f.person_id} className="card-glass p-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <strong className="text-sm">{f.person_name}</strong>
                       <span
@@ -466,7 +472,7 @@ export function RoleDetailSheet({
                   d: cov.gap ? t("sheet.role.gapActionDesc") : t("sheet.role.noGapActionDesc"),
                 },
               ].filter((_, index) => cov.state !== "empty" || index !== 2).map((c) => (
-                <article key={c.title} className="rounded-xl border border-border/60 bg-surface-raised/40 p-4">
+                <article key={c.title} className="card-glass p-3">
                   <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{c.title}</p>
                   <p className="mt-1 font-display text-sm font-semibold">{c.s}</p>
                   <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{c.d}</p>
