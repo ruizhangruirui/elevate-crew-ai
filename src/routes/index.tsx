@@ -174,7 +174,7 @@ function StrategyBoard() {
   };
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-6">
       {/* Org overview */}
       <section className="panel relative overflow-hidden p-8">
         <div
@@ -202,7 +202,7 @@ function StrategyBoard() {
           </div>
         </div>
 
-        <div className="mt-3 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
           {directions.map((d) => {
             const s = dirStats(d.id);
             const selected = d.id === active?.id;
@@ -213,9 +213,11 @@ function StrategyBoard() {
                   selected ? "border-brand/70 shadow-[var(--glow-brand)]" : "hover:border-brand/40"
                 }`}
               >
-                <button
+                <Button
+                  variant="ghost"
                   onClick={() => setActiveId(d.id)}
-                  className="block h-full w-full p-3 text-left"
+                  aria-pressed={selected}
+                  className="block h-full w-full whitespace-normal rounded-[inherit] p-2.5 text-left"
                 >
                   <div className="flex items-center gap-1.5 text-[10px]">
                     <span className="rounded bg-surface-raised px-1.5 py-0.5 text-muted-foreground">
@@ -229,11 +231,11 @@ function StrategyBoard() {
                       {s.gap ? t("idx.criticalGapCount").replace("{count}", String(s.gap)) : t("idx.fullCoverage")}
                     </span>
                   </div>
-                  <h3 className="mt-2 font-display text-sm font-semibold leading-snug">{d.title}</h3>
-                  <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                  <h3 className="mt-1.5 break-words font-display text-sm font-semibold leading-snug">{d.title}</h3>
+                  <p className="mt-1 line-clamp-1 text-xs font-normal leading-snug text-muted-foreground">
                     {d.description}
                   </p>
-                </button>
+                </Button>
               </div>
             );
           })}
@@ -255,7 +257,7 @@ function StrategyBoard() {
             </div>
           </div>
 
-          <div className="mt-5 space-y-6">
+          <div className="mt-3 space-y-4">
           {ROLE_CONTRACT_TYPES.map((ct) => {
             const group = activeRoles.filter((r) => roleContractOf(r) === ct);
             return (
@@ -265,7 +267,7 @@ function StrategyBoard() {
               <span className="rounded bg-surface-raised px-1.5 py-0.5 text-[10px] font-normal text-muted-foreground">{group.length}</span>
             </h3>
             {group.length === 0 ? <p className="text-xs text-muted-foreground">{t("idx.ct.none")}</p> : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {group.map((role) => (
               <div key={role.id} id={`position-${role.id}`} tabIndex={-1} className={linkedRoleId === role.id ? "rounded-lg ring-2 ring-brand ring-offset-2 ring-offset-background" : ""}>
               <RoleCard
@@ -427,7 +429,7 @@ function RoleCard({
     state === "full" ? t("idx.stateFull") : state === "partial" ? t("idx.statePartial") : t("idx.stateNone");
 
   return (
-    <article className="panel group relative flex h-full flex-col p-3.5">
+    <article className="panel group relative flex h-full min-w-0 flex-col p-2.5">
       <RoleMenu role={role} orgNodes={orgNodes} onArchive={onArchive} onSaved={onSaved} />
       <div className="flex items-start justify-between gap-2">
         <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${stateStyle}`}>
@@ -438,13 +440,13 @@ function RoleCard({
         </span>
       </div>
 
-      <h3 className="mt-2.5 font-display text-sm font-semibold leading-snug">{role.title}</h3>
+      <h3 className="mt-2 break-words font-display text-sm font-semibold leading-snug">{role.title}</h3>
       {role.approval_status === "pending" && <PendingApproval role={role} onDone={onSaved} />}
-      <p className="mt-1 line-clamp-3 whitespace-pre-line text-xs leading-relaxed text-muted-foreground">
+      <p className="mt-1 line-clamp-2 whitespace-pre-line text-xs leading-snug text-muted-foreground">
         {role.description}
       </p>
 
-      <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground tabular-nums">
+      <div className="mt-2 flex flex-wrap gap-x-2 gap-y-1 text-[11px] text-muted-foreground tabular-nums">
         <span>
           {t("idx.targetLevel")} L{role.level_min}–{role.level_max}
         </span>
@@ -453,7 +455,7 @@ function RoleCard({
       </div>
 
       {teams.length > 0 && (
-        <p className="mt-2 flex items-center gap-1 truncate text-[11px] text-muted-foreground">
+        <p className="mt-1.5 flex items-center gap-1 truncate text-[11px] text-muted-foreground">
           <Building2 className="size-3 shrink-0" />
           <span className="truncate">
             {t("idx.teamsLabel")}
@@ -478,7 +480,7 @@ function RoleCard({
         </p>
       )}
 
-      <div className="mt-auto pt-3">
+      <div className="mt-auto pt-2">
         <Button size="sm" variant="outline" className="h-7 gap-1 px-2 text-xs" onClick={onOpen}>
           {t("idx.viewRoleProfile")} <ArrowUpRight className="size-3" />
         </Button>

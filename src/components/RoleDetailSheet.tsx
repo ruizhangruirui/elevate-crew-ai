@@ -31,9 +31,9 @@ import {
 
 function Fact({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-lg border border-border/60 bg-surface-raised/50 px-3 py-2">
+    <div className="min-w-0 border-l border-border/60 px-2 py-1">
       <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
-      <p className="mt-0.5 font-display text-base font-semibold tabular-nums">{value}</p>
+      <p className="mt-0.5 break-words font-display text-sm font-semibold tabular-nums">{value}</p>
     </div>
   );
 }
@@ -43,11 +43,11 @@ function TagList({ items, empty }: { items: string[]; empty?: string }) {
   empty = empty ?? t("sheet.pendingFill");
   if (!items.length) return <p className="text-xs text-muted-foreground">{empty}</p>;
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="flex flex-wrap gap-1">
       {items.map((t) => (
         <span
           key={t}
-          className="rounded-full border border-brand/40 bg-brand/10 px-2.5 py-1 text-xs text-foreground"
+          className="max-w-full break-words rounded-md border border-brand/40 bg-brand/10 px-2 py-0.5 text-xs text-foreground"
         >
           {t}
         </span>
@@ -58,9 +58,9 @@ function TagList({ items, empty }: { items: string[]; empty?: string }) {
 
 function ProfileBlock({ title, items }: { title: string; items: string[] }) {
   return (
-    <div className="rounded-xl border border-border/60 bg-surface-raised/40 p-4">
+    <div className="min-w-0 border-t border-border/60 pt-2">
       <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{title}</p>
-      <div className="mt-2">
+      <div className="mt-1.5">
         <TagList items={items} />
       </div>
     </div>
@@ -69,12 +69,12 @@ function ProfileBlock({ title, items }: { title: string; items: string[] }) {
 
 function Module({ title, actions, children }: { title: string; actions?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="panel p-5">
+    <section className="border-b border-border/60 pb-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-display text-base font-semibold">{title}</h3>
+        <h3 className="font-display text-sm font-semibold">{title}</h3>
         {actions}
       </div>
-      <div className="mt-4">{children}</div>
+      <div className="mt-2">{children}</div>
     </section>
   );
 }
@@ -168,7 +168,6 @@ export function RoleDetailSheet({
 
   if (!role || !cov) return null;
 
-  const pct = Math.min(100, Math.round((cov.filled / Math.max(1, role.target_count)) * 100));
   const risk = cov.state === "empty" ? "High" : cov.state === "partial" ? "Medium" : "Low";
   const coverageLabel =
     cov.state === "full" ? "Fully Covered" : cov.state === "partial" ? "Partially Covered" : "Not Covered";
@@ -182,7 +181,7 @@ export function RoleDetailSheet({
           <SheetDescription>{t("sheet.role.headerDesc").replace("{direction}", directionTitle)}</SheetDescription>
         </SheetHeader>
 
-        <div className="mt-6 space-y-5 pb-10">
+        <div className="mt-4 space-y-3 pb-6">
           <Module
             title={t("sheet.role.profile")}
             actions={
@@ -237,31 +236,29 @@ export function RoleDetailSheet({
                 <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
                   {role.description || t("sheet.role.noDescription")}
                 </p>
-                <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
                   <Fact label={t("sheet.role.direction")} value={directionTitle} />
                   <Fact label={t("pp.f.offerTitle")} value={role.job_title || "—"} />
                   <Fact label={t("sheet.role.targetLevel")} value={`${role.level_min}–${role.level_max}`} />
-                  <Fact label={t("sheet.role.targetCount")} value={role.target_count} />
-                  <Fact label={t("sheet.role.currentCoverage")} value={`${cov.filled}/${role.target_count}`} />
                 </div>
 
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="mt-3 grid gap-x-3 gap-y-2 sm:grid-cols-2">
                   <ProfileBlock title={t("sheet.role.domains")} items={role.domains} />
                   <ProfileBlock title={t("sheet.role.knowledge")} items={role.knowledge} />
                   <ProfileBlock title="Leadership" items={role.leadership} />
                   <ProfileBlock title={t("sheet.role.experience")} items={role.experience} />
                 </div>
 
-                <div className="mt-4">
+                <div className="mt-3">
                   <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{t("sheet.role.skillRequirements")}</p>
                   {role.skills.length ? (
-                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                    <div className="mt-1.5 grid gap-1.5 sm:grid-cols-2">
                       {role.skills.map((s) => (
                         <div
                           key={s.skill}
-                          className="flex items-center justify-between rounded-lg border border-border/60 bg-surface-raised/40 px-3 py-2 text-sm"
+                          className="flex min-w-0 items-center justify-between gap-2 rounded-md border border-border/60 bg-surface-raised/40 px-2 py-1 text-xs"
                         >
-                          <span className="text-muted-foreground">{s.skill}</span>
+                          <span className="min-w-0 break-words text-muted-foreground">{s.skill}</span>
                           <strong className="font-display">{s.level}</strong>
                         </div>
                       ))}
@@ -290,12 +287,11 @@ export function RoleDetailSheet({
               </span>
             }
           >
-            <Progress value={pct} className="h-1.5" />
-            <div className="mt-4 space-y-3">
+            <div className="space-y-2">
               {seats.map((owner, i) => (
                 <div
                   key={i}
-                  className="rounded-xl border border-border/60 bg-surface-raised/40 p-4"
+                  className="rounded-lg border border-border/60 bg-surface-raised/40 p-2.5"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <strong className="text-sm">{t("sheet.role.seat").replace("{n}", String(i + 1))}</strong>

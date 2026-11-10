@@ -1,3 +1,5 @@
+- [x] Compact position cards, direction selectors and role-profile domains/knowledge/skills; remove profile headcount and coverage counters without changing assignment or staffing rules.
+- [ ] Verify compact Positions and role profile with a real app-owned login (blocked: no signed-in app session available).
 - [x] Route existing and new position approvals to HR Director and enforce HRD-only approval handling; 22 related tests passed.
 - [ ] Verify HRD approval and assignment/sourcing through the signed-in UI (blocked: no app-owned signed-in session available).
 - [x] Add Action Center detail dialogs and direct links to the associated position, person or reference letter.
