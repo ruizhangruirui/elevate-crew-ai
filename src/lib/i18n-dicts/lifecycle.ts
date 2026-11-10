@@ -33,6 +33,7 @@ export const lifecycleDict: Dict = {
   "lc.join.date": { zh: "入职日期", en: "Join date" },
 
   "lc.archived.title": { zh: "已归档人员", en: "Archived people" },
+  "lc.archived.view": { zh: "查看详情", en: "View profile" },
   "lc.archived.count": { zh: "人", en: "" },
   "lc.archived.show": { zh: "查看已归档", en: "Show archived" },
   "lc.archived.hide": { zh: "收起", en: "Hide" },

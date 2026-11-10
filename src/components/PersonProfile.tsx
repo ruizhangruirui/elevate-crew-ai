@@ -762,7 +762,7 @@ export function PersonProfile({
               <Fact label={t("sheet.person.tenure")} value={tenureLabel(t, tenure)} />
               <Fact
                 label={t("sheet.person.status")}
-                value={person.status === "onboard" ? t("sheet.person.onboard") : t("sheet.person.candidate")}
+                value={person.archived || person.status === "left" ? t("lc.flow.eventExit") : person.status === "onboard" ? t("sheet.person.onboard") : t("sheet.person.candidate")}
                 tone={person.status === "onboard" ? "ok" : "warn"}
               />
             </div>
@@ -779,7 +779,7 @@ export function PersonProfile({
           </>
         )}
         {canHr && editing !== "basic" && <ContractFilesPanel personId={person.id} />}
-        {canHr && editing !== "basic" && (
+        {canHr && !person.archived && editing !== "basic" && (
           <div className="mt-4 flex items-center justify-end border-t border-border/40 pt-2.5">
             <ArchivePersonDialog personId={person.id} personName={person.name} onDone={() => navigate({ to: "/people" })}>
               <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-muted-foreground hover:text-danger">

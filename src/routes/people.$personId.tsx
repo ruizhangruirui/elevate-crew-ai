@@ -7,6 +7,7 @@ import { PersonProfile } from "@/components/PersonProfile";
 import { RoleDetailSheet } from "@/components/RoleDetailSheet";
 import { useI18n } from "@/lib/i18n";
 import { fetchWorkspace } from "@/lib/talent";
+import { fetchArchivedPeople } from "@/lib/lifecycle";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/people/$personId")({
@@ -36,6 +37,11 @@ function PersonPage() {
   const router = useRouter();
   const navigate = useNavigate();
   const { data } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
+  const archived = useQuery({
+    queryKey: ["archived-people"],
+    queryFn: fetchArchivedPeople,
+    enabled: !!data && !data.people.some((p) => p.id === personId),
+  });
   const [activeRoleId, setActiveRoleId] = useState<string | null>(null);
 
   // Return exactly one step: to wherever the visitor came from (list, org chart,
@@ -46,7 +52,8 @@ function PersonPage() {
     else navigate({ to: "/people" });
   };
 
-  const person = data?.people.find((p) => p.id === personId) ?? null;
+  const person = data?.people.find((p) => p.id === personId)
+    ?? archived.data?.find((p) => p.id === personId) ?? null;
   const role = person?.role_id ? (data?.roles.find((r) => r.id === person.role_id) ?? null) : null;
   const direction = role
     ? (data?.directions.find((d) => d.id === role.direction_id) ?? null)
@@ -64,8 +71,10 @@ function PersonPage() {
           <ArrowLeft className="size-4" /> {t("pp.back")}
         </Button>
 
-        {!data ? (
+        {!data || (!person && archived.isLoading) ? (
           <p className="text-sm text-muted-foreground">{t("ppl.loading")}</p>
+        ) : archived.isError && !person ? (
+          <p className="text-sm text-danger">{archived.error.message}</p>
         ) : !person ? (
           <p className="text-sm text-muted-foreground">{t("pp.notFound")}</p>
         ) : (

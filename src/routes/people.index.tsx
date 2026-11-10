@@ -16,7 +16,7 @@ function useSessionFilter(key: string, initial: string) {
   return [value, update] as const;
 }
 import { toast } from "sonner";
-import { Plus, RotateCcw, Search, Trash2 } from "lucide-react";
+import { Eye, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/lib/i18n";
 import { CONTRACTS, contractLabel, labTeamOf } from "@/lib/contract";
@@ -79,7 +79,8 @@ function PeopleBody() {
   const { data } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
   const { data: archived } = useQuery({ queryKey: ["archived-people"], queryFn: fetchArchivedPeople });
   const { data: lifecycle } = useQuery({ queryKey: ["lifecycle"], queryFn: fetchLifecycleEvents });
-  const [showArchived, setShowArchived] = useState(false);
+  const [archivedVisibility, setArchivedVisibility] = useSessionFilter("showArchived", "no");
+  const showArchived = archivedVisibility === "yes";
   const { data: orgNodes } = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
   const [query, setQuery] = useSessionFilter("query", "");
   const [labFilter, setLabFilter] = useSessionFilter("labFilter", "all");
@@ -415,7 +416,7 @@ function PeopleBody() {
       <div className="panel overflow-hidden">
         <button
           type="button"
-          onClick={() => setShowArchived((v) => !v)}
+          onClick={() => setArchivedVisibility(showArchived ? "no" : "yes")}
           className="flex w-full items-center justify-between px-6 py-4 text-left"
         >
           <span className="font-display text-sm font-semibold">
@@ -435,7 +436,14 @@ function PeopleBody() {
                 (e) => e.person_id === a.id && e.event_type === "exit",
               );
               return (
-                <div key={a.id} className="flex flex-wrap items-center gap-4 px-6 py-3">
+                <div
+                  key={a.id}
+                  onDoubleClick={(e) => {
+                    if (e.target instanceof Element && e.target.closest("button")) return;
+                    openPerson(a.id);
+                  }}
+                  className="flex cursor-pointer flex-wrap items-center gap-4 px-6 py-3 transition-colors hover:bg-surface-raised/50"
+                >
                   <div className="min-w-40 flex-1">
                     <p className="font-display text-sm font-semibold">{a.name}</p>
                     <p className="text-xs text-muted-foreground">
@@ -444,6 +452,15 @@ function PeopleBody() {
                         : "—"}
                     </p>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title={t("lc.archived.view")}
+                    aria-label={`${t("lc.archived.view")} ${a.name}`}
+                    onClick={() => openPerson(a.id)}
+                  >
+                    <Eye className="size-4" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"

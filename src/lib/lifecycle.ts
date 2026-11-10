@@ -1,4 +1,5 @@
 import { db as supabase } from "@/lib/db-client";
+import type { Person } from "@/lib/talent";
 
 export type LifecycleEvent = {
   id: string;
@@ -41,13 +42,10 @@ export async function fetchArchivedPeople() {
     .eq("archived", true)
     .order("archived_at", { ascending: false });
   if (error) throw error;
-  return (data ?? []) as unknown as {
-    id: string;
-    name: string;
-    level: number | null;
-    role_id: string | null;
-    archived_at: string | null;
-  }[];
+  return (data ?? []).map((row: Record<string, unknown>) => ({
+    ...row,
+    assessed_skills: Array.isArray(row["assessed_skills"]) ? row["assessed_skills"] : [],
+  })) as Person[];
 }
 
 export async function recordJoin(
