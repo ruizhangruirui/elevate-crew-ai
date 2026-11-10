@@ -1,7 +1,8 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Download, FileText, Trash2, Upload } from "lucide-react";
+import { Download, Eye, FileText, Trash2, Upload } from "lucide-react";
 import { db } from "@/lib/db-client";
 import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,15 @@ import { ConfirmAction } from "@/components/ConfirmAction";
 const MAX_BYTES = 10 * 1024 * 1024;
 
 type ContractFile = { id: string; file_name: string; mime_type: string | null; size_bytes: number; uploaded_by: string | null; created_at: string };
+
+function mimeOf(f: ContractFile) {
+  if (f.mime_type) return f.mime_type;
+  const ext = f.file_name.split(".").pop()?.toLowerCase();
+  if (ext === "pdf") return "application/pdf";
+  if (ext === "png") return "image/png";
+  if (ext === "jpg" || ext === "jpeg") return "image/jpeg";
+  return "application/octet-stream";
+}
 
 function toBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -61,13 +71,26 @@ export function ContractFilesPanel({ personId }: { personId: string }) {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  async function download(f: ContractFile) {
+  const [preview, setPreview] = useState<{ file: ContractFile; url: string } | null>(null);
+  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview.url); }, [preview]);
+
+  async function fileUrl(f: ContractFile): Promise<string | null> {
     const { data, error } = await (db as any).from("person_contracts").select("file_data").eq("id", f.id).single();
-    if (error || !data) { toast.error(error?.message ?? "Error"); return; }
+    if (error || !data) { toast.error(error?.message ?? "Error"); return null; }
     const bin = atob(data.file_data);
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    const url = URL.createObjectURL(new Blob([bytes], { type: f.mime_type || "application/octet-stream" }));
+    return URL.createObjectURL(new Blob([bytes], { type: mimeOf(f) }));
+  }
+
+  async function openPreview(f: ContractFile) {
+    const url = await fileUrl(f);
+    if (url) setPreview({ file: f, url });
+  }
+
+  async function download(f: ContractFile) {
+    const url = await fileUrl(f);
+    if (!url) return;
     const a = document.createElement("a");
     a.href = url; a.download = f.file_name; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -99,6 +122,9 @@ export function ContractFilesPanel({ personId }: { personId: string }) {
               <span className="hidden text-xs text-muted-foreground sm:inline">
                 {(f.size_bytes / 1024 / 1024).toFixed(1)} MB · {f.created_at.slice(0, 10)}{f.uploaded_by ? ` · ${f.uploaded_by}` : ""}
               </span>
+              <Button size="icon" variant="ghost" className="size-7" aria-label={t("cm.file.preview")} onClick={() => openPreview(f)}>
+                <Eye className="size-3.5" />
+              </Button>
               <Button size="icon" variant="ghost" className="size-7" aria-label={t("cm.file.download")} onClick={() => download(f)}>
                 <Download className="size-3.5" />
               </Button>
@@ -111,6 +137,28 @@ export function ContractFilesPanel({ personId }: { personId: string }) {
           ))}
         </ul>
       )}
+      <Dialog open={!!preview} onOpenChange={(o) => { if (!o) setPreview(null); }}>
+        <DialogContent className="max-w-5xl">
+          <DialogHeader>
+            <DialogTitle className="truncate pr-8">{preview?.file.file_name}</DialogTitle>
+          </DialogHeader>
+          {preview && (() => {
+            const mime = mimeOf(preview.file);
+            if (mime === "application/pdf")
+              return <iframe src={preview.url} title={preview.file.file_name} className="h-[75vh] w-full rounded border border-border/40" />;
+            if (mime.startsWith("image/"))
+              return <img src={preview.url} alt={preview.file.file_name} className="mx-auto max-h-[75vh] object-contain" />;
+            return (
+              <div className="space-y-3 py-6 text-center text-sm text-muted-foreground">
+                <p>{t("cm.file.noPreview")}</p>
+                <Button size="sm" variant="outline" className="gap-1.5" onClick={() => download(preview.file)}>
+                  <Download className="size-3.5" /> {t("cm.file.download")}
+                </Button>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

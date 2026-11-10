@@ -12,6 +12,8 @@ export const contractsDict: Dict = {
   "cm.file.uploaded": { zh: "合同已上传", en: "Contract uploaded" },
   "cm.file.none": { zh: "尚未上传合同", en: "No contract uploaded yet" },
   "cm.file.download": { zh: "下载", en: "Download" },
+  "cm.file.preview": { zh: "预览", en: "Preview" },
+  "cm.file.noPreview": { zh: "Word 文件无法在浏览器中直接预览，请下载查看，或上传 PDF 版本。", en: "Word files can't be previewed in the browser. Download it, or upload a PDF version." },
   "cm.file.delete": { zh: "删除", en: "Delete" },
   "cm.file.deleteTitle": { zh: "确认删除该合同文件？", en: "Delete this contract file?" },
   "cm.file.deleted": { zh: "合同文件已删除", en: "Contract file deleted" },
