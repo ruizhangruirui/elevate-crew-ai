@@ -286,6 +286,8 @@ export type Database = {
           current_company: string | null
           current_title: string | null
           cv_url: string | null
+          datalink_stage: string | null
+          datalink_updated_at: string | null
           email: string | null
           id: string
           linkedin_url: string | null
@@ -313,6 +315,8 @@ export type Database = {
           current_company?: string | null
           current_title?: string | null
           cv_url?: string | null
+          datalink_stage?: string | null
+          datalink_updated_at?: string | null
           email?: string | null
           id?: string
           linkedin_url?: string | null
@@ -340,6 +344,8 @@ export type Database = {
           current_company?: string | null
           current_title?: string | null
           cv_url?: string | null
+          datalink_stage?: string | null
+          datalink_updated_at?: string | null
           email?: string | null
           id?: string
           linkedin_url?: string | null

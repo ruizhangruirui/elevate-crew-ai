@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { admin, getSessionUser, managerScope, type AppUser } from "./auth.server";
 import { onboardingDateSchema } from "./candidate-onboarding";
+import { isDatalinkStage } from "./datalink";
 import { missingRoleOwners, missingRoleOwnersOnUpdate } from "./role-owners";
 import { isOwnerRole, canApprovePositions, positionApprovalAction } from "./app-roles";
 
@@ -102,6 +103,8 @@ export const dbQuery = createServerFn({ method: "POST" })
       for (const row of Array.isArray(payload) ? payload : [payload]) {
         if (row?.onboarding_on !== undefined && !onboardingDateSchema.safeParse(row.onboarding_on).success)
           return fail("Invalid start date", "400");
+        if (row?.datalink_stage !== undefined && row.datalink_stage !== null && !isDatalinkStage(row.datalink_stage))
+          return fail("Invalid Datalink stage", "400");
       }
     }
 

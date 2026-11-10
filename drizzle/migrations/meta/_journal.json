@@ -211,6 +211,13 @@
       "when": 1794316154137,
       "tag": "0029_people_contracts",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1794323765649,
+      "tag": "0030_candidates_datalink_stage",
+      "breakpoints": true
     }
   ]
 }
