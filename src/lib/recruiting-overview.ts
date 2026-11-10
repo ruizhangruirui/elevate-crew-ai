@@ -21,7 +21,7 @@ export function overviewCandidates<T extends OverviewCandidate>(
   const roleById = new Map(roles.map((role) => [role.id, role]));
   return candidates.filter((candidate) => {
     const role = roleById.get(candidate.role_id);
-    if (!role || !["offer", "to_onboard"].includes(candidate.outcome)) return false;
+    if (!role || !["offer", "offer_accepted", "to_onboard"].includes(candidate.outcome)) return false;
     if (status !== "all" && candidate.outcome !== status) return false;
     return team === "all" || teamForRole(role.org_node_id, nodes) === team;
   });

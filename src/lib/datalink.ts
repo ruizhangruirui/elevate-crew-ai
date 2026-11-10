@@ -17,7 +17,7 @@ export const isDatalinkStage = (v: unknown): v is DatalinkStage =>
   typeof v === "string" && (DATALINK_STAGES as readonly string[]).includes(v);
 
 /** Datalink applies once the candidate has accepted the offer. */
-export const needsDatalink = (outcome: string) => outcome === "offer" || outcome === "to_onboard";
+export const needsDatalink = (outcome: string) => outcome === "offer_accepted" || outcome === "to_onboard";
 
 /** 0-based index of the current stage, -1 when not started. */
 export const datalinkStep = (stage: string | null | undefined) =>

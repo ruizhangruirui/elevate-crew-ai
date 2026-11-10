@@ -4,7 +4,8 @@ import { datalinkStep, isDatalinkStage, needsDatalink } from "./datalink";
 
 describe("datalink", () => {
   it("prompts only after offer accepted", () => {
-    strictEqual(needsDatalink("offer"), true);
+    strictEqual(needsDatalink("offer_accepted"), true);
+    strictEqual(needsDatalink("offer"), false);
     strictEqual(needsDatalink("to_onboard"), true);
     strictEqual(needsDatalink("active"), false);
   });

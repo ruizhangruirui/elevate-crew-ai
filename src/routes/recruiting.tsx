@@ -53,9 +53,9 @@ export const Route = createFileRoute("/recruiting")({
 });
 
 const DEFAULT_STAGES = ["CV Screen", "Phone Interview", "Hiring Manager Interview", "Technical Interview", "Final Interview", "Reference Check", "Offer"];
-const OUTCOMES = ["active", "on_hold", "offer", "to_onboard", "hired", "rejected", "withdrawn"] as const;
+const OUTCOMES = ["active", "on_hold", "offer", "offer_accepted", "to_onboard", "hired", "rejected", "withdrawn"] as const;
 const FILTERS = {
-  active: ["active", "on_hold", "offer"],
+  active: ["active", "on_hold", "offer", "offer_accepted"],
   to_onboard: ["to_onboard"],
   hired: ["hired"],
   closed: ["rejected", "withdrawn"],
@@ -73,6 +73,7 @@ const OUTCOME_TONE: Record<string, string> = {
   active: "bg-brand/12 text-brand",
   on_hold: "bg-muted text-muted-foreground",
   offer: "bg-warn/12 text-warn",
+  offer_accepted: "bg-ok/12 text-ok",
   to_onboard: "bg-ok/12 text-ok",
   hired: "bg-ok/20 text-ok",
   rejected: "bg-danger/10 text-danger",
@@ -331,7 +332,7 @@ function RecruitingBody() {
           </div>
         </div>
         {overviewOpen && <div className="flex flex-wrap gap-1 border-b border-border/60 px-4 py-2">
-          {["all", "offer", "to_onboard"].map((status) => <Button key={status} size="sm" variant="ghost" aria-pressed={overviewStatus === status} onClick={() => setOverviewStatus(status)} className={`h-7 gap-2 px-2.5 text-xs ${overviewStatus === status ? "bg-brand/12 text-brand" : "text-muted-foreground"}`}>
+          {["all", "offer", "offer_accepted", "to_onboard"].map((status) => <Button key={status} size="sm" variant="ghost" aria-pressed={overviewStatus === status} onClick={() => setOverviewStatus(status)} className={`h-7 gap-2 px-2.5 text-xs ${overviewStatus === status ? "bg-brand/12 text-brand" : "text-muted-foreground"}`}>
             {t(`rec.overview.${status}`)}<span className="tabular-nums">{overviewBase.filter((c) => status === "all" || c.outcome === status).length}</span>
           </Button>)}
         </div>}
