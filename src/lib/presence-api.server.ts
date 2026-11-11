@@ -235,15 +235,19 @@ export function filterSince<T extends { updated_at: string | null }>(items: T[],
   return items.filter((i) => !i.updated_at || Date.parse(i.updated_at) > t);
 }
 
-/**
- * Keep rows last changed at or before the snapshot timestamp. Rows written
- * while a snapshot is being fetched are excluded from it and picked up by the
- * next sync, so concurrent writes cannot shift pages mid-snapshot.
+/** Content version, not a historical timestamp or a retained DB transaction.
+ * Includes BOTH source tables so inferred supervisor/hierarchy changes invalidate
+ * every endpoint. Canonical field order makes cloud/pg JSON ordering irrelevant.
  */
-export function filterAsOf<T extends { updated_at: string | null }>(items: T[], asOf: string): T[] {
-  const t = Date.parse(asOf);
-  if (Number.isNaN(t)) return items;
-  return items.filter((i) => !i.updated_at || Date.parse(i.updated_at) <= t);
+export async function presenceVersion(rows: { people: PersonRow[]; nodes: NodeRow[] }): Promise<string> {
+  const canonical = (items: object[], fields: readonly string[]) => items
+    .map((item) => fields.map((field) => (item as Record<string, unknown>)[field] ?? null))
+    .sort((a, b) => String(a[0]).localeCompare(String(b[0])));
+  const bytes = new TextEncoder().encode(JSON.stringify([
+    canonical(rows.people, EMPLOYEE_FIELDS), canonical(rows.nodes, ORG_NODE_FIELDS),
+  ]));
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return `v1-${Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("")}`;
 }
 
 /** Next cursor = newest timestamp in the result, so a follow-up call misses nothing returned here. */
@@ -265,15 +269,15 @@ export function nextCursor(items: { updated_at: string | null }[], fallback: str
 type DbClient = { from: (table: string) => any };
 
 export async function loadPresenceRows(db: DbClient): Promise<{ people: PersonRow[]; nodes: NodeRow[] }> {
-  // Stable explicit ordering: pagination correctness depends on a deterministic
-  // row order. Both adapters (cloud client and pg Builder) support .order().
-  const [peopleRes, nodesRes] = await Promise.all([
-    db.from("people").select(EMPLOYEE_FIELDS.join(",")).order("id", { ascending: true }),
-    db.from("org_nodes").select(ORG_NODE_FIELDS.join(",")).order("id", { ascending: true }),
-  ]);
-  if (peopleRes.error) throw new Error(peopleRes.error.message);
-  if (nodesRes.error) throw new Error(nodesRes.error.message);
-  return { people: (peopleRes.data ?? []) as PersonRow[], nodes: (nodesRes.data ?? []) as NodeRow[] };
+  // ONE aggregate row from ONE database statement. Never fall back to two
+  // independent reads or independently paginated table scans.
+  const result = await db.from("presence_source_rows").select("people,nodes");
+  if (result.error) throw new Error(result.error.message);
+  const row = result.data?.[0];
+  if (result.data?.length !== 1 || !Array.isArray(row?.people) || !Array.isArray(row?.nodes)) {
+    throw new Error("Invalid Presence source result");
+  }
+  return { people: row.people as PersonRow[], nodes: row.nodes as NodeRow[] };
 }
 
 // ---------------------------------------------------------------------------
@@ -325,20 +329,12 @@ async function defaultLoadRows(): Promise<{ people: PersonRow[]; nodes: NodeRow[
 /**
  * Shared handler for the four read-only presence endpoints:
  * authenticate (fail closed) → rate limit → load rows → build the allowlisted
- * projection → snapshot/incremental filter → paginate → log → respond.
- *
- * Full-snapshot consistency contract (no schema changes required):
- * - Rows are ordered by id, so pages are deterministic.
- * - Every response carries `snapshot.id` (an as-of timestamp). Page 1 is
- *   fetched without `as_of`; the server stamps the snapshot and only includes
- *   rows with updated_at <= that timestamp. The client MUST pass
- *   `&as_of=<snapshot.id>` on every subsequent page.
- * - Records written while a snapshot is being fetched are excluded from it
- *   and appear in the next sync — concurrent writes cannot skip or duplicate
- *   rows within one snapshot.
- * - The client MUST verify all pages share the same snapshot.id and MUST
- *   discard the entire snapshot if any page fails or the id changes; a
- *   partial snapshot must never be applied.
+ * projection → content-version check → incremental filter → paginate.
+ * Each read is statement-consistent; pagination is optimistic, not a historical
+ * snapshot. Echo snapshot.id in `as_of` on later pages AND across endpoints.
+ * Changed data returns 409 (no data); invalid/missing continuation returns 400.
+ * Discard ALL staged pages on any failure and restart. Commit only a complete
+ * version-matched dataset; under continuous writes retries may not complete.
  */
 export async function respondPresence(
   request: Request,
@@ -365,30 +361,33 @@ export async function respondPresence(
     let items = build(rows);
 
     const url = new URL(request.url);
+    const { limit, offset } = parsePagination(url);
+    const requestedVersion = url.searchParams.get("as_of");
+    if ((offset > 0 && !requestedVersion) || (requestedVersion !== null && !/^v1-[a-f0-9]{64}$/.test(requestedVersion))) {
+      logPresenceAccess(endpoint, 400, request);
+      return Response.json({ error: "Echo snapshot.id in as_of; restart from offset 0", restart_required: true }, { status: 400 });
+    }
+    const snapshotId = await presenceVersion(rows);
+    if (requestedVersion && requestedVersion !== snapshotId) {
+      logPresenceAccess(endpoint, 409, request);
+      return Response.json({ error: "Source changed; discard staged pages and restart", restart_required: true }, { status: 409 });
+    }
     let cursor: string | null = null;
-    let snapshotId: string | null = null;
     if (opts?.incremental) {
       const since = url.searchParams.get("since");
       const now = new Date().toISOString();
       cursor = nextCursor(items, since && !Number.isNaN(Date.parse(since)) ? since : now);
       items = filterSince(items, since);
-    } else {
-      // As-of snapshot: client echoes the snapshot id from page 1 on later
-      // pages; absent or malformed values start a fresh snapshot stamped now.
-      const asOfParam = url.searchParams.get("as_of");
-      snapshotId = asOfParam && !Number.isNaN(Date.parse(asOfParam)) ? new Date(Date.parse(asOfParam)).toISOString() : new Date().toISOString();
-      items = filterAsOf(items, snapshotId);
     }
 
-    const { limit, offset } = parsePagination(url);
     const { page, total, next_offset } = paginate(items, limit, offset);
 
     logPresenceAccess(endpoint, 200, request);
     return Response.json({
       data: page,
       page: { limit, offset, total, next_offset },
-      ...(cursor ? { cursor } : {}),
-      ...(snapshotId ? { snapshot: { id: snapshotId, as_of: snapshotId } } : {}),
+      ...(cursor && next_offset === null ? { cursor } : {}),
+      snapshot: { id: snapshotId, consistency: "content-version-checked" },
       // Hard deletes are not tracked; consumers should periodically re-sync
       // a full snapshot (call without `since`) to detect removals.
       sync_mode: opts?.incremental ? "incremental-with-full-snapshot-fallback" : "full-snapshot",

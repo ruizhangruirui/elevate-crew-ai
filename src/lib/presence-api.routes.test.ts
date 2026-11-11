@@ -9,6 +9,8 @@ import {
   buildManagers,
   buildOrganization,
   createRateLimiter,
+  loadPresenceRows,
+  presenceVersion,
   respondPresence,
   PRESENCE_KEY_HEADER,
   type PresenceDeps,
@@ -192,27 +194,102 @@ describe("presence route handler — pagination and snapshots", () => {
     strictEqual(seen.size, PEOPLE.length); // nothing skipped
   });
 
-  it("excludes rows written after the snapshot timestamp", async () => {
+  it("rejects concurrent inserts instead of silently shifting pages", async () => {
     const deps = makeDeps();
     const page1 = await json(await respondPresence(req("/api/integrations/presence/employees?limit=2", TEST_KEY), "employees", employeesBuild, undefined, deps));
     const asOf: string = page1.snapshot.id;
     // Simulate a concurrent write: a new employee appears mid-snapshot.
     const grown = [...PEOPLE, { id: "p-new", name: "New Person", org_node_id: "team-1", supervisor_id: null, is_leader: false, archived: false, status: "active", company_email: null, updated_at: new Date(Date.now() + 60_000).toISOString() }];
     const deps2 = makeDeps({ loadRows: async () => ({ people: grown, nodes: NODES }) });
-    const page2 = await json(
-      await respondPresence(req(`/api/integrations/presence/employees?limit=2&offset=2&as_of=${encodeURIComponent(asOf)}`, TEST_KEY), "employees", employeesBuild, undefined, deps2),
-    );
-    strictEqual(page2.snapshot.id, asOf);
-    const allIds = [...page1.data, ...page2.data].map((r: any) => r.id);
-    strictEqual(allIds.includes("p-new"), false); // late write excluded from this snapshot
+    const res = await respondPresence(req(`/api/integrations/presence/employees?limit=2&offset=2&as_of=${encodeURIComponent(asOf)}`, TEST_KEY), "employees", employeesBuild, undefined, deps2);
+    strictEqual(res.status, 409);
+    strictEqual((await json(res)).data, undefined);
   });
 
-  it("starts a fresh snapshot when as_of is malformed", async () => {
+  it("rejects malformed as_of instead of silently starting a new version", async () => {
     const res = await respondPresence(req("/api/integrations/presence/employees?as_of=not-a-date", TEST_KEY), "employees", employeesBuild, undefined, makeDeps());
     const body = await json(res);
-    strictEqual(res.status, 200);
-    ok(body.snapshot.id !== "not-a-date");
-    strictEqual(Number.isNaN(Date.parse(body.snapshot.id)), false);
+    strictEqual(res.status, 400);
+    strictEqual(body.restart_required, true);
+    strictEqual(body.data, undefined);
+  });
+
+  // Updating an ALREADY RETURNED employee used to shrink the result and skip
+  // p-lead on page 2. Updating a not-yet-returned employee also lost that row.
+  for (const id of ["p-archived", "p-member"]) {
+    it(`rejects an existing employee update between pages (${id}) and restarts completely`, async () => {
+      let current = PEOPLE.map((p) => ({ ...p }));
+      const deps = makeDeps({ loadRows: async () => ({ people: current, nodes: NODES }) });
+      const first = await json(await respondPresence(req("/api/integrations/presence/employees?limit=2", TEST_KEY), "employees", employeesBuild, undefined, deps));
+      current = current.map((p) => p.id === id ? { ...p, name: "Updated synthetic name", updated_at: new Date(Date.now() + 60_000).toISOString() } : p);
+      const res = await respondPresence(req(`/api/integrations/presence/employees?limit=2&offset=2&as_of=${first.snapshot.id}`, TEST_KEY), "employees", employeesBuild, undefined, deps);
+      strictEqual(res.status, 409);
+      const failure = await json(res);
+      strictEqual(failure.data, undefined);
+      strictEqual(failure.restart_required, true);
+      // Restart includes every employee, even a timestamp ahead of the server clock.
+      const restarted = await json(await respondPresence(req("/api/integrations/presence/employees?limit=2", TEST_KEY), "employees", employeesBuild, undefined, deps));
+      const last = await json(await respondPresence(req(`/api/integrations/presence/employees?limit=2&offset=2&as_of=${restarted.snapshot.id}`, TEST_KEY), "employees", employeesBuild, undefined, deps));
+      deepStrictEqual([...restarted.data, ...last.data].map((p: any) => p.id), ["p-archived", "p-explicit", "p-lead", "p-member"]);
+      strictEqual([...restarted.data, ...last.data].find((p: any) => p.id === id).name, "Updated synthetic name");
+    });
+  }
+
+  const mutations: { name: string; change: (rows: Rows) => Rows }[] = [
+    { name: "employee archive", change: (r) => ({ ...r, people: r.people.map((p) => p.id === "p-member" ? { ...p, archived: true, status: "left" } : p) }) },
+    { name: "physical deletion", change: (r) => ({ ...r, people: r.people.filter((p) => p.id !== "p-archived") }) },
+    { name: "leader reassignment without member timestamp changes", change: (r) => ({ ...r, people: r.people.map((p) => ({ ...p, is_leader: p.id === "p-member" })) }) },
+    { name: "explicit supervisor change", change: (r) => ({ ...r, people: r.people.map((p) => p.id === "p-explicit" ? { ...p, supervisor_id: "p-member" } : p) }) },
+    { name: "organization parent change", change: (r) => ({ ...r, nodes: r.nodes.map((n) => n.id === "team-1" ? { ...n, parent_id: null } : n) }) },
+    { name: "organization archive", change: (r) => ({ ...r, nodes: r.nodes.map((n) => n.id === "team-1" ? { ...n, archived: true } : n) }) },
+    { name: "organization insert", change: (r) => ({ ...r, nodes: [...r.nodes, { ...NODES[0], id: "lab-new" }] }) },
+  ];
+  for (const mutation of mutations) {
+    it(`invalidates every endpoint after ${mutation.name}`, async () => {
+      const original = { people: PEOPLE, nodes: NODES };
+      const first = await json(await respondPresence(req("/api/integrations/presence/employees?limit=2", TEST_KEY), "employees", employeesBuild, undefined, makeDeps()));
+      const deps = makeDeps({ loadRows: async () => mutation.change(original) });
+      for (const [endpoint, builder, opts] of [
+        ["employees", employeesBuild, undefined], ["organization", orgBuild, undefined],
+        ["managers", managersBuild, undefined], ["changes", employeesBuild, { incremental: true }],
+      ] as const) {
+        const response = await respondPresence(req(`/api/integrations/presence/${endpoint}?as_of=${first.snapshot.id}`, TEST_KEY), endpoint, builder, opts, deps);
+        strictEqual(response.status, 409);
+        strictEqual((await json(response)).data, undefined);
+      }
+    });
+  }
+
+  it("requires a version for nonzero offsets", async () => {
+    const response = await respondPresence(req("/api/integrations/presence/employees?offset=2", TEST_KEY), "employees", employeesBuild, undefined, makeDeps());
+    strictEqual(response.status, 400);
+  });
+
+  it("uses one version across employees, organization, managers and changes", async () => {
+    const deps = makeDeps();
+    const first = await json(await respondPresence(req("/api/integrations/presence/employees", TEST_KEY), "employees", employeesBuild, undefined, deps));
+    for (const [endpoint, builder, opts] of [
+      ["organization", orgBuild, undefined], ["managers", managersBuild, undefined],
+      ["changes", employeesBuild, { incremental: true }],
+    ] as const) {
+      const res = await respondPresence(req(`/api/integrations/presence/${endpoint}?as_of=${first.snapshot.id}`, TEST_KEY), endpoint, builder, opts, deps);
+      strictEqual(res.status, 200);
+      strictEqual((await json(res)).snapshot.id, first.snapshot.id);
+    }
+  });
+
+  it("canonicalizes source order and field order across adapters", async () => {
+    const original = { people: PEOPLE, nodes: NODES };
+    const reversed = { people: [...PEOPLE].reverse().map((p) => Object.fromEntries(Object.entries(p).reverse())), nodes: [...NODES].reverse() };
+    strictEqual(await presenceVersion(original), await presenceVersion(reversed as Rows));
+  });
+
+  it("withholds incremental cursor until the last version-checked page", async () => {
+    const deps = makeDeps();
+    const first = await json(await respondPresence(req("/api/integrations/presence/changes?limit=2&since=2026-01-01", TEST_KEY), "changes", employeesBuild, { incremental: true }, deps));
+    strictEqual(first.cursor, undefined);
+    const last = await json(await respondPresence(req(`/api/integrations/presence/changes?limit=2&offset=2&since=2026-01-01&as_of=${first.snapshot.id}`, TEST_KEY), "changes", employeesBuild, { incremental: true }, deps));
+    strictEqual(last.cursor, "2026-02-04T00:00:00.000Z");
   });
 
   it("sorts employees by id for deterministic snapshots", async () => {
@@ -220,6 +297,35 @@ describe("presence route handler — pagination and snapshots", () => {
     const body = await json(res);
     const ids = body.data.map((r: any) => r.id);
     deepStrictEqual(ids, [...ids].sort((a, b) => a.localeCompare(b)));
+  });
+});
+
+describe("presence single-statement source loader", () => {
+  it("loads over 1000 employees via one aggregate row and one SELECT", async () => {
+    const people = Array.from({ length: 1501 }, (_, i) => ({ ...PEOPLE[0], id: `synthetic-${i}` }));
+    const calls: string[] = [];
+    const rows = await loadPresenceRows({ from: (table) => {
+      calls.push(table);
+      return { select: async (columns: string) => {
+        calls.push(columns);
+        return { data: [{ people, nodes: NODES }], error: null };
+      } };
+    } });
+    deepStrictEqual(calls, ["presence_source_rows", "people,nodes"]);
+    strictEqual(rows.people.length, 1501);
+    deepStrictEqual(rows.nodes, NODES);
+  });
+
+  it("fails closed if the source view is missing without separate-read fallback", async () => {
+    let calls = 0;
+    const deps = makeDeps({ loadRows: () => loadPresenceRows({ from: () => {
+      calls++;
+      return { select: async () => ({ data: null, error: { message: "missing source view" } }) };
+    } }) });
+    const res = await respondPresence(req("/api/integrations/presence/employees", TEST_KEY), "employees", employeesBuild, undefined, deps);
+    strictEqual(res.status, 500);
+    strictEqual(calls, 1);
+    strictEqual((await json(res)).data, undefined);
   });
 });
 

@@ -1,0 +1,2 @@
+# Integration architecture
+- Presence reads both allowlisted tables through one privileged aggregate SQL view and rejects mismatched content versions across pages/endpoints; separate reads and timestamp cutoffs cannot guarantee complete syncs.
