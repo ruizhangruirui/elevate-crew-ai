@@ -20,6 +20,10 @@ import { Route as RecruitingRouteImport } from './routes/recruiting'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as PeopleIndexRouteImport } from './routes/people.index'
 import { Route as PeoplePersonIdRouteImport } from './routes/people.$personId'
+import { Route as ApiIntegrationsPresenceChangesRouteImport } from './routes/api/integrations/presence/changes'
+import { Route as ApiIntegrationsPresenceEmployeesRouteImport } from './routes/api/integrations/presence/employees'
+import { Route as ApiIntegrationsPresenceManagersRouteImport } from './routes/api/integrations/presence/managers'
+import { Route as ApiIntegrationsPresenceOrganizationRouteImport } from './routes/api/integrations/presence/organization'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -76,6 +80,30 @@ const PeoplePersonIdRoute = PeoplePersonIdRouteImport.update({
   path: '/people/$personId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiIntegrationsPresenceChangesRoute =
+  ApiIntegrationsPresenceChangesRouteImport.update({
+    id: '/api/integrations/presence/changes',
+    path: '/api/integrations/presence/changes',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiIntegrationsPresenceEmployeesRoute =
+  ApiIntegrationsPresenceEmployeesRouteImport.update({
+    id: '/api/integrations/presence/employees',
+    path: '/api/integrations/presence/employees',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiIntegrationsPresenceManagersRoute =
+  ApiIntegrationsPresenceManagersRouteImport.update({
+    id: '/api/integrations/presence/managers',
+    path: '/api/integrations/presence/managers',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiIntegrationsPresenceOrganizationRoute =
+  ApiIntegrationsPresenceOrganizationRouteImport.update({
+    id: '/api/integrations/presence/organization',
+    path: '/api/integrations/presence/organization',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -89,6 +117,10 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/people/$personId': typeof PeoplePersonIdRoute
   '/people/': typeof PeopleIndexRoute
+  '/api/integrations/presence/changes': typeof ApiIntegrationsPresenceChangesRoute
+  '/api/integrations/presence/employees': typeof ApiIntegrationsPresenceEmployeesRoute
+  '/api/integrations/presence/managers': typeof ApiIntegrationsPresenceManagersRoute
+  '/api/integrations/presence/organization': typeof ApiIntegrationsPresenceOrganizationRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -102,6 +134,10 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/people/$personId': typeof PeoplePersonIdRoute
   '/people': typeof PeopleIndexRoute
+  '/api/integrations/presence/changes': typeof ApiIntegrationsPresenceChangesRoute
+  '/api/integrations/presence/employees': typeof ApiIntegrationsPresenceEmployeesRoute
+  '/api/integrations/presence/managers': typeof ApiIntegrationsPresenceManagersRoute
+  '/api/integrations/presence/organization': typeof ApiIntegrationsPresenceOrganizationRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -116,6 +152,10 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/people/$personId': typeof PeoplePersonIdRoute
   '/people/': typeof PeopleIndexRoute
+  '/api/integrations/presence/changes': typeof ApiIntegrationsPresenceChangesRoute
+  '/api/integrations/presence/employees': typeof ApiIntegrationsPresenceEmployeesRoute
+  '/api/integrations/presence/managers': typeof ApiIntegrationsPresenceManagersRoute
+  '/api/integrations/presence/organization': typeof ApiIntegrationsPresenceOrganizationRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -131,6 +171,10 @@ export interface FileRouteTypes {
     | '/settings'
     | '/people/$personId'
     | '/people/'
+    | '/api/integrations/presence/changes'
+    | '/api/integrations/presence/employees'
+    | '/api/integrations/presence/managers'
+    | '/api/integrations/presence/organization'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -144,6 +188,10 @@ export interface FileRouteTypes {
     | '/settings'
     | '/people/$personId'
     | '/people'
+    | '/api/integrations/presence/changes'
+    | '/api/integrations/presence/employees'
+    | '/api/integrations/presence/managers'
+    | '/api/integrations/presence/organization'
   id:
     | '__root__'
     | '/'
@@ -157,6 +205,10 @@ export interface FileRouteTypes {
     | '/settings'
     | '/people/$personId'
     | '/people/'
+    | '/api/integrations/presence/changes'
+    | '/api/integrations/presence/employees'
+    | '/api/integrations/presence/managers'
+    | '/api/integrations/presence/organization'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -171,6 +223,10 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   PeoplePersonIdRoute: typeof PeoplePersonIdRoute
   PeopleIndexRoute: typeof PeopleIndexRoute
+  ApiIntegrationsPresenceChangesRoute: typeof ApiIntegrationsPresenceChangesRoute
+  ApiIntegrationsPresenceEmployeesRoute: typeof ApiIntegrationsPresenceEmployeesRoute
+  ApiIntegrationsPresenceManagersRoute: typeof ApiIntegrationsPresenceManagersRoute
+  ApiIntegrationsPresenceOrganizationRoute: typeof ApiIntegrationsPresenceOrganizationRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -252,6 +308,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PeoplePersonIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/integrations/presence/changes': {
+      id: '/api/integrations/presence/changes'
+      path: '/api/integrations/presence/changes'
+      fullPath: '/api/integrations/presence/changes'
+      preLoaderRoute: typeof ApiIntegrationsPresenceChangesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/integrations/presence/employees': {
+      id: '/api/integrations/presence/employees'
+      path: '/api/integrations/presence/employees'
+      fullPath: '/api/integrations/presence/employees'
+      preLoaderRoute: typeof ApiIntegrationsPresenceEmployeesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/integrations/presence/managers': {
+      id: '/api/integrations/presence/managers'
+      path: '/api/integrations/presence/managers'
+      fullPath: '/api/integrations/presence/managers'
+      preLoaderRoute: typeof ApiIntegrationsPresenceManagersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/integrations/presence/organization': {
+      id: '/api/integrations/presence/organization'
+      path: '/api/integrations/presence/organization'
+      fullPath: '/api/integrations/presence/organization'
+      preLoaderRoute: typeof ApiIntegrationsPresenceOrganizationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -267,6 +351,11 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   PeoplePersonIdRoute: PeoplePersonIdRoute,
   PeopleIndexRoute: PeopleIndexRoute,
+  ApiIntegrationsPresenceChangesRoute: ApiIntegrationsPresenceChangesRoute,
+  ApiIntegrationsPresenceEmployeesRoute: ApiIntegrationsPresenceEmployeesRoute,
+  ApiIntegrationsPresenceManagersRoute: ApiIntegrationsPresenceManagersRoute,
+  ApiIntegrationsPresenceOrganizationRoute:
+    ApiIntegrationsPresenceOrganizationRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
