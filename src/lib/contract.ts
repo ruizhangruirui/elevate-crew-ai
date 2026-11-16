@@ -78,6 +78,26 @@ export function fixedTermFields(
   return { fixed_term: true, contract_end_on: endOn };
 }
 
+/** Whole months between two dates (start → end), null when either is missing/invalid. */
+export function monthsBetween(start?: string | null, end?: string | null): number | null {
+  if (!start || !end) return null;
+  const s = new Date(start);
+  const e = new Date(end);
+  if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return null;
+  const m = (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth()) - (e.getDate() < s.getDate() ? 1 : 0);
+  return Math.max(0, m);
+}
+
+/** Contract duration label, e.g. "6 个月" / "1 年 6 个月" ("6m" / "1y 6m"). */
+export function durationLabel(t: (k: string) => string, months: number | null): string {
+  if (months == null) return "—";
+  const y = Math.floor(months / 12);
+  const m = months % 12;
+  if (y > 0 && m > 0) return t("cm.dur.ym").replace("{y}", String(y)).replace("{m}", String(m));
+  if (y > 0) return t("cm.dur.y").replace("{y}", String(y));
+  return t("cm.dur.m").replace("{m}", String(m));
+}
+
 /** Whole days from today until the date (negative when past). */
 export function daysUntil(date: string, today = new Date()): number {
   const d = new Date(`${date}T00:00:00`);

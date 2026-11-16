@@ -8,16 +8,16 @@ import { useI18n } from "@/lib/i18n";
 import { fetchWorkspace } from "@/lib/talent";
 import { fetchOrgNodes } from "@/lib/org-tree";
 import { formatDate } from "@/lib/dates";
-import { allowsFixedTerm, contractLabel, daysUntil, labTeamOf, PERIPHERAL_CONTRACTS } from "@/lib/contract";
+import { allowsFixedTerm, contractLabel, daysUntil, durationLabel, labTeamOf, monthsBetween, PERIPHERAL_CONTRACTS } from "@/lib/contract";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/contracts")({
   head: () => ({
     meta: [
-      { title: "Contract Monitor · Talent Management" },
+      { title: "Contract Tracker · Talent Management" },
       { name: "description", content: "Track fixed-term contract end dates for leased staff and interns." },
-      { property: "og:title", content: "Contract Monitor · Talent Management" },
+      { property: "og:title", content: "Contract Tracker · Talent Management" },
       { property: "og:description", content: "Track fixed-term contract end dates for leased staff and interns." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -117,6 +117,8 @@ function ContractsBody() {
                 <th className="py-2 pr-3 font-medium">{t("cm.col.person")}</th>
                 <th className="py-2 pr-3 font-medium">{t("cm.col.labTeam")}</th>
                 <th className="py-2 pr-3 font-medium">{t("cm.col.contract")}</th>
+                <th className="py-2 pr-3 font-medium">{t("cm.col.start")}</th>
+                <th className="py-2 pr-3 font-medium">{t("cm.col.duration")}</th>
                 <th className="py-2 pr-3 font-medium">{t("cm.col.end")}</th>
                 <th className="py-2 pr-3 font-medium">{t("cm.col.left")}</th>
               </tr>
@@ -131,6 +133,8 @@ function ContractsBody() {
                   <td className="py-2 pr-3 font-medium">{p.name}{p.staff_id && <span className="ml-1.5 text-xs text-muted-foreground">{p.staff_id}</span>}</td>
                   <td className="py-2 pr-3 text-muted-foreground">{[l?.name, team?.name].filter(Boolean).join(" / ") || "—"}</td>
                   <td className="py-2 pr-3">{contractLabel(t, p.contract_type)}</td>
+                  <td className="py-2 pr-3">{formatDate(p.hire_date)}</td>
+                  <td className="py-2 pr-3">{durationLabel(t, monthsBetween(p.hire_date, p.contract_end_on))}</td>
                   <td className="py-2 pr-3">{formatDate(p.contract_end_on)}</td>
                   <td className="py-2 pr-3">
                     <span className={`rounded-md border px-2 py-0.5 text-xs ${TONE[st]}`}>

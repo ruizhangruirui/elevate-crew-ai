@@ -1,8 +1,8 @@
 import type { Dict } from "../i18n-types";
 
 export const contractsDict: Dict = {
-  "nav.contracts": { zh: "合同监控", en: "Contract Monitor" },
-  "cm.title": { zh: "合同监控", en: "Contract Monitor" },
+  "nav.contracts": { zh: "合同跟踪", en: "Contract Tracker" },
+  "cm.title": { zh: "合同跟踪", en: "Contract Tracker" },
   "cm.fixedTerm": { zh: "固定期限合同", en: "Fixed-term contract" },
   "cm.endDate": { zh: "合同截止日期", en: "Contract end date" },
   "cm.err.endDate": { zh: "固定期限合同需填写合同截止日期", en: "Enter the contract end date for a fixed-term contract" },
@@ -24,9 +24,14 @@ export const contractsDict: Dict = {
   "cm.col.person": { zh: "姓名", en: "Name" },
   "cm.col.labTeam": { zh: "Lab / Team", en: "Lab / Team" },
   "cm.col.contract": { zh: "合同类型", en: "Contract type" },
+  "cm.col.start": { zh: "起始日期", en: "Start date" },
+  "cm.col.duration": { zh: "合同期限", en: "Duration" },
   "cm.col.end": { zh: "截止日期", en: "End date" },
   "cm.col.left": { zh: "剩余", en: "Remaining" },
   "cm.days": { zh: "{n} 天", en: "{n} days" },
+  "cm.dur.ym": { zh: "{y} 年 {m} 个月", en: "{y}y {m}m" },
+  "cm.dur.y": { zh: "{y} 年", en: "{y}y" },
+  "cm.dur.m": { zh: "{m} 个月", en: "{m}m" },
   "cm.st.expired": { zh: "已过期", en: "Expired" },
   "cm.st.30": { zh: "30 天内到期", en: "Ends within 30 days" },
   "cm.st.90": { zh: "90 天内到期", en: "Ends within 90 days" },

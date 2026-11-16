@@ -46,7 +46,7 @@ function PersonPage() {
   const [activeRoleId, setActiveRoleId] = useState<string | null>(null);
 
   // Return exactly one step: to wherever the visitor came from (list, org chart,
-  // contract monitor...). Only fall back to the people list when the profile was
+  // contract tracker...). Only fall back to the people list when the profile was
   // opened directly and there is no previous in-app page.
   const goBack = () => {
     if (router.history.canGoBack()) router.history.back();
