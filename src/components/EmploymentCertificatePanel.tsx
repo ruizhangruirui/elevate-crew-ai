@@ -40,8 +40,6 @@ export function EmploymentCertificatePanel() {
   const [busy, setBusy] = useState(false);
   const [body, setBody] = useState("");
 
-  if (!isHr) return null;
-
   const pick = (id: string) => {
     setPersonId(id);
     const p = (people.data ?? []).find((x) => x.id === id);
@@ -62,6 +60,7 @@ export function EmploymentCertificatePanel() {
   // Editable body: seeded from the template, HR can adjust before downloading.
   const docKey = doc ? doc.paragraphs.join("\n") : "";
   useEffect(() => { setBody(docKey); }, [docKey]);
+  if (!isHr) return null;
   const finalDoc = doc ? { ...doc, paragraphs: body.split(/\r?\n/).map((s) => s.trim()).filter(Boolean) } : null;
   const run = async (kind: "docx" | "pdf") => {
     if (!finalDoc || !facts) return;

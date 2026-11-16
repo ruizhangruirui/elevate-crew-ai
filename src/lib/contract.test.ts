@@ -37,7 +37,10 @@ describe("fixed-term contracts", () => {
 
 describe("contract duration", () => {
   it("counts whole months between start and end dates", () => {
-    strictEqual(monthsBetween("2026-01-05", "2026-07-04"), 5);
+    strictEqual(monthsBetween("2026-01-05", "2026-07-04"), 6);
+    strictEqual(monthsBetween("2026-01-01", "2026-12-31"), 12);
+    strictEqual(monthsBetween("2026-03-01", "2027-02-28"), 12);
+    strictEqual(monthsBetween("2026-01-05", "2026-07-03"), 5);
     strictEqual(monthsBetween("2026-01-05", "2026-07-05"), 6);
     strictEqual(monthsBetween("2026-01-05", "2027-07-05"), 18);
     strictEqual(monthsBetween("2026-01-05", null), null);

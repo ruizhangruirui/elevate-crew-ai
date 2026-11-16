@@ -33,8 +33,8 @@ export function roleExpected(contract?: string | null): boolean {
 /** Whole months between hire date and today. */
 export function tenureMonths(hireDate?: string | null): number | null {
   if (!hireDate) return null;
-  const d = new Date(hireDate);
-  if (Number.isNaN(d.getTime())) return null;
+  const d = parseYmd(hireDate);
+  if (!d) return null;
   const now = new Date();
   const m = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth()) - (now.getDate() < d.getDate() ? 1 : 0);
   return Math.max(0, m);
@@ -78,12 +78,23 @@ export function fixedTermFields(
   return { fixed_term: true, contract_end_on: endOn };
 }
 
-/** Whole months between two dates (start → end), null when either is missing/invalid. */
+/** Parse "YYYY-MM-DD" as a local calendar date (avoids UTC shifts). */
+function parseYmd(v: string): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v);
+  const d = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(v);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/**
+ * Contract length in whole months. The end date is the last working day
+ * (inclusive), so 01 Jan – 31 Dec counts as 12 months, not 11.
+ */
 export function monthsBetween(start?: string | null, end?: string | null): number | null {
   if (!start || !end) return null;
-  const s = new Date(start);
-  const e = new Date(end);
-  if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return null;
+  const s = parseYmd(start);
+  const e0 = parseYmd(end);
+  if (!s || !e0) return null;
+  const e = new Date(e0.getFullYear(), e0.getMonth(), e0.getDate() + 1);
   const m = (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth()) - (e.getDate() < s.getDate() ? 1 : 0);
   return Math.max(0, m);
 }

@@ -42,7 +42,7 @@ export const Route = createFileRoute("/recruiting")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: () => {
+  component: function RecruitingPage() {
     const { t } = useI18n();
     return (
       <AppShell title={t("rec.title")}>
