@@ -35,7 +35,8 @@ export const mutateOffer = createServerFn({ method: "POST" })
       .object({
         id: z.string().uuid(),
         revision: z.number().int(),
-        command: z.enum(["save", "submit", "approve", "reject", "sent", "accepted", "withdraw"]),
+        command: z.enum(["save", "submit", "approve", "reject", "sent", "accepted", "withdraw", "set_stage"]),
+        stage: z.enum(["Offer approval", "Offer sent", "Offer accepted"]).optional(),
         terms: offerTermsSchema.optional(),
         hiring_manager_user_id: z.string().default(""),
         lab_director_user_id: z.string().default(""),

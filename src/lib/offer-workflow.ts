@@ -215,6 +215,7 @@ export function nextOfferState(state: OfferState, command: string): OfferState {
   }
   if (command === "sent" && state === "approved") return "sent";
   if (command === "accepted" && state === "sent") return "accepted";
+  if (command === "set_stage" && !["onboarded", "withdrawn"].includes(state)) return state;
   if (command === "withdraw" && !["accepted", "onboarded", "withdrawn"].includes(state))
     return "withdrawn";
   throw new Error("Invalid offer transition");

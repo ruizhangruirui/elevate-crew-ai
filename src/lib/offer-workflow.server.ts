@@ -278,7 +278,8 @@ export async function startOfferServer(data: { candidate_id: string }) {
 export async function mutateOfferServer(data: {
   id: string;
   revision: number;
-  command: "save" | "submit" | "approve" | "reject" | "sent" | "accepted" | "withdraw";
+  command: "save" | "submit" | "approve" | "reject" | "sent" | "accepted" | "withdraw" | "set_stage";
+  stage?: "Offer approval" | "Offer sent" | "Offer accepted" | undefined;
   terms?: OfferTerms | undefined;
   hiring_manager_user_id: string;
   lab_director_user_id: string;
@@ -298,6 +299,10 @@ export async function mutateOfferServer(data: {
   if (["approve", "reject"].includes(data.command)) {
     if (!canDecideOffer(ctx.user, o)) throw new Error("Only the current named approver can decide");
     if (data.command === "reject" && !data.note) throw new Error("Enter a rejection reason");
+  } else if (data.command === "set_stage") {
+    if (!data.stage) throw new Error("Choose an offer stage");
+    if (!canEditOffer(ctx.user, { ...o, state: o.state === "accepted" ? "sent" : o.state }))
+      throw new Error("Only the assigned recruiter can change the offer stage");
   } else if (!canEditOffer(ctx.user, o))
     throw new Error("Only the assigned recruiter can edit this offer");
   if (["save", "submit"].includes(data.command)) {
@@ -332,6 +337,7 @@ export async function mutateOfferServer(data: {
       hiring_manager_user_id: data.hiring_manager_user_id,
       lab_director_user_id: data.lab_director_user_id,
       hrd_user_id: data.hrd_user_id,
+      ...(data.stage ? { stage: data.stage } : {}),
     },
     data.note,
   );

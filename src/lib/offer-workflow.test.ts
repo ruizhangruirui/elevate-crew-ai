@@ -29,6 +29,11 @@ describe("Offer approval rules", () => {
     assert.throws(() => nextOfferState("approved", "accepted"));
     assert.equal(nextOfferState("sent", "accepted"), "accepted");
   });
+  it("offer stage can jump directly, except after onboarding or withdrawal", () => {
+    assert.equal(nextOfferState("draft", "set_stage"), "draft");
+    assert.equal(nextOfferState("accepted", "set_stage"), "accepted");
+    assert.throws(() => nextOfferState("onboarded", "set_stage"));
+  });
   it("offer approval can be withdrawn until it is accepted", () => {
     assert.equal(nextOfferState("hiring_manager", "withdraw"), "withdrawn");
     assert.equal(nextOfferState("sent", "withdraw"), "withdrawn");

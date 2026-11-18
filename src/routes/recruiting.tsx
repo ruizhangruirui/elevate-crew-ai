@@ -301,23 +301,16 @@ function RecruitingBody() {
         const zh = lang === "zh";
         if (!(OFFER_STAGES as readonly string[]).includes(patch.stage))
           throw new Error(zh ? "该候选人有进行中的 Offer 审批，请先在 Offer 表单中「撤回审批」再改阶段" : "Withdraw the offer approval in the offer form before changing stage");
-        if (patch.stage === "Offer approval") { setOfferId(c.offer_request_id); return; }
         const { offer: o } = await getOffer({ data: { id: c.offer_request_id } });
-        const command = patch.stage === "Offer sent" ? "sent" : "accepted";
-        const ok = command === "sent" ? o.state === "approved" : o.state === "sent";
-        if (!ok) {
-          setOfferId(c.offer_request_id);
-          throw new Error(command === "sent"
-            ? (zh ? "三级审批全部通过后才能标记 Offer sent" : "All three approvals are needed before Offer sent")
-            : (zh ? "请先标记 Offer sent，再标记 Offer accepted" : "Mark Offer sent before Offer accepted"));
-        }
-        await mutateOffer({ data: { id: o.id, revision: o.revision, command, hiring_manager_user_id: o.hiring_manager_user_id ?? "", lab_director_user_id: o.lab_director_user_id ?? "", hrd_user_id: o.hrd_user_id ?? "", note: "" } });
+        await mutateOffer({ data: { id: o.id, revision: o.revision, command: "set_stage", stage: patch.stage as "Offer sent", hiring_manager_user_id: "", lab_director_user_id: "", hrd_user_id: "", note: "" } });
         return;
       }
       if (patch.stage && (OFFER_STAGES as readonly string[]).includes(patch.stage)) {
-        if (patch.stage !== "Offer approval") throw new Error("Start Offer approval first");
         const r = await startOffer({ data: { candidate_id: c.id } });
-        setOfferId(r.id);
+        if (patch.stage !== "Offer approval") {
+          const { offer: o } = await getOffer({ data: { id: r.id } });
+          await mutateOffer({ data: { id: o.id, revision: o.revision, command: "set_stage", stage: patch.stage as "Offer sent", hiring_manager_user_id: "", lab_director_user_id: "", hrd_user_id: "", note: "" } });
+        } else setOfferId(r.id);
         return;
       }
       const { error } = await db.from("candidates").update(patch).eq("id", c.id);
