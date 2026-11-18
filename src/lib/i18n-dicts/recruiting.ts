@@ -36,6 +36,7 @@ export const recruitingDict: Dict = {
   "rec.out.hired": { zh: "已入职", en: "Onboarded" },
   "rec.out.rejected": { zh: "不再考虑", en: "Rejected" },
   "rec.out.withdrawn": { zh: "候选人放弃", en: "Withdrawn" },
+  "rec.out.offer_declined": { zh: "拒绝 Offer", en: "Offer declined" },
   "rec.c.name": { zh: "姓名", en: "Name" },
   "rec.c.current": { zh: "当前公司 / 职位", en: "Current company / title" },
   "rec.c.source": { zh: "来源", en: "Source" },

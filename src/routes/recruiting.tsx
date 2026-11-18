@@ -55,12 +55,12 @@ export const Route = createFileRoute("/recruiting")({
 });
 
 const DEFAULT_STAGES = ["CV Screen", "Phone Interview", "Hiring Manager Interview", "Technical Interview", "Final Interview", "Reference Check"];
-const OUTCOMES = ["active", "on_hold", "to_onboard", "hired", "rejected", "withdrawn"] as const;
+const OUTCOMES = ["active", "on_hold", "to_onboard", "hired", "rejected", "offer_declined", "withdrawn"] as const;
 const FILTERS = {
   active: ["active", "on_hold", "offer", "offer_accepted"],
   to_onboard: ["to_onboard"],
   hired: ["hired"],
-  closed: ["rejected", "withdrawn"],
+  closed: ["rejected", "offer_declined", "withdrawn"],
   all: [...OUTCOMES],
 } as const;
 type FilterKey = keyof typeof FILTERS;
@@ -79,6 +79,7 @@ const OUTCOME_TONE: Record<string, string> = {
   to_onboard: "bg-ok/12 text-ok",
   hired: "bg-ok/20 text-ok",
   rejected: "bg-danger/10 text-danger",
+  offer_declined: "bg-danger/10 text-danger",
   withdrawn: "bg-danger/10 text-danger",
 };
 
