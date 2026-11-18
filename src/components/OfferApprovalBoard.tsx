@@ -270,7 +270,7 @@ export function OfferApprovalDialog({ id, onClose }: { id: string; onClose: () =
         if (!v) onClose();
       }}
     >
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
+      <DialogContent className="block max-h-[92dvh] w-[calc(100vw-1rem)] space-y-4 overflow-y-auto overscroll-contain sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>Offer approval · {data?.offer.candidate_name ?? "…"}</DialogTitle>
         </DialogHeader>
@@ -666,7 +666,7 @@ function OfferForm({ data }: { data: Awaited<ReturnType<typeof getOffer>> }) {
           title={l("审批与修改日志", "Approval & change history")}
           icon={<History className="size-4" />}
         >
-          <div className="max-h-80 space-y-3 overflow-auto">
+          <div className="space-y-3">
             {data.history.map((e) => (
               <div key={e.id} className="border-b border-border/60 pb-3 text-xs">
                 <p className="flex flex-wrap justify-between gap-2 font-medium">

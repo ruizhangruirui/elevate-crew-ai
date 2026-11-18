@@ -30,7 +30,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDate } from "@/lib/dates";
 import { normalizedCandidate, recruitingStageOptions, OFFER_STAGES } from "@/lib/offer-workflow";
-import { startOffer } from "@/lib/offer-workflow.functions";
+import { startOffer, getOffer, mutateOffer } from "@/lib/offer-workflow.functions";
 import { OfferApprovalDialog } from "@/components/OfferApprovalBoard";
 
 export const Route = createFileRoute("/recruiting")({
@@ -145,7 +145,7 @@ function safeUrl(u: string | null) {
 }
 
 function RecruitingBody() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { user } = useAuth();
   const canEdit = isOwnerRole(user?.role) || user?.role === "hr" || user?.role === "recruiter";
   const canEditRole = isOwnerRole(user?.role) || user?.role === "hr" || user?.role === "recruiter";
@@ -297,8 +297,25 @@ function RecruitingBody() {
 
   const quickUpdate = useMutation({
     mutationFn: async ({ c, patch }: { c: Candidate; patch: Partial<Candidate> }) => {
+      if (patch.stage && c.offer_request_id) {
+        const zh = lang === "zh";
+        if (!(OFFER_STAGES as readonly string[]).includes(patch.stage))
+          throw new Error(zh ? "该候选人有进行中的 Offer 审批，请先在 Offer 表单中「撤回审批」再改阶段" : "Withdraw the offer approval in the offer form before changing stage");
+        if (patch.stage === "Offer approval") { setOfferId(c.offer_request_id); return; }
+        const { offer: o } = await getOffer({ data: { id: c.offer_request_id } });
+        const command = patch.stage === "Offer sent" ? "sent" : "accepted";
+        const ok = command === "sent" ? o.state === "approved" : o.state === "sent";
+        if (!ok) {
+          setOfferId(c.offer_request_id);
+          throw new Error(command === "sent"
+            ? (zh ? "三级审批全部通过后才能标记 Offer sent" : "All three approvals are needed before Offer sent")
+            : (zh ? "请先标记 Offer sent，再标记 Offer accepted" : "Mark Offer sent before Offer accepted"));
+        }
+        await mutateOffer({ data: { id: o.id, revision: o.revision, command, hiring_manager_user_id: o.hiring_manager_user_id ?? "", lab_director_user_id: o.lab_director_user_id ?? "", hrd_user_id: o.hrd_user_id ?? "", note: "" } });
+        return;
+      }
       if (patch.stage && (OFFER_STAGES as readonly string[]).includes(patch.stage)) {
-        if (patch.stage !== "Offer approval" && !c.offer_request_id) throw new Error("Start Offer approval first");
+        if (patch.stage !== "Offer approval") throw new Error("Start Offer approval first");
         const r = await startOffer({ data: { candidate_id: c.id } });
         setOfferId(r.id);
         return;
@@ -548,7 +565,7 @@ function RecruitingBody() {
                         <td className="px-3 py-1.5">
                           <Select
                             value={c.stage ?? ""}
-                            disabled={!canEdit || (!!c.offer_request_id && c.stage !== "Offer approval")}
+                            disabled={!canEdit}
                             onValueChange={(v) => quickUpdate.mutate({ c, patch: { stage: v } })}
                           >
                             <SelectTrigger className="h-7 w-44 text-xs">
