@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CalendarDays, CircleDot, Plus, Trash2 } from "lucide-react";
+import { CalendarDays, CircleDot, Mail, Plus, Trash2 } from "lucide-react";
+import { actionLink, buildApprovalMailto, resolveRecipientEmails } from "@/lib/approval-mail";
 import { AppShell } from "@/components/AppShell";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { StatTile } from "@/components/StatTile";
@@ -73,7 +74,7 @@ function ActionsPage() {
 }
 
 function ActionsBoard() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const qc = useQueryClient();
   const { data: actions } = useQuery({ queryKey: ["actions"], queryFn: fetchActions });
   const { data: ws } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
@@ -115,6 +116,23 @@ function ActionsBoard() {
         ? a.status === "done"
         : true,
   );
+
+  const notifyHref = (a: ActionItem) => {
+    const wf = parseActionWorkflow(a.detail);
+    const to = resolveRecipientEmails([wf.approver || a.owner], ws?.people ?? []);
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    return { to, href: buildApprovalMailto({ action: a, to, link: actionLink(a, origin), description: wf.description, lang }) };
+  };
+  const NotifyButton = ({ a, size = "sm" }: { a: ActionItem; size?: "sm" | "default" }) => {
+    const n = notifyHref(a);
+    return (
+      <Button asChild variant="outline" size={size} className="gap-1.5" title={n.to.length ? n.to.join(", ") : t("act.notify.noEmail")}>
+        <a href={n.href} onClick={() => toast.info(n.to.length ? t("act.notify.opened") : t("act.notify.noEmail"))}>
+          <Mail className="size-3.5" /> {t("act.notify")}
+        </a>
+      </Button>
+    );
+  };
 
   const context = (a: ActionItem) => {
     const bits: string[] = [];
@@ -274,6 +292,7 @@ function ActionsBoard() {
               </div>
 
               <div className="flex items-center gap-1">
+                {!done && a.status !== "cancelled" && <NotifyButton a={a} />}
                 <Button variant="outline" size="sm" onClick={() => setSelectedId(a.id)}>
                   {t("act.open")}
                 </Button>
@@ -352,12 +371,13 @@ function ActionsBoard() {
               ))}
             </div>
           )}
-          {target && <DialogFooter>
-            <Button asChild>
+          {selected && <DialogFooter className="gap-2">
+            {selected.status !== "done" && selected.status !== "cancelled" && <NotifyButton a={selected} size="default" />}
+            {target && <Button asChild>
               {target.kind === "reference" ? <Link to="/growth" search={{ tab: "reference", letter: target.id }}>{t("act.openRelated")} →</Link>
                 : target.kind === "position" ? <Link to="/" search={{ role: target.id }}>{t("act.openRelated")} →</Link>
                 : <Link to="/people/$personId" params={{ personId: target.id }}>{t("act.openRelated")} →</Link>}
-            </Button>
+            </Button>}
           </DialogFooter>}
         </DialogContent>
       </Dialog>

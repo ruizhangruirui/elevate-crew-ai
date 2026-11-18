@@ -98,4 +98,7 @@ export const actionsDict: Dict = {
   "act.workflow.relatedObject": { zh: "关联", en: "Related" },
   "act.workflow.evidence": { zh: "证据", en: "Evidence" },
   "act.workflow.rejectionReason": { zh: "拒绝理由", en: "Rejection reason" },
+  "act.notify": { zh: "邮件通知", en: "Email" },
+  "act.notify.opened": { zh: "已在邮箱中打开草稿，确认后发送即可", en: "Draft opened in your mail app — review and send" },
+  "act.notify.noEmail": { zh: "未找到审批人的公司邮箱，请在邮件中手动填写收件人", en: "No company email found for the approver — add the recipient in your mail app" },
 };
