@@ -238,7 +238,8 @@ export async function startOfferServer(data: { candidate_id: string }) {
     if (!visible(ctx, existing as unknown as RawOffer)) throw new Error("Offer unavailable");
     return { id: existing.id };
   }
-  if (ctx.user.role !== "recruiter")
+  const admin = ctx.user.role === "owner" || ctx.user.role === "hr_director";
+  if (!admin && ctx.user.role !== "recruiter")
     throw new Error("Only the assigned recruiter can start an offer");
   const { data: c, error } = await ctx.db
     .from("candidates")
@@ -250,6 +251,7 @@ export async function startOfferServer(data: { candidate_id: string }) {
   if (!role || role.archived || role.approval_status === "pending")
     throw new Error("Position unavailable or awaiting approval");
   if (
+    !admin &&
     accountForPerson(
       ctx.people.find((p) => p.id === role.recruiter_person_id),
       ctx.accounts,

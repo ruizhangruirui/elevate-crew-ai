@@ -114,11 +114,10 @@ export function canEditOffer(
   user: { id: string; role: string },
   o: { recruiter_user_id: string; state: string },
 ) {
-  return (
-    user.role === "recruiter" &&
-    o.recruiter_user_id === user.id &&
-    !["accepted", "onboarded"].includes(o.state)
-  );
+  if (["accepted", "onboarded"].includes(o.state)) return false;
+  // Owner and HR Director may maintain every offer, like the rest of Recruiting.
+  if (user.role === "owner" || user.role === "hr_director") return true;
+  return user.role === "recruiter" && o.recruiter_user_id === user.id;
 }
 export function canDecideOffer(
   user: { id: string; role: string },

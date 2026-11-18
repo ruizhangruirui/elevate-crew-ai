@@ -232,6 +232,13 @@
       "when": 1795016996170,
       "tag": "0032_offer_approval_workflow",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1795019784128,
+      "tag": "0033_offer_owner_edit",
+      "breakpoints": true
     }
   ]
 }
