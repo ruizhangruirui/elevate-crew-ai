@@ -36,43 +36,60 @@ export function actionLink(action: ActionItem, origin: string) {
   return `${origin}/people/${target.id}`;
 }
 
+export const APPROVAL_MAIL_KEY = "approval_mail_template";
+export const APPROVAL_MAIL_PLACEHOLDERS = ["recipient", "title", "details", "due", "link"] as const;
+
+export const DEFAULT_APPROVAL_MAIL = {
+  subject_zh: "[待审批] {title}",
+  body_zh: "{recipient}，您好：\n\n人才管理系统中有一项事项需要您处理：\n\n事项：{title}\n说明：{details}\n截止日期：{due}\n\n请点击链接在系统中查看并处理：{link}\n\n谢谢！",
+  subject_en: "[Approval needed] {title}",
+  body_en: "Dear {recipient},\n\nAn item in the Talent Management system needs your attention:\n\nItem: {title}\nDetails: {details}\nDue: {due}\n\nOpen it in the system: {link}\n\nThank you.",
+};
+export type ApprovalMailTemplate = typeof DEFAULT_APPROVAL_MAIL;
+
+/** Parse the stored template JSON, falling back to defaults per field. */
+export function parseApprovalMailTemplate(raw: string | null | undefined): ApprovalMailTemplate {
+  const out = { ...DEFAULT_APPROVAL_MAIL };
+  try {
+    const parsed = JSON.parse(raw ?? "{}") as Record<string, unknown>;
+    for (const k of Object.keys(out) as (keyof ApprovalMailTemplate)[]) {
+      if (typeof parsed[k] === "string" && (parsed[k] as string).trim()) out[k] = parsed[k] as string;
+    }
+  } catch { /* defaults */ }
+  return out;
+}
+
+export async function fetchApprovalMailTemplate() {
+  const { db } = await import("./db-client");
+  const { data, error } = await db.from("config_items").select("*").eq("category", APPROVAL_MAIL_KEY);
+  if (error) throw error;
+  const row = ((data ?? []) as unknown as { id: string; name: string }[])[0] ?? null;
+  return { row, template: parseApprovalMailTemplate(row?.name) };
+}
+
+export function fillApprovalMail(text: string, vars: Record<string, string>) {
+  return text.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? vars[k] || "—" : m));
+}
+
 export function buildApprovalMailto(opts: {
   action: ActionItem;
   to: string[];
   link: string;
   description?: string;
+  recipient?: string;
   lang: "zh" | "en";
+  template?: ApprovalMailTemplate | undefined;
 }) {
-  const { action, to, link, description, lang } = opts;
-  const zh = lang === "zh";
-  const subject = zh ? `[待审批] ${action.title}` : `[Approval needed] ${action.title}`;
-  const lines = zh
-    ? [
-        "您好，",
-        "",
-        "人才管理系统中有一项事项需要您处理：",
-        "",
-        `事项：${action.title}`,
-        description ? `说明：${description}` : "",
-        action.due_on ? `截止日期：${formatDate(action.due_on)}` : "",
-        "",
-        `请点击链接在系统中查看并处理：${link}`,
-        "",
-        "谢谢！",
-      ]
-    : [
-        "Hello,",
-        "",
-        "An item in the Talent Management system needs your attention:",
-        "",
-        `Item: ${action.title}`,
-        description ? `Details: ${description}` : "",
-        action.due_on ? `Due: ${formatDate(action.due_on)}` : "",
-        "",
-        `Open it in the system: ${link}`,
-        "",
-        "Thank you.",
-      ];
-  const body = lines.filter((l, i, a) => l !== "" || a[i - 1] !== "").join("\n");
+  const { action, to, link, description, recipient, lang } = opts;
+  const tpl = opts.template ?? DEFAULT_APPROVAL_MAIL;
+  const vars = {
+    recipient: recipient || (lang === "zh" ? "同事" : "colleague"),
+    title: action.title,
+    details: description ?? "",
+    due: action.due_on ? formatDate(action.due_on) : "",
+    link,
+  };
+  const subject = fillApprovalMail(lang === "zh" ? tpl.subject_zh : tpl.subject_en, vars);
+  const body = fillApprovalMail(lang === "zh" ? tpl.body_zh : tpl.body_en, vars);
   return `mailto:${to.map(encodeURIComponent).join(",")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }

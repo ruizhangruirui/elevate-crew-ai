@@ -3,10 +3,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Archive, Download, Search, Trash2, Building2, Compass, Users, ShieldCheck, SlidersHorizontal, History, Settings2, ListFilter, FileText, Stamp, Briefcase } from "lucide-react";
+import { Plus, Pencil, Archive, Download, Search, Trash2, Building2, Compass, Users, ShieldCheck, SlidersHorizontal, History, Settings2, ListFilter, FileText, Stamp, Briefcase, Mail } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { LetterheadEditor } from "@/components/LetterheadEditor";
 import { CertificateTemplateEditor } from "@/components/CertificateTemplateEditor";
+import { ApprovalMailTemplateEditor } from "@/components/ApprovalMailTemplateEditor";
 import { ReferenceTemplateEditor } from "@/components/ReferenceTemplateEditor";
 import { UserAccessSection } from "@/components/UserAccessSection";
 import { ImportPeopleDialog } from "@/components/ImportPeopleDialog";
@@ -514,12 +515,13 @@ function TalentConfiguration({ items }: { items: ConfigItem[] }) {
     <>
       <SectionHeader title={t("set.config.title")} desc="" />
       <Tabs defaultValue="options">
-        <TabsList className="mb-4 grid h-auto w-full grid-cols-2 gap-1 bg-muted/60 sm:grid-cols-4">
+        <TabsList className="mb-4 grid h-auto w-full grid-cols-2 gap-1 bg-muted/60 sm:grid-cols-5">
           {[
             ["options", "set.config.options", ListFilter],
             ["reference", "set.config.reference", FileText],
             ["stationery", "set.config.stationery", Stamp],
             ["certificate", "set.config.certificate", Briefcase],
+            ["approvalMail", "set.config.approvalMail", Mail],
           ].map(([value, label, Icon]) => {
             const TabIcon = Icon as typeof ListFilter;
             return <TabsTrigger key={String(value)} value={String(value)} className="h-auto min-h-9 gap-2 whitespace-normal px-2 text-xs"><TabIcon className="size-4 shrink-0" />{t(String(label))}</TabsTrigger>;
@@ -529,6 +531,7 @@ function TalentConfiguration({ items }: { items: ConfigItem[] }) {
         <TabsContent value="reference" forceMount className="mt-0 data-[state=inactive]:hidden"><ReferenceTemplateEditor /></TabsContent>
         <TabsContent value="stationery" forceMount className="mt-0 data-[state=inactive]:hidden"><LetterheadEditor /></TabsContent>
         <TabsContent value="certificate" forceMount className="mt-0 data-[state=inactive]:hidden"><CertificateTemplateEditor /></TabsContent>
+        <TabsContent value="approvalMail" forceMount className="mt-0 data-[state=inactive]:hidden"><ApprovalMailTemplateEditor /></TabsContent>
       </Tabs>
     </>
   );

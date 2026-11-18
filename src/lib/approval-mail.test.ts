@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import { deepStrictEqual, ok } from "node:assert/strict";
-import { buildApprovalMailto, resolveRecipientEmails } from "./approval-mail";
+import { buildApprovalMailto, parseApprovalMailTemplate, DEFAULT_APPROVAL_MAIL, resolveRecipientEmails } from "./approval-mail";
 
 const people = [
   { name: "Anna Lee", company_email: "anna@co.com" },
@@ -25,5 +25,17 @@ describe("approval mail", () => {
     });
     ok(url.startsWith("mailto:ben%40co.com?subject="));
     ok(decodeURIComponent(url).includes("https://app/?role=1"));
+  });
+  it("uses the configured template with placeholders", () => {
+    const template = { ...DEFAULT_APPROVAL_MAIL, subject_en: "Please approve: {title}", body_en: "Hi {recipient}, see {link}" };
+    const url = buildApprovalMailto({ action: { title: "Pos X", due_on: null } as any, to: [], link: "L1", recipient: "Ben", lang: "en", template });
+    const decoded = decodeURIComponent(url);
+    ok(decoded.includes("subject=Please approve: Pos X"));
+    ok(decoded.includes("body=Hi Ben, see L1"));
+  });
+  it("falls back to defaults for missing or blank template fields", () => {
+    const tpl = parseApprovalMailTemplate(JSON.stringify({ subject_zh: "", body_en: "X" }));
+    deepStrictEqual(tpl.subject_zh, DEFAULT_APPROVAL_MAIL.subject_zh);
+    deepStrictEqual(tpl.body_en, "X");
   });
 });

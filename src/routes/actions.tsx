@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CalendarDays, CircleDot, Mail, Plus, Trash2 } from "lucide-react";
-import { actionLink, buildApprovalMailto, resolveRecipientEmails } from "@/lib/approval-mail";
+import { actionLink, buildApprovalMailto, fetchApprovalMailTemplate, resolveRecipientEmails } from "@/lib/approval-mail";
 import { AppShell } from "@/components/AppShell";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { StatTile } from "@/components/StatTile";
@@ -117,11 +117,12 @@ function ActionsBoard() {
         : true,
   );
 
+  const { data: mailTpl } = useQuery({ queryKey: ["approval-mail-template"], queryFn: fetchApprovalMailTemplate });
   const notifyHref = (a: ActionItem) => {
     const wf = parseActionWorkflow(a.detail);
     const to = resolveRecipientEmails([wf.approver || a.owner], ws?.people ?? []);
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    return { to, href: buildApprovalMailto({ action: a, to, link: actionLink(a, origin), description: wf.description, lang }) };
+    return { to, href: buildApprovalMailto({ action: a, to, link: actionLink(a, origin), description: wf.description, recipient: wf.approver || a.owner || "", lang, template: mailTpl?.template }) };
   };
   const NotifyButton = ({ a, size = "sm" }: { a: ActionItem; size?: "sm" | "default" }) => {
     const n = notifyHref(a);
