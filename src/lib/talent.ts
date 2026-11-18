@@ -67,6 +67,11 @@ export type Person = {
   staff_id?: string | null;
   offer_title?: string | null;
   hire_date?: string | null;
+  fixed_term?: boolean;
+  contract_end_on?: string | null;
+  contract_duration_months?: number | null;
+  project_code?: string | null;
+  approved_offer_id?: string | null;
   location?: string | null;
   level: number | null;
   status: string;

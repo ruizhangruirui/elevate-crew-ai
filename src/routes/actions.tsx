@@ -198,7 +198,7 @@ function ActionsBoard() {
           return (
             <article key={a.id} className="flex flex-wrap items-start gap-3 px-5 py-4">
               <button
-                disabled={a.source_kind === "position_approval"}
+                disabled={a.source_kind === "position_approval" || a.source_kind === "offer_approval"}
                 onClick={() => move.mutate({ id: a.id, status: done ? "todo" : "done" })}
                 className={`mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border transition-colors ${
                   done ? "border-ok bg-ok/20 text-ok" : "border-border hover:border-brand"
@@ -297,7 +297,7 @@ function ActionsBoard() {
                 <Button variant="outline" size="sm" onClick={() => setSelectedId(a.id)}>
                   {t("act.open")}
                 </Button>
-                {!done && a.source_kind !== "position_approval" && (
+                {!done && a.source_kind !== "position_approval" && a.source_kind !== "offer_approval" && (
                   <Select
                     value={a.status}
                     onValueChange={(v) => move.mutate({ id: a.id, status: v as ActionStatus })}
@@ -313,7 +313,7 @@ function ActionsBoard() {
                     </SelectContent>
                   </Select>
                 )}
-                {a.source_kind !== "position_approval" && <ConfirmAction
+                {a.source_kind !== "position_approval" && a.source_kind !== "offer_approval" && <ConfirmAction
                   title={t("act.delete.confirmTitle")}
                   description={<p>{t("act.delete.desc")}</p>}
                   confirmLabel={t("act.delete.confirmLabel")}
@@ -375,7 +375,8 @@ function ActionsBoard() {
           {selected && <DialogFooter className="gap-2">
             {selected.status !== "done" && selected.status !== "cancelled" && <NotifyButton a={selected} size="default" />}
             {target && <Button asChild>
-              {target.kind === "reference" ? <Link to="/growth" search={{ tab: "reference", letter: target.id }}>{t("act.openRelated")} →</Link>
+              {target.kind === "offer" ? <Link to="/recruiting/offers" search={{ offer: target.id }}>{t("act.openRelated")} →</Link>
+                : target.kind === "reference" ? <Link to="/growth" search={{ tab: "reference", letter: target.id }}>{t("act.openRelated")} →</Link>
                 : target.kind === "position" ? <Link to="/" search={{ role: target.id }}>{t("act.openRelated")} →</Link>
                 : <Link to="/people/$personId" params={{ personId: target.id }}>{t("act.openRelated")} →</Link>}
             </Button>}

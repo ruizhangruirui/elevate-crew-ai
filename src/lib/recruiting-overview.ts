@@ -1,5 +1,5 @@
 type OverviewRole = { id: string; org_node_id?: string | null };
-type OverviewCandidate = { role_id: string; outcome: string };
+type OverviewCandidate = { role_id: string; outcome: string; stage?: string | null };
 type OverviewNode = { id: string; parent_id: string | null; type: string };
 
 export function teamForRole(nodeId: string | null | undefined, nodes: readonly OverviewNode[]) {
@@ -21,8 +21,9 @@ export function overviewCandidates<T extends OverviewCandidate>(
   const roleById = new Map(roles.map((role) => [role.id, role]));
   return candidates.filter((candidate) => {
     const role = roleById.get(candidate.role_id);
-    if (!role || !["offer", "offer_accepted", "to_onboard"].includes(candidate.outcome)) return false;
-    if (status !== "all" && candidate.outcome !== status) return false;
+    const offerStatus = candidate.outcome === "to_onboard" ? "to_onboard" : candidate.stage === "Offer accepted" ? "offer_accepted" : candidate.stage === "Offer sent" ? "offer" : candidate.outcome;
+    if (!role || !["offer", "offer_accepted", "to_onboard"].includes(offerStatus)) return false;
+    if (status !== "all" && offerStatus !== status) return false;
     return team === "all" || teamForRole(role.org_node_id, nodes) === team;
   });
 }

@@ -296,6 +296,7 @@ export type Database = {
           next_step: string | null
           next_step_on: string | null
           notes: string | null
+          offer_request_id: string | null
           onboarding_on: string | null
           outcome: string
           person_id: string | null
@@ -325,6 +326,7 @@ export type Database = {
           next_step?: string | null
           next_step_on?: string | null
           notes?: string | null
+          offer_request_id?: string | null
           onboarding_on?: string | null
           outcome?: string
           person_id?: string | null
@@ -354,6 +356,7 @@ export type Database = {
           next_step?: string | null
           next_step_on?: string | null
           notes?: string | null
+          offer_request_id?: string | null
           onboarding_on?: string | null
           outcome?: string
           person_id?: string | null
@@ -368,6 +371,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "candidates_offer_request_id_fkey"
+            columns: ["offer_request_id"]
+            isOneToOne: false
+            referencedRelation: "offer_requests"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "candidates_person_id_fkey"
             columns: ["person_id"]
@@ -504,6 +514,173 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offer_request_events: {
+        Row: {
+          actor_name: string
+          actor_user_id: string
+          changes: Json
+          created_at: string
+          from_state: string | null
+          id: string
+          kind: string
+          note: string | null
+          offer_id: string
+          revision: number
+          round: number
+          terms_snapshot: Json
+          to_state: string | null
+        }
+        Insert: {
+          actor_name: string
+          actor_user_id: string
+          changes?: Json
+          created_at?: string
+          from_state?: string | null
+          id?: string
+          kind: string
+          note?: string | null
+          offer_id: string
+          revision: number
+          round: number
+          terms_snapshot?: Json
+          to_state?: string | null
+        }
+        Update: {
+          actor_name?: string
+          actor_user_id?: string
+          changes?: Json
+          created_at?: string
+          from_state?: string | null
+          id?: string
+          kind?: string
+          note?: string | null
+          offer_id?: string
+          revision?: number
+          round?: number
+          terms_snapshot?: Json
+          to_state?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_request_events_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "offer_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offer_requests: {
+        Row: {
+          candidate_id: string
+          created_at: string
+          hiring_manager_user_id: string | null
+          hrd_user_id: string | null
+          id: string
+          lab_director_user_id: string | null
+          lab_id: string | null
+          org_node_id: string | null
+          recruiter_user_id: string
+          revision: number
+          role_id: string
+          round: number
+          state: string
+          terms: Json
+          updated_at: string
+        }
+        Insert: {
+          candidate_id: string
+          created_at?: string
+          hiring_manager_user_id?: string | null
+          hrd_user_id?: string | null
+          id?: string
+          lab_director_user_id?: string | null
+          lab_id?: string | null
+          org_node_id?: string | null
+          recruiter_user_id: string
+          revision?: number
+          role_id: string
+          round?: number
+          state?: string
+          terms?: Json
+          updated_at?: string
+        }
+        Update: {
+          candidate_id?: string
+          created_at?: string
+          hiring_manager_user_id?: string | null
+          hrd_user_id?: string | null
+          id?: string
+          lab_director_user_id?: string | null
+          lab_id?: string | null
+          org_node_id?: string | null
+          recruiter_user_id?: string
+          revision?: number
+          role_id?: string
+          round?: number
+          state?: string
+          terms?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_requests_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: true
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_requests_hiring_manager_user_id_fkey"
+            columns: ["hiring_manager_user_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_requests_hrd_user_id_fkey"
+            columns: ["hrd_user_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_requests_lab_director_user_id_fkey"
+            columns: ["lab_director_user_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_requests_lab_id_fkey"
+            columns: ["lab_id"]
+            isOneToOne: false
+            referencedRelation: "org_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_requests_org_node_id_fkey"
+            columns: ["org_node_id"]
+            isOneToOne: false
+            referencedRelation: "org_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_requests_recruiter_user_id_fkey"
+            columns: ["recruiter_user_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_requests_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
             referencedColumns: ["id"]
           },
         ]
@@ -675,6 +852,7 @@ export type Database = {
         Row: {
           address: string | null
           appointed_role_title: string | null
+          approved_offer_id: string | null
           archived: boolean
           archived_at: string | null
           assessed_at: string | null
@@ -682,6 +860,7 @@ export type Database = {
           assessed_skills: Json
           attrition_risk: string
           company_email: string | null
+          contract_duration_months: number | null
           contract_end_on: string | null
           contract_type: string | null
           created_at: string
@@ -701,6 +880,7 @@ export type Database = {
           performance: string | null
           personal_email: string | null
           prior_experience: string[]
+          project_code: string | null
           readiness: string
           role_id: string | null
           role_transition_on: string | null
@@ -715,6 +895,7 @@ export type Database = {
         Insert: {
           address?: string | null
           appointed_role_title?: string | null
+          approved_offer_id?: string | null
           archived?: boolean
           archived_at?: string | null
           assessed_at?: string | null
@@ -722,6 +903,7 @@ export type Database = {
           assessed_skills?: Json
           attrition_risk?: string
           company_email?: string | null
+          contract_duration_months?: number | null
           contract_end_on?: string | null
           contract_type?: string | null
           created_at?: string
@@ -741,6 +923,7 @@ export type Database = {
           performance?: string | null
           personal_email?: string | null
           prior_experience?: string[]
+          project_code?: string | null
           readiness?: string
           role_id?: string | null
           role_transition_on?: string | null
@@ -755,6 +938,7 @@ export type Database = {
         Update: {
           address?: string | null
           appointed_role_title?: string | null
+          approved_offer_id?: string | null
           archived?: boolean
           archived_at?: string | null
           assessed_at?: string | null
@@ -762,6 +946,7 @@ export type Database = {
           assessed_skills?: Json
           attrition_risk?: string
           company_email?: string | null
+          contract_duration_months?: number | null
           contract_end_on?: string | null
           contract_type?: string | null
           created_at?: string
@@ -781,6 +966,7 @@ export type Database = {
           performance?: string | null
           personal_email?: string | null
           prior_experience?: string[]
+          project_code?: string | null
           readiness?: string
           role_id?: string | null
           role_transition_on?: string | null
@@ -793,6 +979,13 @@ export type Database = {
           workload_pct?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "people_approved_offer_id_fkey"
+            columns: ["approved_offer_id"]
+            isOneToOne: false
+            referencedRelation: "offer_requests"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "people_org_id_fkey"
             columns: ["org_id"]
@@ -1389,7 +1582,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      mutate_offer_request: {
+        Args: {
+          p_actor: string
+          p_candidate: string
+          p_command: string
+          p_expected: number
+          p_note?: string
+          p_payload?: Json
+        }
+        Returns: string
+      }
+      onboard_accepted_offer: {
+        Args: { p_offer: string; p_today: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

@@ -1,4 +1,8 @@
-- [ ] Add Recruiting Offer approval/sent/accepted stages, a filterable collapsible Offer workflow with recruiter-owned terms, sequential Hiring Manager → Lab Director → HRD approval, email draft notifications, versioned audit history, and approved onboarding-to-profile mapping (awaiting clarification of confidential visibility and approver selection).
+- [x] Add Recruiting Offer approval/sent/accepted stages and a filterable, paginated, collapsible Offer form.
+- [x] Enforce assigned-recruiter terms editing, scoped confidential reads, sequential Hiring Manager → Lab Director → HRD approval, and immutable revision/audit history.
+- [x] Connect approval tasks, configurable email drafts and accepted-offer onboarding-to-profile mapping in cloud and on-prem modes.
+- [x] Run workflow/permission/date regression tests: 146 unit checks and 28 isolated PostgreSQL workflow checks passed; all migrations replayed locally.
+- [ ] Verify Offer flow with real signed-in Recruiter and approvers (blocked: no app-owned session available); company server must apply migration 0032 before using the new feature.
 - [x] Correct Presence pagination consistency with version-checked pages and a single-statement source SQL script; 49 Presence / 122 total tests pass; no deployment or database changes applied.
 - [ ] Validate Presence source SQL and all four real database-backed endpoints (blocked: source view requires explicit application and Green Zone access is unavailable).
 - [x] Refine the role-profile drawer with a fixed title area, glass capability blocks, clearer type hierarchy and compact skill rows; preserve existing actions and data.

@@ -31,6 +31,7 @@ export function resolveRecipientEmails(names: (string | null | undefined)[], peo
 export function actionLink(action: ActionItem, origin: string) {
   const target = actionTarget(action);
   if (!target) return `${origin}/actions`;
+  if (target.kind === "offer") return `${origin}/recruiting/offers?offer=${target.id}`;
   if (target.kind === "reference") return `${origin}/growth?tab=reference&letter=${target.id}`;
   if (target.kind === "position") return `${origin}/?role=${target.id}`;
   return `${origin}/people/${target.id}`;

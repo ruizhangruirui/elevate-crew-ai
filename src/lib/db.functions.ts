@@ -78,6 +78,18 @@ export const dbQuery = createServerFn({ method: "POST" })
     const user = await getSessionUser();
     if (!user) return fail("Unauthorized: please sign in", "401");
     const db = await admin();
+    if ([spec.columns, spec.returning].some(v => v && /offer_requests|offer_request_events|offer_request_id|approved_offer_id/.test(v) && v.includes("("))) return fail("Confidential Offer data must use the Offer workflow", "403");
+    if (spec.table === "people" && spec.op !== "select" && (Array.isArray(spec.payload) ? spec.payload : [spec.payload]).some((r: any) => r?.approved_offer_id !== undefined)) return fail("Approved offers are linked by the onboarding workflow", "403");
+
+    if (spec.table === "actions" && spec.op !== "select") {
+      if ((Array.isArray(spec.payload) ? spec.payload : [spec.payload]).some((r: any) => r?.source_kind === "offer_approval"))
+        return fail("Offer tasks are managed by the Offer workflow", "403");
+      if (spec.op !== "insert") {
+        const { data: rows, error } = await applyFilters(db.from("actions").select("source_kind"), spec.filters);
+        if (error) return fail("Could not verify task permissions", "403");
+        if ((rows ?? []).some((r: any) => r.source_kind === "offer_approval")) return fail("Offer tasks are managed by the Offer workflow", "403");
+      }
+    }
 
     // Stamp the real actor on audit entries.
     const stamp = (row: any) => {
@@ -100,6 +112,14 @@ export const dbQuery = createServerFn({ method: "POST" })
 
     if (spec.table === "candidates" && spec.op !== "select" && payload !== undefined) {
       for (const row of Array.isArray(payload) ? payload : [payload]) {
+        if (row?.offer_request_id !== undefined) return fail("Use the Offer workflow", "403");
+        if (["Offer approval", "Offer sent", "Offer accepted"].includes(row?.stage)) {
+          // Existing legacy rows may keep an unchanged stage while editing contact details.
+          const { data: current, error: currentError } = spec.op === "update"
+            ? await applyFilters(db.from("candidates").select("stage"), spec.filters)
+            : { data: [], error: null };
+          if (currentError || !current?.length || current.some((c: any) => c.stage !== row.stage)) return fail("Use the Offer workflow to change offer stages", "403");
+        }
         if (row?.onboarding_on !== undefined && !onboardingDateSchema.safeParse(row.onboarding_on).success)
           return fail("Invalid start date", "400");
       }
@@ -274,12 +294,19 @@ export const dbQuery = createServerFn({ method: "POST" })
     }
     if (scope && spec.table === "actions" && spec.op === "select" && out) {
       const visible = await actionVisibility(db, user, scope);
-      out = Array.isArray(out) ? out.filter(visible) : visible(out) ? out : null;
+      const scopedVisible = (r: any) => r.source_kind === "offer_approval" || visible(r);
+      out = Array.isArray(out) ? out.filter(scopedVisible) : scopedVisible(out) ? out : null;
     }
     // Home address is HR-only: strip it for every other role.
     if (spec.table === "people" && out && !isOwnerRole(user.role) && user.role !== "hr") {
       const strip = (r: any) => { if (r && typeof r === "object") delete r.address; return r; };
       out = Array.isArray(out) ? out.map(strip) : strip(out);
+    }
+    if (spec.table === "actions" && out) {
+      const { data: offers, error: offerError } = await db.from("offer_requests").select("id,recruiter_user_id,hiring_manager_user_id,lab_director_user_id,hrd_user_id,org_node_id");
+      if (offerError) return fail("Could not verify Offer task visibility", "403");
+      const canReadOfferTask = (r: any) => r.source_kind !== "offer_approval" || (offers ?? []).some(o => o.id === r.source_key && (isOwnerRole(user.role) || [o.recruiter_user_id, o.hiring_manager_user_id, o.lab_director_user_id, o.hrd_user_id].includes(user.id) || (user.role === "hr" && (!scope || scope.nodeIds.has(o.org_node_id ?? "")))));
+      out = Array.isArray(out) ? out.filter(canReadOfferTask) : canReadOfferTask(out) ? out : null;
     }
     return { data: out, error: error ? { message: error.message, code: error.code } : null, count: count ?? null };
   });

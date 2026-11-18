@@ -18,6 +18,12 @@ export const processDueOnboardings = createServerFn({ method: "POST" }).handler(
   const { data: org } = await db.from("orgs").select("id").limit(1).maybeSingle();
   let moved = 0;
   for (const c of list) {
+    if (c.offer_request_id) {
+      const { data: onboarded, error: offerError } = await db.rpc("onboard_accepted_offer", { p_offer: c.offer_request_id, p_today: today });
+      if (offerError) throw new Error(offerError.message);
+      if (onboarded) moved++;
+      continue;
+    }
     const { data: role } = await db.from("roles").select("id,org_node_id,job_title,title").eq("id", c.role_id).maybeSingle();
     let personId = c.person_id as string | null;
     const fields = {

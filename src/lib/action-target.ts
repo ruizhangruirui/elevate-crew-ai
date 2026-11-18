@@ -1,6 +1,9 @@
 import type { ActionItem } from "./actions";
 
 export function actionTarget(action: ActionItem) {
+  if (action.source_kind === "offer_approval" && action.source_key) {
+    return { kind: "offer" as const, id: action.source_key };
+  }
   if ((action.source_kind === "reference" || action.source_kind === "reference_review") && action.source_key) {
     return { kind: "reference" as const, id: action.source_key };
   }

@@ -125,7 +125,7 @@ export const syncTeamTailor = createServerFn({ method: "POST" }).handler(async (
 
   const { data: existing, error: existingError } = await db
     .from("candidates")
-    .select("id,role_id,email,name,stage,outcome,priority,cv_url,teamtailor_application_id");
+    .select("id,role_id,email,name,stage,outcome,priority,cv_url,teamtailor_application_id,offer_request_id");
   if (existingError) throw new Error(existingError.message);
   const byAppId = new Map((existing ?? []).filter((c) => c.teamtailor_application_id).map((c) => [c.teamtailor_application_id as string, c]));
   const byKey = new Map((existing ?? []).map((c) => [`${c.role_id}|${dedupeKey(c)}`, c]));
@@ -158,6 +158,7 @@ export const syncTeamTailor = createServerFn({ method: "POST" }).handler(async (
       if (!existingRow.cv_url && a.profileUrl) {
         await db.from("candidates").update({ cv_url: a.profileUrl } as never).eq("id", existingRow.id);
       }
+      if (existingRow.offer_request_id) { unchanged++; continue; }
       const priority = inboxDefaultPriority(stage, existingRow.priority);
       const patch: { id: string; stage: string | null; outcome: string; priority?: string } = { id: existingRow.id, stage, outcome };
       if (priority) patch.priority = priority;

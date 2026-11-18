@@ -16,6 +16,11 @@ const candidates = [
   { id: "5", role_id: "rl", outcome: "offer" },
 ];
 describe("Cross-role recruiting overview", () => {
+  it("keeps Offer sent and accepted stage rows in the overview after removing their old statuses", () => {
+    const rows = [{ id: "sent", role_id: "ra", outcome: "active", stage: "Offer sent" }, { id: "accepted", role_id: "ra", outcome: "to_onboard", stage: "Offer accepted" }];
+    deepStrictEqual(overviewCandidates(rows, roles, nodes).map(c => c.id), ["sent", "accepted"]);
+    deepStrictEqual(overviewCandidates(rows, roles, nodes, "all", "offer").map(c => c.id), ["sent"]);
+  });
   it("combines Offered and To onboard candidates across roles", () => {
     deepStrictEqual(overviewCandidates(candidates, roles, nodes).map((c) => c.id), ["1", "2", "5"]);
   });

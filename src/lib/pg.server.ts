@@ -393,5 +393,21 @@ class Builder implements PromiseLike<PgResult> {
 export function pgAdmin() {
   return {
     from: (table: string) => new Builder(table, "select"),
+    rpc: async (name: string, args: Record<string, unknown>): Promise<PgResult> => {
+      const signatures: Record<string, string[]> = {
+        mutate_offer_request: ["p_actor", "p_candidate", "p_expected", "p_command", "p_payload", "p_note"],
+        onboard_accepted_offer: ["p_offer", "p_today"],
+      };
+      const keys = signatures[name];
+      if (!keys) return { data: null, error: { message: "Unsupported database function" }, count: null };
+      try {
+        const values = keys.map(k => k === "p_payload" ? JSON.stringify(args[k]) : args[k]);
+        const placeholders = keys.map((k, i) => `$${i + 1}${k === "p_payload" ? "::jsonb" : ""}`).join(",");
+        const result = await getPool().query(`SELECT public.${ident(name, "function")}(${placeholders}) AS result`, values);
+        return { data: result.rows[0]?.result ?? null, error: null, count: null };
+      } catch (error) {
+        return { data: null, error: { message: error instanceof Error ? error.message : String(error) }, count: null };
+      }
+    },
   };
 }

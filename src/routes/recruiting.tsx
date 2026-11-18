@@ -28,7 +28,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDate } from "@/lib/dates";
-import { DATALINK_URL, needsOfferApproval } from "@/lib/datalink";
+import { normalizedCandidate, recruitingStageOptions, OFFER_STAGES } from "@/lib/offer-workflow";
+import { startOffer } from "@/lib/offer-workflow.functions";
+import { OfferApprovalDialog } from "@/components/OfferApprovalBoard";
 
 export const Route = createFileRoute("/recruiting")({
   validateSearch: z.object({ role: z.string().optional() }),
@@ -52,8 +54,8 @@ export const Route = createFileRoute("/recruiting")({
   },
 });
 
-const DEFAULT_STAGES = ["CV Screen", "Phone Interview", "Hiring Manager Interview", "Technical Interview", "Final Interview", "Reference Check", "Offer"];
-const OUTCOMES = ["active", "on_hold", "offer", "offer_accepted", "to_onboard", "hired", "rejected", "withdrawn"] as const;
+const DEFAULT_STAGES = ["CV Screen", "Phone Interview", "Hiring Manager Interview", "Technical Interview", "Final Interview", "Reference Check"];
+const OUTCOMES = ["active", "on_hold", "to_onboard", "hired", "rejected", "withdrawn"] as const;
 const FILTERS = {
   active: ["active", "on_hold", "offer", "offer_accepted"],
   to_onboard: ["to_onboard"],
@@ -92,6 +94,7 @@ function ctLabel(t: (k: string) => string, v: string | null): string {
 export type Candidate = {
   id: string;
   role_id: string;
+  offer_request_id?: string | null;
   name: string;
   email: string | null;
   phone: string | null;
@@ -156,6 +159,12 @@ function RecruitingBody() {
   const [overviewStatus, setOverviewStatus] = useState("all");
   const [overviewQuery, setOverviewQuery] = useState("");
   const [overviewOpen, setOverviewOpen] = useState(true);
+  const [offerId, setOfferId] = useState<string | null>(null);
+  const openOffer = useMutation({
+    mutationFn: (candidate: Candidate) => candidate.offer_request_id ? Promise.resolve({ id: candidate.offer_request_id }) : startOffer({ data: { candidate_id: candidate.id } }),
+    onSuccess: (r) => { setOfferId(r.id); qc.invalidateQueries({ queryKey: ["candidates"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const { data: ws } = useQuery({ queryKey: ["workspace", "recruiting"], queryFn: fetchRecruitingWorkspace });
   const { data: orgNodes = [] } = useQuery({ queryKey: ["orgNodes"], queryFn: fetchOrgNodes });
@@ -203,7 +212,7 @@ function RecruitingBody() {
       return (data ?? []) as { name: string; active: boolean }[];
     },
   });
-  const stages = stageItems && stageItems.length ? stageItems.filter((s) => s.active).map((s) => s.name) : DEFAULT_STAGES;
+  const stages = recruitingStageOptions(stageItems && stageItems.length ? stageItems.filter((s) => s.active).map((s) => s.name) : DEFAULT_STAGES);
 
   const { data: candidates } = useQuery({
     queryKey: ["candidates"],
@@ -215,7 +224,7 @@ function RecruitingBody() {
       } catch { /* non-blocking */ }
       const { data, error } = await db.from("candidates").select("*").order("updated_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as Candidate[];
+      return ((data ?? []) as Candidate[]).map(normalizedCandidate);
     },
   });
 
@@ -285,6 +294,12 @@ function RecruitingBody() {
 
   const quickUpdate = useMutation({
     mutationFn: async ({ c, patch }: { c: Candidate; patch: Partial<Candidate> }) => {
+      if (patch.stage && (OFFER_STAGES as readonly string[]).includes(patch.stage)) {
+        if (patch.stage !== "Offer approval" && !c.offer_request_id) throw new Error("Start Offer approval first");
+        const r = await startOffer({ data: { candidate_id: c.id } });
+        setOfferId(r.id);
+        return;
+      }
       const { error } = await db.from("candidates").update(patch).eq("id", c.id);
       if (error) throw error;
       await db.from("candidate_events").insert({
@@ -306,6 +321,7 @@ function RecruitingBody() {
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-end"><Button asChild variant="outline"><Link to="/recruiting/offers">Offer approval →</Link></Button></div>
       <section className="card-glass min-w-0 overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 px-4 py-3">
           <button type="button" onClick={() => setOverviewOpen(!overviewOpen)} className="flex items-center gap-1.5" aria-expanded={overviewOpen}>
@@ -331,7 +347,7 @@ function RecruitingBody() {
         </div>
         {overviewOpen && <div className="flex flex-wrap gap-1 border-b border-border/60 px-4 py-2">
           {["all", "offer", "offer_accepted", "to_onboard"].map((status) => <Button key={status} size="sm" variant="ghost" aria-pressed={overviewStatus === status} onClick={() => setOverviewStatus(status)} className={`h-7 gap-2 px-2.5 text-xs ${overviewStatus === status ? "bg-brand/12 text-brand" : "text-muted-foreground"}`}>
-            {t(`rec.overview.${status}`)}<span className="tabular-nums">{overviewBase.filter((c) => status === "all" || c.outcome === status).length}</span>
+            {t(`rec.overview.${status}`)}<span className="tabular-nums">{overviewBase.filter((c) => status === "all" || (status === "offer" ? c.stage === "Offer sent" : status === "offer_accepted" ? c.stage === "Offer accepted" && c.outcome !== "to_onboard" : c.outcome === status)).length}</span>
           </Button>)}
         </div>}
         {overviewOpen && <div className="max-h-80 overflow-auto">
@@ -349,7 +365,7 @@ function RecruitingBody() {
                   <td className="px-4 py-2"><Button variant="link" onClick={() => setEditing(candidate)} className="h-auto whitespace-normal p-0 text-left text-xs font-medium">{candidate.name}</Button></td>
                   <td className="max-w-56 px-4 py-2"><Button variant="link" className="h-auto whitespace-normal p-0 text-left text-xs" onClick={() => navigate({ search: { role: candidate.role_id } })}>{position?.title}</Button>{position?.job_title && <p className="mt-0.5 text-muted-foreground">{position.job_title}</p>}</td>
                   <td className="px-4 py-2">{teamId ? nodeById.get(teamId)?.name : "—"}<p className="text-muted-foreground">{labOf(position?.org_node_id)?.name}</p></td>
-                  <td className="px-4 py-2"><span className={`whitespace-nowrap rounded px-1.5 py-0.5 ${OUTCOME_TONE[candidate.outcome] ?? ""}`}>{t(`rec.overview.${candidate.outcome}`)}</span></td>
+                  <td className="px-4 py-2"><span className={`whitespace-nowrap rounded px-1.5 py-0.5 ${OUTCOME_TONE[candidate.outcome] ?? ""}`}>{candidate.outcome === "to_onboard" ? t("rec.out.to_onboard") : candidate.stage ?? t(`rec.out.${candidate.outcome}`)}</span></td>
                   <td className="whitespace-nowrap px-4 py-2 tabular-nums">{formatDate(candidate.onboarding_on)}</td>
                   <td className="max-w-48 px-4 py-2">{candidate.next_step || "—"}{candidate.next_step_on && <p className="text-muted-foreground tabular-nums">{formatDate(candidate.next_step_on)}</p>}</td>
                   <td className="px-4 py-2">{candidate.recruiter || "—"}</td>
@@ -530,7 +546,7 @@ function RecruitingBody() {
                         <td className="px-3 py-1.5">
                           <Select
                             value={c.stage ?? ""}
-                            disabled={!canEdit}
+                            disabled={!canEdit || (!!c.offer_request_id && c.stage !== "Offer approval")}
                             onValueChange={(v) => quickUpdate.mutate({ c, patch: { stage: v } })}
                           >
                             <SelectTrigger className="h-7 w-44 text-xs">
@@ -546,7 +562,7 @@ function RecruitingBody() {
                         <td className="px-3 py-1.5">
                           <Select
                             value={c.outcome}
-                            disabled={!canEdit}
+                            disabled={!canEdit || !!c.offer_request_id}
                             onValueChange={(v) => {
                               if (v === "to_onboard" || v === "offer_accepted") quickUpdate.mutate({ c, patch: { outcome: v } }, {
                                 onSuccess: () => setEditing({ ...c, outcome: v }),
@@ -567,14 +583,10 @@ function RecruitingBody() {
                         <td className="max-w-48 px-3 py-1.5 text-xs">
                           <p className="truncate">{c.next_step || "—"}</p>
                           {c.next_step_on && <p className="text-muted-foreground tabular-nums">{formatDate(c.next_step_on)}</p>}
-                          {(c.outcome === "to_onboard" || c.outcome === "offer_accepted") && c.onboarding_on && (
+                          {(c.outcome === "to_onboard" || c.stage === "Offer accepted") && c.onboarding_on && (
                             <p className="whitespace-nowrap text-ok tabular-nums">{t("rec.f.startDate")}: {formatDate(c.onboarding_on)}</p>
                           )}
-                          {needsOfferApproval(c.outcome) && (
-                            <a href={DATALINK_URL} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 whitespace-nowrap rounded bg-brand/12 px-1.5 py-0.5 font-medium text-brand hover:bg-brand/20">
-                              {t("dl.start")} <ExternalLink className="size-3" />
-                            </a>
-                          )}
+                          {(c.offer_request_id || c.stage === "Offer approval") && <Button variant="link" size="sm" className="mt-1 h-auto p-0 text-xs" disabled={openOffer.isPending} onClick={() => openOffer.mutate(c)}>Offer approval →</Button>}
                         </td>
                         <td className="px-3 py-1.5">
                           <span className="flex gap-1.5 text-muted-foreground">
@@ -610,11 +622,11 @@ function RecruitingBody() {
           orgId={ws.org?.id ?? null}
           stages={stages}
           canEdit={canEdit}
+          onOffer={(c) => { setEditing(null); openOffer.mutate(c); }}
           onClose={() => setEditing(null)}
         />
       )}
-
-
+      {offerId && <OfferApprovalDialog id={offerId} onClose={() => setOfferId(null)} />}
     </div>
   );
 }
@@ -626,6 +638,7 @@ function CandidateDialog({
   stages,
   canEdit,
   onClose,
+  onOffer,
 }: {
   candidate: Candidate | null;
   roleId: string;
@@ -633,6 +646,7 @@ function CandidateDialog({
   stages: string[];
   canEdit: boolean;
   onClose: () => void;
+  onOffer: (c: Candidate) => void;
 }) {
   const { t } = useI18n();
   const qc = useQueryClient();
@@ -704,6 +718,13 @@ function CandidateDialog({
   const save = useMutation({
     mutationFn: async () => {
       const p = payload();
+      if (!candidate && (OFFER_STAGES as readonly string[]).includes(p.stage ?? "")) throw new Error("Save the candidate first, then start Offer approval");
+      if (candidate?.offer_request_id) {
+        const { name: _name, stage: _stage, outcome: _outcome, onboarding_on: _onboarding, next_step: _next, contract_type: _contract, ...editable } = p;
+        const { error } = await db.from("candidates").update(editable).eq("id", candidate.id);
+        if (error) throw error;
+        return;
+      }
       if (!candidate) {
         const { data, error } = await db.from("candidates").insert({ ...p, role_id: roleId }).select("id").single();
         if (error) throw error;
@@ -721,6 +742,7 @@ function CandidateDialog({
       toast.success(t("rec.saved"));
       refresh();
       onClose();
+      if (candidate && f.stage === "Offer approval" && !candidate.offer_request_id) onOffer(candidate);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -785,7 +807,7 @@ function CandidateDialog({
   const field = (k: keyof typeof f, label: string, type = "text") => (
     <div className="space-y-1">
       <Label className="text-xs">{label}</Label>
-      <Input type={type} value={f[k]} onChange={set(k)} disabled={!canEdit} className="h-8 text-sm" />
+      <Input type={type} value={f[k]} onChange={set(k)} disabled={!canEdit || (!!candidate?.offer_request_id && ["name", "onboarding_on", "next_step"].includes(k))} className="h-8 text-sm" />
     </div>
   );
 
@@ -821,7 +843,7 @@ function CandidateDialog({
           {field("source", t("rec.c.source"))}
           <div className="space-y-1">
             <Label className="text-xs">{t("rec.c.contract")}</Label>
-            <Select value={f.contract_type} onValueChange={(v) => setF({ ...f, contract_type: v })} disabled={!canEdit}>
+            <Select value={f.contract_type} onValueChange={(v) => setF({ ...f, contract_type: v })} disabled={!canEdit || !!candidate?.offer_request_id}>
               <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="—" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value={CONTRACT_TYPE_EMPLOYEE}>{ctLabel(t, CONTRACT_TYPE_EMPLOYEE)}</SelectItem>
@@ -837,7 +859,10 @@ function CandidateDialog({
           {field("rating", t("rec.f.rating"), "number")}
           <div className="space-y-1">
             <Label className="text-xs">{t("rec.c.stage")}</Label>
-            <Select value={f.stage} onValueChange={(v) => setF({ ...f, stage: v })} disabled={!canEdit}>
+            <Select value={f.stage} onValueChange={(v) => {
+              if ((OFFER_STAGES as readonly string[]).includes(v) && candidate) { onOffer(candidate); return; }
+              setF({ ...f, stage: v });
+            }} disabled={!canEdit || !!candidate?.offer_request_id}>
               <SelectTrigger className="h-8 text-sm"><SelectValue placeholder={t("rec.stageNone")} /></SelectTrigger>
               <SelectContent>
                 {[...new Set([...stages, ...(f.stage ? [f.stage] : [])])].map((s) => (
@@ -848,7 +873,7 @@ function CandidateDialog({
           </div>
           <div className="space-y-1">
             <Label className="text-xs">{t("rec.c.outcome")}</Label>
-            <Select value={f.outcome} onValueChange={(v) => setF({ ...f, outcome: v })} disabled={!canEdit}>
+            <Select value={f.outcome} onValueChange={(v) => setF({ ...f, outcome: v })} disabled={!canEdit || !!candidate?.offer_request_id}>
               <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {OUTCOMES.map((o) => (
@@ -860,6 +885,7 @@ function CandidateDialog({
           {field("next_step_on", t("rec.f.nextDate"), "date")}
           {candidate && field("onboarding_on", t("rec.f.startDate"), "date")}
           <div className="sm:col-span-3">{field("next_step", t("rec.c.next"))}</div>
+          {candidate?.offer_request_id && <Button variant="outline" onClick={() => onOffer(candidate)}>Offer approval →</Button>}
           <div className="sm:col-span-3 grid gap-3 sm:grid-cols-2">
             {field("cv_url", t("rec.f.cv"))}
             {field("linkedin_url", t("rec.f.linkedin"))}
@@ -912,7 +938,7 @@ function CandidateDialog({
                   </Button>
                 </ConfirmAction>
               )}
-              {candidate && !candidate.person_id && (
+              {candidate && !candidate.person_id && !candidate.offer_request_id && (
                 <ConfirmAction title={t("rec.toOnboard")} description={<p>{t("rec.toOnboardDesc")}</p>} confirmLabel={t("rec.toOnboard")} onConfirm={() => toOnboard.mutate()}>
                   <Button variant="outline" size="sm" className="gap-1.5" disabled={!f.name.trim()}>
                     <UserCheck className="size-3.5" /> {t("rec.toOnboard")}

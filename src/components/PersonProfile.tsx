@@ -32,7 +32,7 @@ import { recordJoin } from "@/lib/lifecycle";
 import { ArchivePersonDialog } from "@/components/ArchivePersonDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { ContractFilesPanel } from "@/components/ContractFilesPanel";
-import { allowsFixedTerm, fixedTermFields, contractLabel, CONTRACTS, labTeamOf, roleExpected, tenureLabel, tenureMonths } from "@/lib/contract";
+import { allowsFixedTerm, fixedTermFields, contractLabel, CONTRACTS, labTeamOf, roleExpected, tenureLabel, tenureMonths, durationLabel, monthsBetween } from "@/lib/contract";
 import { badgeImportance } from "@/lib/importance";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { Button } from "@/components/ui/button";
@@ -493,7 +493,9 @@ export function PersonProfile({
         if (!form.name.trim()) throw new Error(t("pp.err.name"));
         const contract = form.contract_type === "unset" ? null : form.contract_type;
         const nextNode = form.org_node_id === "none" ? null : form.org_node_id;
-        const term = fixedTermFields(contract, form.fixed_term, form.contract_end_on || null);
+        const term = person.approved_offer_id && !allowsFixedTerm(contract)
+          ? { fixed_term: person.fixed_term ?? false, contract_end_on: person.contract_end_on ?? null }
+          : fixedTermFields(contract, form.fixed_term, form.contract_end_on || null);
         if ("error" in term) throw new Error(t(term.error));
         payload = {
           staff_id: form.staff_id.trim() || null,
@@ -750,6 +752,8 @@ export function PersonProfile({
                 <Fact label={t("cm.fixedTerm")} value={(person as any).fixed_term ? t("common.yes") : t("common.no")} />
               )}
               {(person as any).fixed_term && <Fact label={t("cm.endDate")} value={formatDate((person as any).contract_end_on)} />}
+              {person.approved_offer_id && <Fact label={t("cm.col.duration")} value={person.fixed_term ? durationLabel(t, person.contract_duration_months ?? monthsBetween(person.hire_date, person.contract_end_on)) : "Open ended"} />}
+              {person.project_code && <Fact label="Project code" value={person.project_code} />}
               <Fact label={t("loc.location")} value={person.location || "—"} />
               <Fact label={t("sheet.person.level")} value={person.level != null ? `L${person.level}` : "—"} />
               <Fact label={t("pp.f.role")} value={person.appointed_role_title || role?.title || (roleExpected(person.contract_type) ? t("sheet.person.notAssigned") : "—")} />

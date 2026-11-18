@@ -1,2 +1,3 @@
 # Integration architecture
+- Offer terms and sequential approvals use thin app-owned authenticated server functions with dynamically imported server-only helpers and service-only transactional SQL; immutable versioned events prevent concurrent approvals and partial onboarding in both database modes.
 - Presence reads both allowlisted tables through one privileged aggregate SQL view and rejects mismatched content versions across pages/endpoints; separate reads and timestamp cutoffs cannot guarantee complete syncs.

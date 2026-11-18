@@ -55,7 +55,7 @@ function ContractsBody() {
   const [status, setStatus] = useState<"all" | Status>("all");
 
   const rows = useMemo(() => {
-    const people = ((data?.people ?? []) as any[]).filter((p) => p.fixed_term && allowsFixedTerm(p.contract_type));
+    const people = ((data?.people ?? []) as any[]).filter((p) => p.fixed_term && (allowsFixedTerm(p.contract_type) || p.approved_offer_id));
     return people
       .map((p) => {
         const days = p.contract_end_on ? daysUntil(p.contract_end_on) : null;
@@ -99,7 +99,7 @@ function ContractsBody() {
             <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t("cm.allContracts")}</SelectItem>
-              {[...PERIPHERAL_CONTRACTS].map((c) => <SelectItem key={c} value={c}>{contractLabel(t, c)}</SelectItem>)}
+              {[...new Set([...PERIPHERAL_CONTRACTS, ...rows.map(r => r.p.contract_type).filter(Boolean)])].map((c) => <SelectItem key={c} value={c}>{contractLabel(t, c)}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={status} onValueChange={(v) => setStatus(v as any)}>
