@@ -37,7 +37,7 @@ export const processDueOnboardings = createServerFn({ method: "POST" }).handler(
     if (personId) {
       const { data: p } = await db.from("people").select("id,hire_date").eq("id", personId).maybeSingle();
       if (p) {
-        const { error: e } = await db.from("people").update({ status: "onboard", hire_date: p.hire_date ?? c.onboarding_on }).eq("id", personId);
+        const { error: e } = await db.from("people").update({ status: "onboard", hire_date: p.hire_date ?? c.onboarding_on, ...(role ? { role_id: role.id, org_node_id: role.org_node_id } : {}) }).eq("id", personId);
         if (e) continue;
       } else personId = null;
     }
