@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { PersonPicker } from "@/components/PersonPicker";
+import { VisibleToPicker } from "@/components/VisibleToPicker";
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -103,6 +105,39 @@ export function RoleDetailSheet({
   const [fits, setFits] = useState<FitResult[]>([]);
   const runProfile = useServerFn(generateRoleProfile);
   const runFit = useServerFn(analyzeRoleFit);
+  const navigate = useNavigate();
+  const [sourcingOpen, setSourcingOpen] = useState(false);
+  const [recruiter, setRecruiter] = useState<string | null>(null);
+  const [supervisor, setSupervisor] = useState<string | null>(null);
+  const [visibleTo, setVisibleTo] = useState<string[]>([]);
+  const inRecruiting = !!role && !role.recruiting_archived;
+  const pendingApproval = role?.approval_status === "pending";
+  const openSourcing = () => {
+    if (!role) return;
+    if (inRecruiting) { void navigate({ to: "/recruiting", search: { role: role.id } }); return; }
+    setRecruiter(role.recruiter_person_id ?? null);
+    setSupervisor(role.supervisor_person_id ?? null);
+    setVisibleTo(((role as unknown as { visible_to_person_ids?: string[] | null }).visible_to_person_ids) ?? []);
+    setAssignSeat(null);
+    setSourcingOpen((v) => !v);
+  };
+  const startSourcing = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("roles")
+        .update({ recruiting_archived: false, recruiter_person_id: recruiter, supervisor_person_id: supervisor, visible_to_person_ids: visibleTo })
+        .eq("id", role!.id);
+      if (error) throw error;
+      return role!.id;
+    },
+    onSuccess: (id) => {
+      toast.success(t("rec.roleAdded"));
+      setSourcingOpen(false);
+      onDone();
+      void navigate({ to: "/recruiting", search: { role: id } });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const aiProfile = useMutation({
     mutationFn: async () => {
@@ -339,12 +374,23 @@ export function RoleDetailSheet({
                         <Button variant="outline" size="sm" className="h-9 min-w-0 gap-1.5 px-2 whitespace-normal" onClick={() => setAssignSeat(assignSeat === i ? null : i)} aria-expanded={assignSeat === i}>
                           <UserPlus className="size-3.5" /> {t("sheet.role.assignOwner")}
                         </Button>
-                        <Button asChild variant="outline" size="sm" className="h-9 min-w-0 gap-1.5 px-2 whitespace-normal">
-                          <Link to="/recruiting" search={{ role: role.id }}>
-                            <Search className="size-3.5" /> {t("sheet.role.sourcing")}
-                          </Link>
+                        <Button variant="outline" size="sm" className="h-9 min-w-0 gap-1.5 px-2 whitespace-normal" onClick={openSourcing} disabled={pendingApproval} aria-expanded={sourcingOpen}>
+                          <Search className="size-3.5" /> {t("sheet.role.sourcing")}
                         </Button>
                       </div>
+                      {sourcingOpen && !inRecruiting && i === seats.findIndex((s) => !s) && (
+                        <div className="space-y-3 rounded-md border border-border/60 p-3">
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <PersonPicker label={t("idx.roleRecruiter")} value={recruiter} onChange={setRecruiter} clearLabel={t("ui.clear")} scope="hr" />
+                            <PersonPicker label={t("idx.roleSupervisor")} value={supervisor} onChange={setSupervisor} clearLabel={t("ui.clear")} />
+                          </div>
+                          <VisibleToPicker value={visibleTo} onChange={setVisibleTo} orgNodeId={role.org_node_id ?? null} />
+                          <div className="flex justify-end gap-2">
+                            <Button variant="ghost" size="sm" onClick={() => setSourcingOpen(false)}>{t("ui.cancel")}</Button>
+                            <Button size="sm" disabled={!recruiter || !supervisor || startSourcing.isPending} onClick={() => startSourcing.mutate()}>{t("idx.nextSourcing")}</Button>
+                          </div>
+                        </div>
+                      )}
                       {assignSeat === i && <div className="flex gap-2">
                       <Select onValueChange={(v) => assign.mutate(v)}>
                         <SelectTrigger className="min-w-0 flex-1" disabled={assign.isPending}>
