@@ -253,6 +253,13 @@
       "when": 1795020430144,
       "tag": "0035_offer_withdraw_flow",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1795021170891,
+      "tag": "0036_drop_permissive_policies",
+      "breakpoints": true
     }
   ]
 }
