@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { AppShell } from "@/components/AppShell";
+import { RecruitingTabs } from "@/components/RecruitingTabs";
 import { OfferApprovalBoard } from "@/components/OfferApprovalBoard";
 export const Route = createFileRoute("/recruiting_/offers")({
   validateSearch: z.object({ offer: z.string().uuid().optional() }),
@@ -26,7 +27,8 @@ function OfferPage() {
   const { offer } = Route.useSearch();
   const navigate = useNavigate({ from: "/recruiting/offers" });
   return (
-    <AppShell title="Offer approval">
+    <AppShell title="Recruiting">
+      <RecruitingTabs active="offers" />
       <OfferApprovalBoard
         selectedId={offer}
         onSelect={(id) => navigate({ search: { offer: id } })}

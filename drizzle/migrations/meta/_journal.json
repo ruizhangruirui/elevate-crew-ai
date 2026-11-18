@@ -239,6 +239,20 @@
       "when": 1795019784128,
       "tag": "0033_offer_owner_edit",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1795020386467,
+      "tag": "0034_offer_withdraw",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1795020430144,
+      "tag": "0035_offer_withdraw_flow",
+      "breakpoints": true
     }
   ]
 }

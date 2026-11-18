@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { ChevronDown, ExternalLink, FileText, Linkedin, Plus, RefreshCw, Search, Trash2, UserCheck } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { RecruitingTabs } from "@/components/RecruitingTabs";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/hooks/useAuth";
@@ -48,6 +49,7 @@ export const Route = createFileRoute("/recruiting")({
     const { t } = useI18n();
     return (
       <AppShell title={t("rec.title")}>
+        <RecruitingTabs active="candidates" />
         <RecruitingBody />
       </AppShell>
     );
@@ -322,7 +324,6 @@ function RecruitingBody() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end"><Button asChild variant="outline"><Link to="/recruiting/offers">Offer approval →</Link></Button></div>
       <section className="card-glass min-w-0 overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 px-4 py-3">
           <button type="button" onClick={() => setOverviewOpen(!overviewOpen)} className="flex items-center gap-1.5" aria-expanded={overviewOpen}>

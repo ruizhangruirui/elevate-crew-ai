@@ -12,6 +12,7 @@ export const OFFER_STATES = [
   "sent",
   "accepted",
   "onboarded",
+  "withdrawn",
 ] as const;
 export type OfferState = (typeof OFFER_STATES)[number];
 const text = z.string().trim().max(2000).default("");
@@ -114,7 +115,7 @@ export function canEditOffer(
   user: { id: string; role: string },
   o: { recruiter_user_id: string; state: string },
 ) {
-  if (["accepted", "onboarded"].includes(o.state)) return false;
+  if (["accepted", "onboarded", "withdrawn"].includes(o.state)) return false;
   // Owner and HR Director may maintain every offer, like the rest of Recruiting.
   if (user.role === "owner" || user.role === "hr_director") return true;
   return user.role === "recruiter" && o.recruiter_user_id === user.id;
@@ -214,6 +215,8 @@ export function nextOfferState(state: OfferState, command: string): OfferState {
   }
   if (command === "sent" && state === "approved") return "sent";
   if (command === "accepted" && state === "sent") return "accepted";
+  if (command === "withdraw" && !["accepted", "onboarded", "withdrawn"].includes(state))
+    return "withdrawn";
   throw new Error("Invalid offer transition");
 }
 export function recruitingStageOptions(stages: readonly string[]) {

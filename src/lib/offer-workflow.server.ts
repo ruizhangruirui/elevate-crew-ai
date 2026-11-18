@@ -234,7 +234,7 @@ export async function startOfferServer(data: { candidate_id: string }) {
     .eq("candidate_id", data.candidate_id)
     .maybeSingle();
   if (exError) throw new Error(exError.message);
-  if (existing) {
+  if (existing && existing.state !== "withdrawn") {
     if (!visible(ctx, existing as unknown as RawOffer)) throw new Error("Offer unavailable");
     return { id: existing.id };
   }
@@ -278,7 +278,7 @@ export async function startOfferServer(data: { candidate_id: string }) {
 export async function mutateOfferServer(data: {
   id: string;
   revision: number;
-  command: "save" | "submit" | "approve" | "reject" | "sent" | "accepted";
+  command: "save" | "submit" | "approve" | "reject" | "sent" | "accepted" | "withdraw";
   terms?: OfferTerms | undefined;
   hiring_manager_user_id: string;
   lab_director_user_id: string;

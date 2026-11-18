@@ -29,6 +29,11 @@ describe("Offer approval rules", () => {
     assert.throws(() => nextOfferState("approved", "accepted"));
     assert.equal(nextOfferState("sent", "accepted"), "accepted");
   });
+  it("offer approval can be withdrawn until it is accepted", () => {
+    assert.equal(nextOfferState("hiring_manager", "withdraw"), "withdrawn");
+    assert.equal(nextOfferState("sent", "withdraw"), "withdrawn");
+    assert.throws(() => nextOfferState("accepted", "withdraw"));
+  });
   it("revisions restart the entire approval round", () => {
     assert.equal(nextOfferState("approved", "save"), "draft");
     assert.equal(nextOfferState("sent", "submit"), "hiring_manager");
@@ -42,7 +47,7 @@ describe("Offer approval rules", () => {
     for (const u of [
       { id: "other", role: "recruiter" },
       { id: "hm", role: "manager" },
-      { id: "rec", role: "owner" },
+      { id: "hr", role: "hr" },
     ])
       assert.equal(canEditOffer(u, offer), false);
   });

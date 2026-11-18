@@ -50,6 +50,7 @@ const stateNames: Record<string, [string, string]> = {
   sent: ["Offer 已发送", "Offer sent"],
   accepted: ["Offer 已接受 · 待入职", "Offer accepted · to onboard"],
   onboarded: ["已入职", "Onboarded"],
+  withdrawn: ["已撤回", "Withdrawn"],
 };
 const fields: Record<keyof OfferTerms, [string, string]> = {
   candidate_name: ["候选人姓名", "Candidate name"],
@@ -72,7 +73,9 @@ const fields: Record<keyof OfferTerms, [string, string]> = {
 const stateTone = (s: string) =>
   ["approved", "accepted", "onboarded"].includes(s)
     ? "bg-ok/12 text-ok"
-    : s === "rejected"
+    : s === "withdrawn"
+      ? "bg-muted text-muted-foreground"
+      : s === "rejected"
       ? "bg-danger/10 text-danger"
       : "bg-brand/12 text-brand";
 export function OfferApprovalBoard({
@@ -297,7 +300,7 @@ function OfferForm({ data }: { data: Awaited<ReturnType<typeof getOffer>> }) {
     queryFn: fetchApprovalMailTemplate,
   });
   const mutation = useMutation({
-    mutationFn: (command: "save" | "submit" | "approve" | "reject" | "sent" | "accepted") =>
+    mutationFn: (command: "save" | "submit" | "approve" | "reject" | "sent" | "accepted" | "withdraw") =>
       mutateOffer({
         data: {
           id: o.id,
@@ -603,6 +606,25 @@ function OfferForm({ data }: { data: Awaited<ReturnType<typeof getOffer>> }) {
               </Button>
             </ConfirmAction>
           </>
+        )}
+        {o.can_edit && (
+          <ConfirmAction
+            title={l("撤回 Offer 审批", "Withdraw offer approval")}
+            description={
+              <p>
+                {l(
+                  "审批流程将终止，候选人回到发起审批前的阶段；审批记录会保留，之后可重新发起。",
+                  "The approval stops and the candidate returns to the previous stage. History is kept and you can start again later.",
+                )}
+              </p>
+            }
+            confirmLabel={l("确认撤回", "Withdraw")}
+            onConfirm={() => mutation.mutate("withdraw")}
+          >
+            <Button variant="outline" disabled={mutation.isPending}>
+              {l("撤回审批", "Withdraw")}
+            </Button>
+          </ConfirmAction>
         )}
         {o.can_edit && o.state === "approved" && (
           <ConfirmAction
