@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileText, Download, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { db as supabase } from "@/lib/db-client";
+import { useApprovalNotify } from "@/hooks/useApprovalNotify";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -121,6 +122,7 @@ function RequestDialog({
   onClose: () => void;
 }) {
   const { t } = useI18n();
+  const notifier = useApprovalNotify();
   const qc = useQueryClient();
   const tpl = useQuery({ queryKey: ["ref-templates"], queryFn: fetchRefTemplates });
   const events = useQuery({ queryKey: ["lifecycle-events"], queryFn: fetchLifecycleEvents });
@@ -183,9 +185,10 @@ function RequestDialog({
         status: "todo",
       } as never);
       await supabase.from("audit_log").insert({ person_id: personId, action: "Reference letter requested", entity: facts.name, detail: sup.name } as never);
+      return { title: t("ref.todoTitle").replace("{name}", facts.name), source_kind: "reference", source_key: (data as { id: string }).id, person_id: personId, owner: sup.name };
     },
-    onSuccess: () => {
-      toast.success(t("ref.sent"));
+    onSuccess: (draft) => {
+      notifier.offer(t("ref.sent"), draft);
       qc.invalidateQueries({ queryKey: ["reference-letters"] });
       qc.invalidateQueries({ queryKey: ["actions"] });
       onClose();
@@ -279,6 +282,7 @@ function LetterDialog({
   onClose: () => void;
 }) {
   const { t } = useI18n();
+  const notifier = useApprovalNotify();
   const { user } = useAuth();
   const qc = useQueryClient();
   const growth = useQuery({ queryKey: ["growth-data"], queryFn: fetchGrowthData });
@@ -325,7 +329,7 @@ function LetterDialog({
       return patch["status"] as string | undefined;
     },
     onSuccess: (status) => {
-      if (status === "submitted") toast.success(t("ref.submitted"));
+      if (status === "submitted") notifier.offer(t("ref.submitted"), { title: t("ref.reviewTodo").replace("{name}", letter.facts.name), source_kind: "reference_review", source_key: letter.id, person_id: letter.person_id, owner: "HR" });
       else if (status === "approved") toast.success(t("ref.approved"));
       else if (status === "requested") toast.success(t("ref.returned"));
       else toast.success(t("ref.tpl.saved"));

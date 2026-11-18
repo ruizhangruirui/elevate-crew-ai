@@ -2,7 +2,8 @@ import { isOwnerRole, canApprovePositions, POSITION_APPROVAL_OWNER } from "@/lib
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { EMPLOYMENT_MODES, employmentModeLabel, useLocations } from "@/lib/locations";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useApprovalNotify } from "@/hooks/useApprovalNotify";
 import { toast } from "sonner";
 import {
   Plus,
@@ -1013,6 +1014,8 @@ export function NewDirectionDialog({ orgId, onDone }: { orgId: string; onDone: (
 
 function NewRoleDialog({ directionId, orgNodes, onDone, onAssign }: { directionId: string; orgNodes: { id: string; name: string; type: string }[]; onDone: () => void; onAssign: (id: string) => void }) {
   const { t } = useI18n();
+  const notifier = useApprovalNotify();
+  const approvalDraft = useRef<Parameters<typeof notifier.offer>[1] | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -1076,6 +1079,8 @@ function NewRoleDialog({ directionId, orgNodes, onDone, onAssign }: { directionI
       if (error) throw error;
       const id = (data as { id: string }).id;
       if (!isOwner) {
+        approvalDraft.current = null;
+        approvalDraft.current = { title: `${t("idx.approvalTodo")}: ${form.title.trim()}`, detail: `${t("idx.requestedBy")} ${user?.name ?? ""}`, source_kind: "position_approval", source_key: id, role_id: id, owner: POSITION_APPROVAL_OWNER };
         await supabase.from("actions").insert({
           title: `${t("idx.approvalTodo")}: ${form.title.trim()}`,
           detail: `${t("idx.requestedBy")} ${user?.name ?? ""}`,
@@ -1090,7 +1095,8 @@ function NewRoleDialog({ directionId, orgNodes, onDone, onAssign }: { directionI
       return id;
     },
     onSuccess: (id) => {
-      toastSaved(isOwner ? t("idx.roleCreated") : t("idx.sentForApproval"));
+      if (isOwner || !approvalDraft.current) toastSaved(t("idx.roleCreated"));
+      else notifier.offer(t("idx.sentForApproval"), approvalDraft.current);
       setCreatedId(id);
       setStep("next");
       onDone();
