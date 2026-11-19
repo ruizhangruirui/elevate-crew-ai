@@ -576,6 +576,8 @@ export type Database = {
       }
       offer_requests: {
         Row: {
+          archived: boolean
+          archived_at: string | null
           candidate_id: string
           created_at: string
           hiring_manager_user_id: string | null
@@ -593,6 +595,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived?: boolean
+          archived_at?: string | null
           candidate_id: string
           created_at?: string
           hiring_manager_user_id?: string | null
@@ -610,6 +614,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived?: boolean
+          archived_at?: string | null
           candidate_id?: string
           created_at?: string
           hiring_manager_user_id?: string | null
@@ -1582,6 +1588,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_offer_request: {
+        Args: { p_actor: string; p_offer: string }
+        Returns: undefined
+      }
       mutate_offer_request: {
         Args: {
           p_actor: string

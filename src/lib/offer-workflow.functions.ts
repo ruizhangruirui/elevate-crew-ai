@@ -10,6 +10,7 @@ export const listOffers = createServerFn({ method: "POST" })
         lab: z.string().default("all"),
         page: z.number().int().min(1).default(1),
         mine: z.boolean().default(false),
+        archived: z.boolean().default(false),
       })
       .parse(d),
   )
@@ -57,4 +58,18 @@ export const mutateOffer = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { mutateOfferServer } = await import("./offer-workflow.server");
     return mutateOfferServer(data);
+  });
+export const archiveOffer = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({ id: z.string().uuid(), archived: z.boolean() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { archiveOfferServer } = await import("./offer-workflow.server");
+    return archiveOfferServer(data);
+  });
+export const deleteOffer = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data }) => {
+    const { deleteOfferServer } = await import("./offer-workflow.server");
+    return deleteOfferServer(data);
   });

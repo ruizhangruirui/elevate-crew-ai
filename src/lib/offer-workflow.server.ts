@@ -23,8 +23,43 @@ type RawOffer = Omit<
   | "recruiter_name"
   | "can_edit"
   | "can_decide"
+  | "can_archive"
+  | "can_delete"
   | "recipient"
 > & { terms: OfferTerms };
+const isOfferAdmin = (u: { role: string }) => u.role === "owner" || u.role === "hr_director";
+export async function archiveOfferServer(data: { id: string; archived: boolean }) {
+  const ctx = await context();
+  const { data: row, error } = await ctx.db
+    .from("offer_requests")
+    .select("*")
+    .eq("id", data.id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  const o = row as unknown as RawOffer | null;
+  if (!o || !visible(ctx, o)) throw new Error("Offer unavailable");
+  if (!isOfferAdmin(ctx.user) && o.recruiter_user_id !== ctx.user.id)
+    throw new Error("Only the assigned recruiter or Owner can archive this offer");
+  const { error: e2 } = await ctx.db
+    .from("offer_requests")
+    .update({
+      archived: data.archived,
+      archived_at: data.archived ? new Date().toISOString() : null,
+    })
+    .eq("id", o.id);
+  if (e2) throw new Error(e2.message);
+  return { ok: true };
+}
+export async function deleteOfferServer(data: { id: string }) {
+  const ctx = await context();
+  if (!isOfferAdmin(ctx.user)) throw new Error("Only the Owner can delete offers");
+  const { error } = await ctx.db.rpc("delete_offer_request", {
+    p_actor: ctx.user.id,
+    p_offer: data.id,
+  });
+  if (error) throw new Error(error.message);
+  return { ok: true };
+}
 type Node = { id: string; name: string; parent_id: string | null; type: string };
 type Person = {
   id: string;
@@ -123,6 +158,8 @@ function present(ctx: Ctx, o: RawOffer): OfferRequest {
     recruiter_name: ctx.accounts.find((u) => u.id === o.recruiter_user_id)?.name ?? "—",
     can_edit: canEditOffer(ctx.user, o),
     can_decide: canDecideOffer(ctx.user, o),
+    can_archive: isOfferAdmin(ctx.user) || o.recruiter_user_id === ctx.user.id,
+    can_delete: isOfferAdmin(ctx.user),
     recipient: recipient ? { name: recipient.name, email: recipient.email } : null,
   };
 }
@@ -132,6 +169,7 @@ export async function listOffersServer(data: {
   lab: string;
   page: number;
   mine: boolean;
+  archived?: boolean;
 }) {
   const ctx = await context();
   const { data: rows, error } = await ctx.db
@@ -146,6 +184,7 @@ export async function listOffersServer(data: {
     .map((o) => present(ctx, o as unknown as RawOffer));
   const filtered = accessible.filter(
     (o) =>
+      !!o.archived === !!data.archived &&
       (data.state === "all" || o.state === data.state) &&
       (data.lab === "all" || o.lab_id === data.lab) &&
       (!data.mine ||

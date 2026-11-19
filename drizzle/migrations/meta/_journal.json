@@ -274,6 +274,13 @@
       "when": 1795096903967,
       "tag": "0038_offer_lab_director_optional",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1795097523361,
+      "tag": "0039_offer_archive_delete",
+      "breakpoints": true
     }
   ]
 }

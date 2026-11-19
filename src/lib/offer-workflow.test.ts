@@ -152,6 +152,9 @@ describe("Offer approval rules", () => {
 describe("Optional Lab Director", () => {
   it("skips to HRD when no Lab Director is named", () => {
     assert.equal(nextOfferState("hiring_manager", "approve", { hasLabDirector: false }), "hrd");
-    assert.equal(nextOfferState("hiring_manager", "approve", { hasLabDirector: true }), "lab_director");
+    assert.equal(
+      nextOfferState("hiring_manager", "approve", { hasLabDirector: true }),
+      "lab_director",
+    );
   });
 });

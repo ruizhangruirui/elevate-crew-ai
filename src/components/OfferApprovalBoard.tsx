@@ -16,7 +16,13 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
-import { listOffers, getOffer, mutateOffer } from "@/lib/offer-workflow.functions";
+import {
+  listOffers,
+  getOffer,
+  mutateOffer,
+  archiveOffer,
+  deleteOffer,
+} from "@/lib/offer-workflow.functions";
 import {
   OFFER_STATES,
   type OfferTerms,
@@ -92,10 +98,11 @@ export function OfferApprovalBoard({
   const [state, setState] = useState("all");
   const [lab, setLab] = useState("all");
   const [mine, setMine] = useState(false);
+  const [archived, setArchived] = useState(false);
   const [page, setPage] = useState(1);
   const { data, error, isFetching } = useQuery({
-    queryKey: ["offers", query, state, lab, mine, page],
-    queryFn: () => listOffers({ data: { query, state, lab, mine, page } }),
+    queryKey: ["offers", query, state, lab, mine, archived, page],
+    queryFn: () => listOffers({ data: { query, state, lab, mine, archived, page } }),
     refetchInterval: 60_000,
   });
   return (
@@ -170,6 +177,17 @@ export function OfferApprovalBoard({
             />
             {l("待我处理", "My pending items")}
           </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={archived}
+              onChange={(e) => {
+                setArchived(e.target.checked);
+                setPage(1);
+              }}
+            />
+            {l("查看已归档", "Show archived")}
+          </label>
         </div>
       </div>
       {error && (
@@ -243,6 +261,7 @@ function OfferRow({ offer: o, onOpen }: { offer: OfferRequest; onOpen: () => voi
         <Button variant="outline" size="sm" onClick={onOpen}>
           {lang === "zh" ? "打开表单" : "Open offer"}
         </Button>
+        <OfferRowActions offer={o} />
       </div>
       {open && (
         <div className="flex flex-wrap justify-between gap-3 border-t border-border/60 px-5 py-3 text-sm">
@@ -931,5 +950,69 @@ function OfferFlow({
         </div>
       )}
     </div>
+  );
+}
+
+function OfferRowActions({ offer: o }: { offer: OfferRequest }) {
+  const { lang } = useI18n();
+  const l = (zh: string, en: string) => (lang === "zh" ? zh : en);
+  const qc = useQueryClient();
+  const done = (msg: string) => {
+    toast.success(msg);
+    qc.invalidateQueries({ queryKey: ["offers"] });
+  };
+  const archive = useMutation({
+    mutationFn: () => archiveOffer({ data: { id: o.id, archived: !o.archived } }),
+    onSuccess: () => done(o.archived ? l("已恢复", "Restored") : l("已归档", "Archived")),
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const remove = useMutation({
+    mutationFn: () => deleteOffer({ data: { id: o.id } }),
+    onSuccess: () => done(l("已删除", "Deleted")),
+    onError: (e: Error) => toast.error(e.message),
+  });
+  return (
+    <>
+      {o.can_archive && (
+        <ConfirmAction
+          title={o.archived ? l("恢复 Offer", "Restore offer") : l("归档 Offer", "Archive offer")}
+          description={
+            <p>
+              {o.archived
+                ? l("该条目将重新出现在列表中。", "This offer will reappear in the list.")
+                : l(
+                    "条目将从列表隐藏，审批记录保留，可在「查看已归档」中恢复。",
+                    "Hidden from the list; history is kept and it can be restored from Show archived.",
+                  )}
+            </p>
+          }
+          confirmLabel={o.archived ? l("恢复", "Restore") : l("归档", "Archive")}
+          onConfirm={() => archive.mutate()}
+        >
+          <Button variant="ghost" size="sm" disabled={archive.isPending}>
+            {o.archived ? l("恢复", "Restore") : l("归档", "Archive")}
+          </Button>
+        </ConfirmAction>
+      )}
+      {o.can_delete && (
+        <ConfirmAction
+          title={l("永久删除 Offer", "Delete offer permanently")}
+          description={
+            <p>
+              {l(
+                `将永久删除 ${o.candidate_name} 的 Offer 表单、全部审批记录和相关待办，无法恢复。候选人回到发起 Offer 前的阶段；已入职人员资料保留。`,
+                `Permanently deletes the offer for ${o.candidate_name}, all approval history and related tasks. This cannot be undone. The candidate returns to the pre-offer stage; onboarded people records are kept.`,
+              )}
+            </p>
+          }
+          confirmLabel={l("永久删除", "Delete")}
+          onConfirm={() => remove.mutate()}
+        >
+          <Button variant="ghost" size="sm" className="text-danger" disabled={remove.isPending}>
+            {l("删除", "Delete")}
+          </Button>
+        </ConfirmAction>
+      )}
+    </>
   );
 }

@@ -63,6 +63,9 @@ export type OfferRequest = {
   recruiter_name: string;
   can_edit: boolean;
   can_decide: boolean;
+  archived: boolean;
+  can_archive: boolean;
+  can_delete: boolean;
   recipient: { name: string; email: string } | null;
 };
 export type OfferJson =
