@@ -297,20 +297,9 @@ function RecruitingBody() {
 
   const quickUpdate = useMutation({
     mutationFn: async ({ c, patch }: { c: Candidate; patch: Partial<Candidate> }) => {
-      if (patch.stage && c.offer_request_id) {
-        const zh = lang === "zh";
-        if (!(OFFER_STAGES as readonly string[]).includes(patch.stage))
-          throw new Error(zh ? "该候选人有进行中的 Offer 审批，请先在 Offer 表单中「撤回审批」再改阶段" : "Withdraw the offer approval in the offer form before changing stage");
+      if (patch.stage && c.offer_request_id && (OFFER_STAGES as readonly string[]).includes(patch.stage) && patch.stage !== "Offer approval") {
         const { offer: o } = await getOffer({ data: { id: c.offer_request_id } });
         await mutateOffer({ data: { id: o.id, revision: o.revision, command: "set_stage", stage: patch.stage as "Offer sent", hiring_manager_user_id: "", lab_director_user_id: "", hrd_user_id: "", note: "" } });
-        return;
-      }
-      if (patch.stage && (OFFER_STAGES as readonly string[]).includes(patch.stage)) {
-        const r = await startOffer({ data: { candidate_id: c.id } });
-        if (patch.stage !== "Offer approval") {
-          const { offer: o } = await getOffer({ data: { id: r.id } });
-          await mutateOffer({ data: { id: o.id, revision: o.revision, command: "set_stage", stage: patch.stage as "Offer sent", hiring_manager_user_id: "", lab_director_user_id: "", hrd_user_id: "", note: "" } });
-        } else setOfferId(r.id);
         return;
       }
       const { error } = await db.from("candidates").update(patch).eq("id", c.id);
@@ -730,9 +719,8 @@ function CandidateDialog({
   const save = useMutation({
     mutationFn: async () => {
       const p = payload();
-      if (!candidate && (OFFER_STAGES as readonly string[]).includes(p.stage ?? "")) throw new Error("Save the candidate first, then start Offer approval");
       if (candidate?.offer_request_id) {
-        const { name: _name, stage: _stage, outcome: _outcome, onboarding_on: _onboarding, next_step: _next, contract_type: _contract, ...editable } = p;
+        const { name: _name, next_step: _next, ...editable } = p;
         const { error } = await db.from("candidates").update(editable).eq("id", candidate.id);
         if (error) throw error;
         return;
@@ -871,10 +859,7 @@ function CandidateDialog({
           {field("rating", t("rec.f.rating"), "number")}
           <div className="space-y-1">
             <Label className="text-xs">{t("rec.c.stage")}</Label>
-            <Select value={f.stage} onValueChange={(v) => {
-              if ((OFFER_STAGES as readonly string[]).includes(v) && candidate) { onOffer(candidate); return; }
-              setF({ ...f, stage: v });
-            }} disabled={!canEdit || !!candidate?.offer_request_id}>
+            <Select value={f.stage} onValueChange={(v) => setF({ ...f, stage: v })} disabled={!canEdit}>
               <SelectTrigger className="h-8 text-sm"><SelectValue placeholder={t("rec.stageNone")} /></SelectTrigger>
               <SelectContent>
                 {[...new Set([...stages, ...(f.stage ? [f.stage] : [])])].map((s) => (

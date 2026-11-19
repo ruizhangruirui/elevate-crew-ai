@@ -113,13 +113,7 @@ export const dbQuery = createServerFn({ method: "POST" })
     if (spec.table === "candidates" && spec.op !== "select" && payload !== undefined) {
       for (const row of Array.isArray(payload) ? payload : [payload]) {
         if (row?.offer_request_id !== undefined) return fail("Use the Offer workflow", "403");
-        if (["Offer approval", "Offer sent", "Offer accepted"].includes(row?.stage)) {
-          // Existing legacy rows may keep an unchanged stage while editing contact details.
-          const { data: current, error: currentError } = spec.op === "update"
-            ? await applyFilters(db.from("candidates").select("stage,outcome"), spec.filters)
-            : { data: [], error: null };
-          if (currentError || !current?.length || current.some((c: any) => c.stage !== row.stage && !((c.outcome === "offer" && row.stage === "Offer sent") || (c.outcome === "offer_accepted" && row.stage === "Offer accepted")))) return fail("Use the Offer workflow to change offer stages", "403");
-        }
+        // Offer approval is optional for now: offer stages may be set directly.
         if (row?.onboarding_on !== undefined && !onboardingDateSchema.safeParse(row.onboarding_on).success)
           return fail("Invalid start date", "400");
       }
