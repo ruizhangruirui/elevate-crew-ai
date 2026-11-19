@@ -397,6 +397,7 @@ export function pgAdmin() {
       const signatures: Record<string, string[]> = {
         mutate_offer_request: ["p_actor", "p_candidate", "p_expected", "p_command", "p_payload", "p_note"],
         onboard_accepted_offer: ["p_offer", "p_today"],
+        delete_offer_request: ["p_actor", "p_offer"],
       };
       const keys = signatures[name];
       if (!keys) return { data: null, error: { message: "Unsupported database function" }, count: null };
