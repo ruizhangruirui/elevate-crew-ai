@@ -148,7 +148,9 @@ export async function listOffersServer(data: {
     (o) =>
       (data.state === "all" || o.state === data.state) &&
       (data.lab === "all" || o.lab_id === data.lab) &&
-      (!data.mine || currentOfferApprover(o) === ctx.user.id) &&
+      (!data.mine ||
+        currentOfferApprover(o) === ctx.user.id ||
+        (["draft", "sent"].includes(o.state) && o.recruiter_user_id === ctx.user.id)) &&
       (!q ||
         [o.candidate_name, o.job_title, o.recruiter_name].some((v) => v.toLowerCase().includes(q))),
   );
@@ -278,7 +280,8 @@ export async function startOfferServer(data: { candidate_id: string }) {
 export async function mutateOfferServer(data: {
   id: string;
   revision: number;
-  command: "save" | "submit" | "approve" | "reject" | "sent" | "accepted" | "withdraw" | "set_stage";
+  command:
+    "save" | "submit" | "approve" | "reject" | "sent" | "accepted" | "withdraw" | "set_stage";
   stage?: "Offer approval" | "Offer sent" | "Offer accepted" | undefined;
   terms?: OfferTerms | undefined;
   hiring_manager_user_id: string;
@@ -323,7 +326,8 @@ export async function mutateOfferServer(data: {
     ] as const) {
       if (id && !group.some((u) => u.id === id))
         throw new Error("Choose an eligible approver for this Lab");
-      if (data.command === "submit" && !id) throw new Error("Choose all three approvers");
+      if (data.command === "submit" && !id && group !== choices.lab_director)
+        throw new Error("Choose Hiring Manager and HRD approvers");
     }
   }
   const id = await callMutation(

@@ -149,3 +149,9 @@ describe("Offer approval rules", () => {
       validateOfferTerms({ ...emptyOfferTerms, candidate_name: "Example" }, true),
     ));
 });
+describe("Optional Lab Director", () => {
+  it("skips to HRD when no Lab Director is named", () => {
+    assert.equal(nextOfferState("hiring_manager", "approve", { hasLabDirector: false }), "hrd");
+    assert.equal(nextOfferState("hiring_manager", "approve", { hasLabDirector: true }), "lab_director");
+  });
+});

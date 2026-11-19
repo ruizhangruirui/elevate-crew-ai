@@ -267,6 +267,13 @@
       "when": 1795021601371,
       "tag": "0037_offer_free_stage_jump",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1795096903967,
+      "tag": "0038_offer_lab_director_optional",
+      "breakpoints": true
     }
   ]
 }

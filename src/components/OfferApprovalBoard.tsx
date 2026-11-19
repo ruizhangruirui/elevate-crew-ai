@@ -353,9 +353,13 @@ function OfferForm({ data }: { data: Awaited<ReturnType<typeof getOffer>> }) {
     value: string,
     set: (s: string) => void,
     options: { id: string; name: string }[],
+    optional = false,
   ) => (
     <div className="space-y-1">
-      <Label className="text-xs">{title} *</Label>
+      <Label className="text-xs">
+        {title}
+        {optional ? "" : " *"}
+      </Label>
       <Select
         value={value || "none"}
         disabled={!o.can_edit || mutation.isPending}
@@ -419,7 +423,7 @@ function OfferForm({ data }: { data: Awaited<ReturnType<typeof getOffer>> }) {
             <Button asChild variant="outline" size="sm">
               <a href={mailto}>
                 <Mail className="size-4" />
-                {l("邮件通知", "Email notification")} · {o.recipient.name}
+                {l("邮件通知下一位", "Notify next")}: {o.recipient.name}
               </a>
             </Button>
           )}
@@ -504,10 +508,11 @@ function OfferForm({ data }: { data: Awaited<ReturnType<typeof getOffer>> }) {
                   accountOptions(data.choices.hiring_manager, hm),
                 )}
                 {picker(
-                  stateNames["lab_director"]?.[lang === "zh" ? 0 : 1] ?? "Lab Director",
+                  `${stateNames["lab_director"]?.[lang === "zh" ? 0 : 1] ?? "Lab Director"} (${l("选填", "optional")})`,
                   ld,
                   setLd,
                   accountOptions(data.choices.lab_director, ld),
+                  true,
                 )}
                 {picker("HRD approval", hrd, setHrd, accountOptions(data.choices.hrd, hrd))}
               </div>
@@ -557,7 +562,7 @@ function OfferForm({ data }: { data: Awaited<ReturnType<typeof getOffer>> }) {
               </ConfirmAction>
               <ConfirmAction
                 title={l("提交新一轮审批", "Submit new approval round")}
-                description={<p>Hiring Manager → Lab Director → HRD</p>}
+                description={<p>Hiring Manager → {ld ? "Lab Director → " : ""}HRD</p>}
                 confirmLabel={l("提交审批", "Submit")}
                 onConfirm={() => mutation.mutate("submit")}
               >
@@ -786,7 +791,11 @@ function OfferFlow({
       who: o.recruiter_name,
     },
     { key: "hiring_manager", title: "Hiring Manager", who: names.hiring_manager },
-    { key: "lab_director", title: "Lab Director", who: names.lab_director },
+    {
+      key: "lab_director",
+      title: "Lab Director",
+      who: names.lab_director || l("选填 · 未指定则跳过", "Optional · skipped if empty"),
+    },
     { key: "hrd", title: "HR Director", who: names.hrd },
     { key: "sent", title: l("发送 Offer", "Send offer"), who: o.recruiter_name },
     {

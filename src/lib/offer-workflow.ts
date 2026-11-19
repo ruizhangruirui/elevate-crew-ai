@@ -108,7 +108,8 @@ export function currentOfferApprover(o: {
   if (o.state === "hiring_manager") return o.hiring_manager_user_id;
   if (o.state === "lab_director") return o.lab_director_user_id;
   if (o.state === "hrd") return o.hrd_user_id;
-  if (["approved", "rejected", "draft", "sent"].includes(o.state)) return o.recruiter_user_id;
+  // Before submission there is no approver to notify; after HRD approval the recruiter acts next.
+  if (["approved", "rejected"].includes(o.state)) return o.recruiter_user_id;
   return null;
 }
 export function canEditOffer(
@@ -203,13 +204,17 @@ export function validateOfferTerms(t: OfferTerms, submitted: boolean) {
       throw new Error("Fixed-term contracts need an end date and duration in months");
   }
 }
-export function nextOfferState(state: OfferState, command: string): OfferState {
+export function nextOfferState(
+  state: OfferState,
+  command: string,
+  opts: { hasLabDirector?: boolean } = {},
+): OfferState {
   if (command === "save" && !["accepted", "onboarded"].includes(state)) return "draft";
   if (command === "submit" && !["accepted", "onboarded"].includes(state)) return "hiring_manager";
   if (command === "reject" && ["hiring_manager", "lab_director", "hrd"].includes(state))
     return "rejected";
   if (command === "approve") {
-    if (state === "hiring_manager") return "lab_director";
+    if (state === "hiring_manager") return opts.hasLabDirector === false ? "hrd" : "lab_director";
     if (state === "lab_director") return "hrd";
     if (state === "hrd") return "approved";
   }
