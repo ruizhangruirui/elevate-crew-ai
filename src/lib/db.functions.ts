@@ -220,6 +220,32 @@ export const dbQuery = createServerFn({ method: "POST" })
       if (denied) return fail(denied, "403");
     }
 
+    // Recruiters assigned Labs only recruit for positions in those Labs (empty = all Labs).
+    const recruiterScope = user.role === "recruiter" && user.scope_node_ids.length > 0 ? await managerScope(user) : null;
+    if (recruiterScope && spec.op !== "select") {
+      const inScopeRoles = new Set(await scopedRoleIds(db, recruiterScope.nodeIds));
+      const rows = Array.isArray(payload) ? payload : payload ? [payload] : [];
+      if (spec.table === "roles") {
+        if (rows.some((r: any) => r?.org_node_id && !recruiterScope.nodeIds.has(r.org_node_id))) return fail("This position is outside your recruiting Labs", "403");
+        if (spec.op !== "insert") {
+          const { data: targets } = await applyFilters(db.from("roles").select("id"), spec.filters);
+          if ((targets ?? []).some((r: any) => !inScopeRoles.has(r.id))) return fail("This position is outside your recruiting Labs", "403");
+        }
+      }
+      if (spec.table === "candidates") {
+        if (rows.some((r: any) => r?.role_id && !inScopeRoles.has(r.role_id))) return fail("This position is outside your recruiting Labs", "403");
+        if (spec.op !== "insert") {
+          const { data: targets } = await applyFilters(db.from("candidates").select("role_id"), spec.filters);
+          if ((targets ?? []).some((r: any) => !inScopeRoles.has(r.role_id))) return fail("This candidate is outside your recruiting Labs", "403");
+        }
+      }
+      if (spec.table === "candidate_events" && rows.length) {
+        const ids = [...new Set(rows.map((r: any) => r?.candidate_id).filter(Boolean))];
+        const { data: cs } = ids.length ? await db.from("candidates").select("role_id").in("id", ids) : { data: [] };
+        if ((cs ?? []).some((c: any) => !inScopeRoles.has(c.role_id))) return fail("This candidate is outside your recruiting Labs", "403");
+      }
+    }
+
     let q: any = (db as any).from(spec.table);
     if (spec.op === "select") q = q.select(spec.columns ?? "*", spec.selectOpts);
     else if (spec.op === "insert") q = q.insert(payload);
@@ -228,6 +254,15 @@ export const dbQuery = createServerFn({ method: "POST" })
     else q = q.delete();
 
     q = applyFilters(q, spec.filters);
+    if (recruiterScope && spec.op === "select") {
+      const roleIds = [...new Set([...(await scopedRoleIds(db, recruiterScope.nodeIds)), ...(await sharedRoleIds(db, user))])];
+      if (spec.table === "roles") q = q.in("id", roleIds);
+      else if (spec.table === "candidates") q = q.in("role_id", roleIds);
+      else if (spec.table === "candidate_events") {
+        const { data: cs } = roleIds.length ? await db.from("candidates").select("id").in("role_id", roleIds) : { data: [] };
+        q = q.in("candidate_id", (cs ?? []).map((c: any) => c.id));
+      }
+    }
     if (scope && spec.op === "select") {
       if (spec.table === "people") q = q.in("id", [...scope.personIds]);
       else if (spec.table === "roles") {

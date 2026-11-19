@@ -92,7 +92,7 @@ async function context() {
   const people = (ps.data ?? []) as Person[];
   const roles = rs.data ?? [];
   const scope =
-    user.role === "manager" || (user.role === "hr" && user.scope_node_ids.length)
+    user.role === "manager" || ((user.role === "hr" || user.role === "recruiter") && user.scope_node_ids.length)
       ? await managerScope(user)
       : null;
   return { user, db, accounts, nodes, people, roles, scope };

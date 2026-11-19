@@ -83,7 +83,7 @@ export function UserAccessSection({ nodes }: { nodes: Node[] }) {
               <TableCell className="text-muted-foreground">{u.email}</TableCell>
               <TableCell>{roleLabel(u.role)}</TableCell>
               <TableCell className="text-muted-foreground">
-                {u.role === "manager" || (u.role === "hr" && u.scope_node_ids.length)
+                {u.role === "manager" || ((u.role === "hr" || u.role === "recruiter") && u.scope_node_ids.length)
                   ? u.scope_node_ids.map((id) => nodeName.get(id) ?? id).join(", ") || "-"
                   : u.role === "recruiter" ? t("access.role.recruiter") : t("access.allData")}
               </TableCell>
@@ -227,7 +227,7 @@ function UserDialog({
               </div>
             )}
           </div>
-          {(role === "manager" || role === "hr") && (
+          {(role === "manager" || role === "hr" || role === "recruiter") && (
             <div className="space-y-2">
               <Label>{t("access.scope")}</Label>
               <p className="text-xs text-muted-foreground">{t("access.scopeHint")}</p>

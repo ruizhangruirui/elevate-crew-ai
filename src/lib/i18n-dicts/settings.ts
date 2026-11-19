@@ -183,7 +183,7 @@ export const settingsDict: Dict = {
   "access.email": { zh: "邮箱", en: "Email" },
   "access.role": { zh: "角色", en: "Role" },
   "access.scope": { zh: "负责范围", en: "Scope" },
-  "access.scopeHint": { zh: "选择负责的 Lab / Team（含其下级）。HRBP 不选则可见全部数据。", en: "Pick the Labs / Teams in scope (children included). An HRBP with none selected sees all data." },
+  "access.scopeHint": { zh: "选择负责的 Lab / Team（含其下级）。HRBP 或 Recruiter 不选则可见全部数据；Recruiter 只能招聘所选 Lab 的岗位。", en: "Pick the Labs / Teams in scope (children included). An HRBP or Recruiter with none selected sees all data; Recruiters only recruit for positions in the selected Labs." },
   "access.allData": { zh: "全部数据", en: "All data" },
   "access.status": { zh: "状态", en: "Status" },
   "access.status.active": { zh: "启用", en: "Active" },
