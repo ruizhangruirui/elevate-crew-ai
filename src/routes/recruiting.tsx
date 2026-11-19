@@ -819,7 +819,7 @@ function CandidateDialog({
   const field = (k: keyof typeof f, label: string, type = "text") => (
     <div className="space-y-1">
       <Label className="text-xs">{label}</Label>
-      <Input type={type} value={f[k]} onChange={set(k)} disabled={!canEdit || (!!candidate?.offer_request_id && ["name", "onboarding_on", "next_step"].includes(k))} className="h-8 text-sm" />
+      <Input type={type} value={f[k]} onChange={set(k)} disabled={!canEdit || (!!candidate?.offer_request_id && ["name", "next_step"].includes(k))} className="h-8 text-sm" />
     </div>
   );
 
