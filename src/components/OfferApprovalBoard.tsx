@@ -542,24 +542,26 @@ function OfferForm({ data }: { data: Awaited<ReturnType<typeof getOffer>> }) {
         <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-4">
           {o.can_edit && (
             <>
-              <ConfirmAction
-                title={l("保存 Offer 修订", "Save offer revision")}
-                description={
-                  <p>
-                    {l(
-                      "修改会保留日志，并清除当前审批效力，需要重新提交审批。",
-                      "Changes are logged and invalidate the current approval. Resubmit for approval.",
-                    )}
-                  </p>
-                }
-                confirmLabel={l("保存修订", "Save revision")}
-                onConfirm={() => mutation.mutate("save")}
-              >
-                <Button variant="outline" disabled={mutation.isPending}>
-                  <Save className="size-4" />
-                  {l("保存草稿", "Save draft")}
-                </Button>
-              </ConfirmAction>
+              {o.round > 0 && (
+                <ConfirmAction
+                  title={l("保存 Offer 修订", "Save offer revision")}
+                  description={
+                    <p>
+                      {l(
+                        "修改会保留日志，并清除当前审批效力，需要重新提交审批。",
+                        "Changes are logged and invalidate the current approval. Resubmit for approval.",
+                      )}
+                    </p>
+                  }
+                  confirmLabel={l("保存修订", "Save revision")}
+                  onConfirm={() => mutation.mutate("save")}
+                >
+                  <Button variant="outline" disabled={mutation.isPending}>
+                    <Save className="size-4" />
+                    {l("保存草稿", "Save draft")}
+                  </Button>
+                </ConfirmAction>
+              )}
               <ConfirmAction
                 title={l("提交新一轮审批", "Submit new approval round")}
                 description={<p>Hiring Manager → {ld ? "Lab Director → " : ""}HRD</p>}
