@@ -281,6 +281,13 @@
       "when": 1795097523361,
       "tag": "0039_offer_archive_delete",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1795100327542,
+      "tag": "0040_relax_offer_candidate_guard",
+      "breakpoints": true
     }
   ]
 }
