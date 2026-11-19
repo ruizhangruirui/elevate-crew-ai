@@ -35,7 +35,7 @@ export function AppShell({
 
   const pathname = useLocation({ select: (l) => l.pathname });
   const isRecruiter = user?.role === "recruiter";
-  const recruiterAllowed = pathname === "/" || pathname.startsWith("/recruiting");
+  const recruiterAllowed = pathname === "/" || pathname.startsWith("/recruiting") || pathname === "/actions";
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/auth" });
     else if (!loading && isRecruiter && !recruiterAllowed) navigate({ to: "/recruiting", replace: true });
@@ -83,7 +83,7 @@ export function AppShell({
         </div>
 
         <nav className="mt-4 space-y-1">
-          {nav.filter((n) => !isRecruiter || n.to === "/" || n.to === "/recruiting").map(({ to, key, icon: Icon }) => (
+          {nav.filter((n) => !isRecruiter || n.to === "/" || n.to === "/recruiting" || n.to === "/actions").map(({ to, key, icon: Icon }) => (
             <Link
               key={to}
               to={to}

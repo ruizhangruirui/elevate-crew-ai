@@ -178,7 +178,8 @@ export const dbQuery = createServerFn({ method: "POST" })
     if (user.role === "recruiter") {
       const approvalTaskInsert = spec.table === "actions" && spec.op === "insert" && payload
         && (Array.isArray(payload) ? payload : [payload]).every((row: any) => row?.source_kind === "position_approval");
-      if (!RECRUITER_READ.has(spec.table) && !approvalTaskInsert) return fail("Recruiters can only access Positions and Recruiting", "403");
+      const ownActionRead = spec.table === "actions" && spec.op === "select";
+      if (!RECRUITER_READ.has(spec.table) && !approvalTaskInsert && !ownActionRead) return fail("Recruiters can only access Positions and Recruiting", "403");
       const roleWrite = spec.table === "roles" && (spec.op === "insert" || spec.op === "update");
       if (spec.op !== "select" && spec.table !== "candidates" && spec.table !== "candidate_events" && !roleWrite && !approvalTaskInsert)
         return fail("Recruiters can only maintain candidates and hiring roles", "403");
@@ -307,6 +308,28 @@ export const dbQuery = createServerFn({ method: "POST" })
       if (offerError) return fail("Could not verify Offer task visibility", "403");
       const canReadOfferTask = (r: any) => r.source_kind !== "offer_approval" || (offers ?? []).some(o => o.id === r.source_key && (isOwnerRole(user.role) || [o.recruiter_user_id, o.hiring_manager_user_id, o.lab_director_user_id, o.hrd_user_id].includes(user.id) || (user.role === "hr" && (!scope || scope.nodeIds.has(o.org_node_id ?? "")))));
       out = Array.isArray(out) ? out.filter(canReadOfferTask) : canReadOfferTask(out) ? out : null;
+      // Tag each task as the caller's own to-do or own request so everyone can find theirs.
+      const rows: any[] = Array.isArray(out) ? out : out ? [out] : [];
+      const roleIds = [...new Set(rows.filter(r => r.source_kind === "position_approval" && r.role_id).map(r => r.role_id))];
+      const { data: reqRoles } = roleIds.length ? await db.from("roles").select("id,requested_by").in("id", roleIds) : { data: [] as any[] };
+      const { data: offerStates } = await db.from("offer_requests").select("id,state,recruiter_user_id,hiring_manager_user_id,lab_director_user_id,hrd_user_id");
+      const { currentOfferApprover } = await import("./offer-workflow");
+      const me = (user.name ?? "").trim().toLowerCase();
+      const same = (v: unknown) => !!me && typeof v === "string" && v.trim().toLowerCase() === me;
+      for (const r of rows) {
+        let mine: "todo" | "request" | null = null;
+        if (r.source_kind === "offer_approval") {
+          const o = (offerStates ?? []).find((x: any) => x.id === r.source_key);
+          if (o && currentOfferApprover(o as any) === user.id) mine = "todo";
+          else if (o && o.recruiter_user_id === user.id) mine = "request";
+        } else {
+          const approver = /\nApprover:\s*(.+)/.exec(r.detail ?? "")?.[1];
+          if (same(r.owner) || same(approver)) mine = "todo";
+          else if (r.source_kind === "position_approval" && same((reqRoles ?? []).find((x: any) => x.id === r.role_id)?.requested_by)) mine = "request";
+        }
+        r.mine = mine;
+      }
+      if (user.role === "recruiter") out = Array.isArray(out) ? out.filter((r: any) => r.mine) : out?.mine ? out : null;
     }
     return { data: out, error: error ? { message: error.message, code: error.code } : null, count: count ?? null };
   });

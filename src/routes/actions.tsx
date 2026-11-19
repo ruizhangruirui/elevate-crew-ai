@@ -80,6 +80,7 @@ function ActionsBoard() {
   const { data: ws } = useQuery({ queryKey: ["workspace"], queryFn: fetchWorkspace });
   const { data: nodes } = useQuery({ queryKey: ["org-nodes"], queryFn: fetchOrgNodes });
   const [tab, setTab] = useState<"open" | "done" | "all">("open");
+  const [scope, setScope] = useState<"todo" | "request" | "all">("todo");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const invalidate = () => qc.invalidateQueries({ refetchType: "all" });
@@ -109,7 +110,9 @@ function ActionsBoard() {
   const personName = (id: string) => ws?.people.find((p) => p.id === id)?.name ?? "—";
   const s = useMemo(() => actionSummary(list), [list]);
 
-  const shown = list.filter((a) =>
+  const mineOf = (a: ActionItem) => (a as ActionItem & { mine?: "todo" | "request" | null }).mine ?? null;
+  const openCount = (k: "todo" | "request") => list.filter((a) => mineOf(a) === k && (a.status === "todo" || a.status === "doing")).length;
+  const shown = list.filter((a) => scope === "all" || mineOf(a) === scope).filter((a) =>
     tab === "open"
       ? a.status === "todo" || a.status === "doing"
       : tab === "done"
@@ -159,6 +162,15 @@ function ActionsBoard() {
         <StatTile label={t("act.stat.done")} value={s.done} tone="ok" />
       </section>
 
+      <section className="flex flex-wrap gap-1.5">
+        {(["todo", "request", "all"] as const).map((k) => (
+          <Button key={k} size="sm" variant={scope === k ? "default" : "outline"} onClick={() => setScope(k)}>
+            {t(`act.scope.${k}`)}
+            {k !== "all" && <span className="ml-1.5 rounded-full bg-background/30 px-1.5 text-[11px]">{openCount(k)}</span>}
+          </Button>
+        ))}
+      </section>
+
       <section className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex gap-1.5">
           {(["open", "done", "all"] as const).map((tabKey) => (
@@ -185,6 +197,9 @@ function ActionsBoard() {
       </section>
 
       <section className="panel divide-y divide-border/40">
+        {shown.length === 0 && (
+          <p className="px-5 py-8 text-center text-sm text-muted-foreground">{t("act.scope.empty")}</p>
+        )}
         {shown.map((a) => {
           const over = isOverdue(a);
           const done = a.status === "done";
@@ -222,6 +237,11 @@ function ActionsBoard() {
                   </p>
                 )}
                 <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                  {mineOf(a) && (
+                    <span className={`rounded px-1.5 py-0.5 ${mineOf(a) === "todo" ? "bg-brand/15 text-foreground" : "bg-muted/40"}`}>
+                      {t(`act.scope.tag.${mineOf(a)}`)}
+                    </span>
+                  )}
                   <span className="rounded bg-muted/40 px-1.5 py-0.5">
                     {t(`act.source.${a.source_kind}`) !== `act.source.${a.source_kind}`
                       ? t(`act.source.${a.source_kind}`)
