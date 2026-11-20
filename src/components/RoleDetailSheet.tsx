@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { UserPlus, UserMinus, Pencil, Sparkles, Loader2, Search, Layers3, BookOpen, Compass, BriefcaseBusiness, type LucideIcon } from "lucide-react";
 import { db as supabase } from "@/lib/db-client";
 import { coverageOf, criticalityLabel, type Person, type Role, type Skill } from "@/lib/talent";
-import { analyzeRoleFit, generateRoleProfile, type FitResult } from "@/lib/ai.functions";
+import { analyzeRoleFit, generateRoleProfile, type FitResult, type RoleProfileDraft } from "@/lib/ai.functions";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -84,7 +84,11 @@ function Module({ title, actions, children }: { title: string; actions?: React.R
   );
 }
 
-export function RoleDetailSheet({
+export function RoleDetailSheet(props: Parameters<typeof RoleDetailContent>[0]) {
+  return <RoleDetailContent key={props.role?.id ?? "empty"} {...props} />;
+}
+
+function RoleDetailContent({
   role,
   people,
   directionTitle,
@@ -103,6 +107,7 @@ export function RoleDetailSheet({
   const [editing, setEditing] = useState(false);
   const [assignSeat, setAssignSeat] = useState<number | null>(null);
   const [fits, setFits] = useState<FitResult[]>([]);
+  const [profileDraft, setProfileDraft] = useState<RoleProfileDraft | null>(null);
   const runProfile = useServerFn(generateRoleProfile);
   const runFit = useServerFn(analyzeRoleFit);
   const navigate = useNavigate();
@@ -141,30 +146,22 @@ export function RoleDetailSheet({
 
   const aiProfile = useMutation({
     mutationFn: async () => {
-      const draft = await runProfile({ data: { roleId: role!.id, lang } });
-      const { error } = await supabase
-        .from("roles")
-        .update({
-          domains: draft.domains,
-          knowledge: draft.knowledge,
-          leadership: draft.leadership,
-          experience: draft.experience,
-          skills: draft.skills as unknown as never,
-          kpa: draft.kpa,
-          recommended_action: draft.recommended_action,
-        })
-        .eq("id", role!.id);
-      if (error) throw error;
+      if (!role) throw new Error(t("sheet.role.noDescription"));
+      return runProfile({ data: { roleId: role.id, lang } });
     },
-    onSuccess: () => {
+    onSuccess: (draft) => {
+      setProfileDraft(draft);
+      setEditing(true);
       toast.success(t("sheet.role.aiProfileGenerated"));
-      onDone();
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const aiFit = useMutation({
-    mutationFn: () => runFit({ data: { roleId: role!.id, lang } }),
+    mutationFn: () => {
+      if (!role) throw new Error(t("sheet.role.noDescription"));
+      return runFit({ data: { roleId: role.id, lang } });
+    },
     onSuccess: (rows) => {
       setFits(rows);
       toast.success(t("sheet.role.fitAnalysisDone").replace("{n}", String(rows.length)));
@@ -212,7 +209,10 @@ export function RoleDetailSheet({
   const seats = Array.from({ length: role.target_count }, (_, i) => owners[i] ?? null);
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={(value) => {
+      if (!value) { setFits([]); setProfileDraft(null); setEditing(false); }
+      onOpenChange(value);
+    }}>
       <SheetContent side="right" className="flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
         <SheetHeader className="shrink-0 border-b border-brand/15 bg-brand/5 px-5 py-5 pr-12 text-left sm:px-6">
           <SheetDescription className="flex items-center gap-1.5 text-xs text-brand-soft">
@@ -249,7 +249,7 @@ export function RoleDetailSheet({
                   confirmLabel={t("sheet.role.confirmRegenLabel")}
                   onConfirm={() => aiProfile.mutate()}
                 >
-                  <Button variant="outline" size="sm" className="h-7 gap-1.5 px-2 text-xs" disabled={aiProfile.isPending}>
+                  <Button variant="outline" size="sm" className="h-7 gap-1.5 px-2 text-xs" disabled={aiProfile.isPending || editing || !role.description?.trim()}>
                     {aiProfile.isPending ? (
                       <Loader2 className="size-3.5 animate-spin" />
                     ) : (
@@ -258,7 +258,7 @@ export function RoleDetailSheet({
                     {t("sheet.role.aiGenerateProfile")}
                   </Button>
                 </ConfirmAction>
-                <Button variant="outline" size="sm" className="h-7 gap-1.5 px-2 text-xs" onClick={() => setEditing((v) => !v)}>
+                <Button variant="outline" size="sm" className="h-7 gap-1.5 px-2 text-xs" onClick={() => { setProfileDraft(null); setEditing((v) => !v); }}>
                   <Pencil className="size-3.5" /> {editing ? t("sheet.cancel") : t("sheet.role.editProfile")}
                 </Button>
               </div>
@@ -266,8 +266,12 @@ export function RoleDetailSheet({
           >
             {editing ? (
               <EditRoleForm
+                key={role.id}
                 role={role}
+                initialDraft={profileDraft}
                 onDone={() => {
+                  setProfileDraft(null);
+                  setFits([]);
                   setEditing(false);
                   onDone();
                 }}
@@ -440,7 +444,7 @@ export function RoleDetailSheet({
               <p className="text-xs text-muted-foreground">
                 {t("sheet.role.aiAssistDesc")}
               </p>
-              <Button size="sm" className="gap-1.5" disabled={aiFit.isPending} onClick={() => aiFit.mutate()}>
+              <Button size="sm" className="gap-1.5" disabled={aiFit.isPending || editing} onClick={() => aiFit.mutate()}>
                 {aiFit.isPending ? (
                   <Loader2 className="size-3.5 animate-spin" />
                 ) : (
@@ -492,17 +496,12 @@ export function RoleDetailSheet({
               </div>
             )}
 
-            <div className={`grid gap-3 ${cov.state === "empty" ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
+            <div className="grid gap-3 sm:grid-cols-3">
               {[
                 {
                   title: t("sheet.role.currentJudgment"),
-                  s: coverageLabel,
-                  d:
-                    cov.state === "empty"
-                      ? t("sheet.role.emptyStateDesc")
-                      : cov.state === "partial"
-                        ? t("sheet.role.partialStateDesc")
-                        : t("sheet.role.fullStateDesc"),
+                  s: fits.length ? t("sheet.role.fitAnalysisDone").replace("{n}", String(fits.length)) : t("sheet.role.notAnalyzed"),
+                  d: fits.find((fit) => owners.some((owner) => owner.id === fit.person_id))?.summary ?? fits[0]?.summary ?? "—",
                 },
                 {
                   title: t("sheet.role.coreEvidence"),
@@ -513,10 +512,10 @@ export function RoleDetailSheet({
                 },
                 {
                   title: t("sheet.role.recommendedAction"),
-                  s: role.recommended_action[0] ?? (cov.gap ? t("sheet.role.startKpa") : t("sheet.role.keepQuarterlyReview")),
-                  d: cov.gap ? t("sheet.role.gapActionDesc") : t("sheet.role.noGapActionDesc"),
+                  s: fits[0]?.person_name ?? "—",
+                  d: fits[0]?.recommendation ?? "—",
                 },
-              ].filter((_, index) => cov.state !== "empty" || index !== 2).map((c) => (
+              ].map((c) => (
                 <article key={c.title} className="card-glass p-3">
                   <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{c.title}</p>
                   <p className="mt-1 font-display text-sm font-semibold">{c.s}</p>
@@ -539,8 +538,9 @@ const fromLines = (v: string) =>
     .map((s) => s.trim())
     .filter(Boolean);
 
-function EditRoleForm({ role, onDone }: { role: Role; onDone: () => void }) {
-  const { t } = useI18n();
+function EditRoleForm({ role, initialDraft, onDone }: { role: Role; initialDraft: RoleProfileDraft | null; onDone: () => void }) {
+  const { t, lang } = useI18n();
+  const runProfile = useServerFn(generateRoleProfile);
   const [form, setForm] = useState({
     title: role.title,
     job_title: role.job_title ?? "",
@@ -549,13 +549,30 @@ function EditRoleForm({ role, onDone }: { role: Role; onDone: () => void }) {
     level_max: String(role.level_max),
     target_count: String(role.target_count),
     criticality: role.criticality,
-    domains: toLines(role.domains),
-    knowledge: toLines(role.knowledge),
-    leadership: toLines(role.leadership),
-    experience: toLines(role.experience),
-    skills: role.skills.map((s) => `${s.skill}: ${s.level}`).join("\n"),
-    kpa: role.kpa ?? "",
-    recommended_action: toLines(role.recommended_action),
+    domains: toLines(initialDraft?.domains ?? role.domains),
+    knowledge: toLines(initialDraft?.knowledge ?? role.knowledge),
+    leadership: toLines(initialDraft?.leadership ?? role.leadership),
+    experience: toLines(initialDraft?.experience ?? role.experience),
+    skills: (initialDraft?.skills ?? role.skills).map((s) => `${s.skill}: ${s.level}`).join("\n"),
+    kpa: initialDraft?.kpa ?? role.kpa ?? "",
+    recommended_action: toLines(initialDraft?.recommended_action ?? role.recommended_action),
+  });
+
+  const generate = useMutation({
+    mutationFn: () => runProfile({ data: {
+      roleId: role.id, lang,
+      draft: { title: form.title, description: form.description, level_min: Number(form.level_min), level_max: Number(form.level_max) },
+    } }),
+    onSuccess: (draft) => {
+      setForm((current) => ({ ...current,
+        domains: toLines(draft.domains), knowledge: toLines(draft.knowledge),
+        leadership: toLines(draft.leadership), experience: toLines(draft.experience),
+        skills: draft.skills.map((skill) => `${skill.skill}: ${skill.level}`).join("\n"),
+        kpa: draft.kpa, recommended_action: toLines(draft.recommended_action),
+      }));
+      toast.success(t("sheet.role.aiProfileGenerated"));
+    },
+    onError: (error: Error) => toast.error(error.message),
   });
 
   const save = useMutation({
@@ -594,6 +611,7 @@ function EditRoleForm({ role, onDone }: { role: Role; onDone: () => void }) {
 
   return (
     <div className="space-y-4">
+      <fieldset disabled={generate.isPending || save.isPending} className="space-y-4">
       <div className="space-y-2">
         <Label>{t("sheet.role.editRoleName")}</Label>
         <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
@@ -609,6 +627,12 @@ function EditRoleForm({ role, onDone }: { role: Role; onDone: () => void }) {
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
         />
+        <ConfirmAction title={t("sheet.role.confirmRegenTitle")} description={t("sheet.role.confirmRegenDesc1")} confirmLabel={t("sheet.role.aiGenerateProfile")} onConfirm={() => generate.mutate()}>
+          <Button variant="outline" size="sm" disabled={!form.description.trim() || !form.title.trim() || generate.isPending} className="gap-1.5">
+            {generate.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}
+            {generate.isPending ? t("sheet.role.analyzing") : t("sheet.role.generateFromDescription")}
+          </Button>
+        </ConfirmAction>
       </div>
       <div className="grid grid-cols-3 gap-3">
         <div className="space-y-2">
@@ -687,6 +711,7 @@ function EditRoleForm({ role, onDone }: { role: Role; onDone: () => void }) {
       <Button onClick={() => save.mutate()} disabled={!form.title.trim() || save.isPending}>
         {t("sheet.save")}
       </Button>
+      </fieldset>
     </div>
   );
 }

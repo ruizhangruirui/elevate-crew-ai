@@ -4,6 +4,7 @@ import { admin, getSessionUser, managerScope, type AppUser } from "./auth.server
 import { onboardingDateSchema } from "./candidate-onboarding";
 import { missingRoleOwners, missingRoleOwnersOnUpdate } from "./role-owners";
 import { isOwnerRole, canApprovePositions, positionApprovalAction } from "./app-roles";
+import { scopedRoleIds, sharedRoleIds } from "./role-scope.server";
 
 const TABLES = [
   "actions",
@@ -504,27 +505,6 @@ async function actionVisibility(
 }
 
 /** Roles whose team/lab lies inside the manager's scope. */
-async function scopedRoleIds(db: any, nodeIds: Set<string>): Promise<string[]> {
-  if (!nodeIds.size) return [];
-  const { data } = await db.from("roles").select("id").in("org_node_id", [...nodeIds]);
-  return (data ?? []).map((r: any) => r.id);
-}
-
-/**
- * Recruiting positions explicitly shared with this account ("Visible to"). The account is
- * linked to a person by company email (case-insensitive), falling back to an exact name match.
- * Read-only: write checks are unchanged.
- */
-async function sharedRoleIds(db: any, user: AppUser): Promise<string[]> {
-  const { data: people } = await db.from("people").select("id,name,company_email").eq("archived", false);
-  const email = user.email.trim().toLowerCase();
-  const me = (people ?? []).filter((p: any) => (p.company_email ?? "").trim().toLowerCase() === email);
-  const ids: string[] = (me.length ? me : (people ?? []).filter((p: any) => p.name === user.name)).map((p: any) => p.id);
-  if (!ids.length) return [];
-  const { data } = await db.from("roles").select("id,visible_to_person_ids").eq("archived", false);
-  return (data ?? []).filter((r: any) => (r.visible_to_person_ids ?? []).some((id: string) => ids.includes(id))).map((r: any) => r.id);
-}
-
 /** Scope nodes plus their ancestors, so managers still see the Lab above their Team. */
 async function withAncestors(db: any, nodeIds: Set<string>): Promise<Set<string>> {
   const { data } = await db.from("org_nodes").select("id,parent_id");

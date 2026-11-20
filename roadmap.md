@@ -1,3 +1,5 @@
+- [x] Generate editable role requirements from the current Job Description; replace placeholder assessment with evidence-based fit results. Six new input/scope checks and both synthetic live AI calls passed.
+- [ ] Verify AI generation and fit through the signed-in UI (blocked: app-owned session unavailable).
 - [x] Add Recruiting Offer approval/sent/accepted stages and a filterable, paginated, collapsible Offer form.
 - [x] Enforce assigned-recruiter terms editing, scoped confidential reads, sequential Hiring Manager → Lab Director → HRD approval, and immutable revision/audit history.
 - [x] Connect approval tasks, configurable email drafts and accepted-offer onboarding-to-profile mapping in cloud and on-prem modes.
