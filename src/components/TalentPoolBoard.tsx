@@ -204,6 +204,7 @@ export function TalentPoolBoard() {
                 <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${scoreTone(t.ai_score)}`}>{t.ai_score ?? "—"}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">{t.name}</span>
+                  {t.headline && <span className="block truncate text-xs text-muted-foreground">{t.headline}</span>}
                   {highlights.length > 0 && <span className="my-1 flex flex-wrap gap-1.5">
                     {highlights.map((h) => <span key={`${h.kind}-${h.institution ?? ""}`} title={`${h.source === "ai" ? l("AI 摘要，待核实", "AI summary, unverified") : l("资料提及，待核实", "Profile mention, unverified")}: ${h.evidence}`} className={`inline-flex max-w-full items-center gap-1 rounded-md border px-2 py-1 text-xs font-semibold ${h.kind === "qs" ? "border-warn/30 bg-warn/10 text-warn" : "border-brand/30 bg-brand/10 text-brand"}`}><GraduationCap className="h-3.5 w-3.5 shrink-0" /><span className="break-words">{highlightLabel(h)}{h.source === "ai" ? " · AI" : ""}</span></span>)}
                   </span>}
