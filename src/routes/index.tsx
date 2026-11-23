@@ -468,31 +468,28 @@ function RoleCard({
       </p>
 
       <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground tabular-nums">
-        <span className="rounded bg-surface-raised px-1.5 py-0.5">
+        <span>
           {t("idx.targetLevel")} L{role.level_min}–{role.level_max}
         </span>
         {role.employment_mode && <span>{employmentModeLabel(t, role.employment_mode)}</span>}
         {role.location && <span>{role.location}</span>}
       </div>
 
-      {(teams.length > 0 || members.length > 0) && (
-        <div className="mt-2.5 space-y-1 rounded-lg bg-surface-raised/60 px-2 py-1.5">
-          {teams.length > 0 && (
-            <p className="flex items-center gap-1 truncate text-[11px] text-muted-foreground">
-              <Building2 className="size-3 shrink-0" />
-              <span className="truncate">
-                {t("idx.teamsLabel")}
-                {teams.join("、")}
-              </span>
-            </p>
-          )}
-          {members.length > 0 && (
-            <p className="flex items-center gap-1 truncate text-[11px] text-muted-foreground">
-              <Users className="size-3 shrink-0" />
-              <span className="truncate">{members.join("、")}</span>
-            </p>
-          )}
-        </div>
+      {teams.length > 0 && (
+        <p className="mt-1.5 flex items-center gap-1 truncate text-[11px] text-muted-foreground">
+          <Building2 className="size-3 shrink-0" />
+          <span className="truncate">
+            {t("idx.teamsLabel")}
+            {teams.join("、")}
+          </span>
+        </p>
+      )}
+
+      {members.length > 0 && (
+        <p className="mt-1 flex items-center gap-1 truncate text-[11px] text-muted-foreground">
+          <Users className="size-3 shrink-0" />
+          <span className="truncate">{members.join("、")}</span>
+        </p>
       )}
 
       {toOnboard.length > 0 && (
