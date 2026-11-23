@@ -13,9 +13,6 @@ import {
   Building2,
   Pencil,
   MoreHorizontal,
-  CheckCircle2,
-  AlertTriangle,
-  CircleDashed,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/lib/i18n";
@@ -450,19 +447,15 @@ function RoleCard({
         : "bg-danger/12 text-danger";
   const stateLabel =
     state === "full" ? t("idx.stateFull") : state === "partial" ? t("idx.statePartial") : t("idx.stateNone");
-  const StateIcon = state === "full" ? CheckCircle2 : state === "partial" ? AlertTriangle : CircleDashed;
-  const barColor = state === "full" ? "bg-ok" : state === "partial" ? "bg-warn" : "bg-danger";
-  const coveragePct = Math.min(100, Math.round((filled / Math.max(1, role.target_count)) * 100));
 
   return (
     <article className="panel group relative flex h-full min-w-0 flex-col p-3">
       <RoleMenu role={role} orgNodes={orgNodes} onArchive={onArchive} onSaved={onSaved} />
       <div className="flex items-start justify-between gap-2">
-        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${stateStyle}`}>
-          <StateIcon className="size-3" />
+        <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${stateStyle}`}>
           {stateLabel}
         </span>
-        <span className="flex items-center gap-1.5 pr-6 text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+        <span className="flex items-center gap-1.5 pr-6 text-[10px] font-medium text-muted-foreground">
           <span className={`size-1.5 rounded-full ${CRITICALITY_DOT[role.criticality] ?? "bg-muted-foreground/50"}`} />
           {criticalityLabel[role.criticality] ?? role.criticality}
         </span>
@@ -480,18 +473,6 @@ function RoleCard({
         </span>
         {role.employment_mode && <span>{employmentModeLabel(t, role.employment_mode)}</span>}
         {role.location && <span>{role.location}</span>}
-      </div>
-
-      <div className="mt-2.5">
-        <div className="flex items-baseline justify-between text-[10px] text-muted-foreground">
-          <span className="uppercase tracking-[0.1em]">{t("idx.coverageLabel")}</span>
-          <span className="font-semibold tabular-nums text-foreground">
-            {filled}<span className="font-normal text-muted-foreground">/{role.target_count}</span>
-          </span>
-        </div>
-        <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-raised">
-          <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${coveragePct}%` }} />
-        </div>
       </div>
 
       {(teams.length > 0 || members.length > 0) && (

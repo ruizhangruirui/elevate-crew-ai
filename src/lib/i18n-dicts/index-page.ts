@@ -27,7 +27,6 @@ export const indexDict: Dict = {
   "idx.ct.none": { zh: "暂无岗位", en: "No positions" },
   "idx.fullCoverage": { zh: "全覆盖", en: "Fully covered" },
   "idx.stateFull": { zh: "已覆盖", en: "Fully Covered" },
-  "idx.coverageLabel": { zh: "覆盖", en: "Coverage" },
   "idx.statePartial": { zh: "部分覆盖", en: "Partially Covered" },
   "idx.stateNone": { zh: "未覆盖", en: "Not Covered" },
   "idx.criticalGapCount": { zh: "{count} Critical Gap", en: "{count} Critical Gap" },
