@@ -70,7 +70,7 @@ export function TalentPoolBoard() {
       .filter((t) => source === "all" || t.source === source)
       .filter((t) => (t.ai_score ?? 0) >= Number(minScore))
       .filter((t) => roleFilter === "all" || t.ai_role_matches.some((m) => m.role_id === roleFilter))
-      .filter((t) => !s || [t.name, t.email, t.headline, t.location, ...t.tags, ...t.ai_directions.map((d) => d.direction)].some((v) => v?.toLowerCase().includes(s)))
+      .filter((t) => !s || [t.name, t.email, t.headline, t.location, ...t.tags, ...t.teamtailor_applied_jobs, ...t.ai_directions.map((d) => d.direction)].some((v) => v?.toLowerCase().includes(s)))
       .sort((a, b) => (b.ai_score ?? -1) - (a.ai_score ?? -1));
   }, [data, q, source, minScore, roleFilter, showArchived, category]);
   const categories = useMemo(() => {
@@ -115,7 +115,7 @@ export function TalentPoolBoard() {
       <div className="card-glass flex flex-wrap items-center gap-2 p-3">
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} placeholder={l("搜索姓名、方向、标签…", "Search name, direction, tag…")} className="h-9 w-56 pl-8 text-sm" />
+          <Input value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} placeholder={l("搜索姓名、投递岗位、方向…", "Search name, applied job, direction…")} className="h-9 w-56 pl-8 text-sm" />
         </div>
         <Select value={source} onValueChange={(v) => { setSource(v); setPage(0); }}>
           <SelectTrigger className="h-9 w-36 text-sm"><SelectValue /></SelectTrigger>
@@ -204,6 +204,7 @@ export function TalentPoolBoard() {
                   <span className="block truncate text-xs text-muted-foreground">
                     {[t.headline, t.location].filter(Boolean).join(" · ") || t.email || "—"}
                   </span>
+                  {t.teamtailor_applied_jobs.length > 0 && <span className="mt-1 block whitespace-normal break-words text-xs text-brand">{l("TeamTailor 投递：", "TeamTailor applied: ")}{t.teamtailor_applied_jobs.join(" · ")}</span>}
                 </span>
                 <span className="hidden max-w-[40%] flex-wrap justify-end gap-1 md:flex">
                   {t.ai_directions.slice(0, 2).map((d) => <span key={d.direction} className="rounded-full bg-brand/10 px-2 py-0.5 text-xs text-brand">{d.direction}</span>)}
@@ -223,6 +224,10 @@ export function TalentPoolBoard() {
                       {t.linkedin_url && <a className="inline-flex items-center gap-1 text-brand hover:underline" href={t.linkedin_url} target="_blank" rel="noreferrer"><Linkedin className="h-3 w-3" />LinkedIn</a>}
                       {t.cv_url && <a className="inline-flex items-center gap-1 text-brand hover:underline" href={t.cv_url} target="_blank" rel="noreferrer"><ExternalLink className="h-3 w-3" />CV</a>}
                     </div>
+                    {t.teamtailor_candidate_id && <div className="space-y-1">
+                      <h4 className="text-xs font-semibold">{l("TeamTailor 实际投递岗位", "TeamTailor applied positions")}</h4>
+                      {t.teamtailor_applied_jobs.length > 0 ? <ul className="space-y-1">{t.teamtailor_applied_jobs.map((title) => <li key={title} className="break-words text-xs text-brand">{title}</li>)}</ul> : <p className="text-xs text-muted-foreground">{l("暂无同步的投递岗位记录", "No synced application records")}</p>}
+                    </div>}
                     <p className="text-xs text-muted-foreground">{t.has_cv_text ? l("已有简历文字，可用于 AI 分析", "CV text available for AI") : l("暂无简历文字", "No CV text yet")}</p>
                     {t.tags.length > 0 && <div className="flex flex-wrap gap-1">{t.tags.map((g) => <span key={g} className="rounded bg-muted px-1.5 py-0.5 text-xs">{g}</span>)}</div>}
                     {t.notes && <p className="whitespace-pre-line text-xs">{t.notes}</p>}

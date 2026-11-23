@@ -1,6 +1,6 @@
 import { it } from "node:test";
 import { strictEqual, deepStrictEqual } from "node:assert/strict";
-import { fetchTeamTailorData } from "./teamtailor.server";
+import { fetchTeamTailorCandidates, fetchTeamTailorData } from "./teamtailor.server";
 
 it("reads a matched job's applicants independently of the global application page cap and follows its next page", async () => {
   const originalFetch = globalThis.fetch;
@@ -44,4 +44,31 @@ it("does not fetch applications when no supplier jobs match maintained positions
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+it("talent pool keeps each candidate's actual applied jobs, including multiple and rejected applications, across pages", async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    strictEqual(url.searchParams.get("include"), "job-applications.job");
+    const second = ++calls === 2;
+    return new Response(JSON.stringify({
+      data: [{ id: second ? "candidate-2" : "candidate-1", type: "candidates", attributes: { "first-name": "Synthetic" }, relationships: {
+        "job-applications": { data: second ? [] : ["a1", "a2", "a3"].map((id) => ({ id, type: "job-applications" })) },
+      } }],
+      included: [
+        ...["a1", "a2", "a3", "unrelated"].map((id) => ({ id, type: "job-applications", attributes: { "rejected-at": id === "a2" ? "2026-11-01" : null }, relationships: { job: { data: { id: id === "a2" ? "j2" : id === "unrelated" ? "j3" : "j1", type: "jobs" } } } })),
+        ...["Research Engineer", "Research Intern", "Unrelated role"].map((title, i) => ({ id: `j${i + 1}`, type: "jobs", attributes: { title } })),
+      ],
+      links: { next: second ? null : "https://api.teamtailor.com/v1/candidates?include=job-applications.job&page%5Bnumber%5D=2" },
+    }));
+  };
+  try {
+    const result = await fetchTeamTailorCandidates("synthetic-key", "eu");
+    strictEqual(calls, 2);
+    deepStrictEqual(result.candidates[0]?.appliedJobs, ["Research Engineer", "Research Intern"]);
+    deepStrictEqual(result.candidates[1]?.appliedJobs, []);
+    strictEqual(result.capped, false);
+  } finally { globalThis.fetch = originalFetch; }
 });

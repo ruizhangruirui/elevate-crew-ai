@@ -1,3 +1,4 @@
+- [x] Show and search actual TeamTailor applied positions in Talent pool, separate from AI recommendations.
 - [x] Recruiting → Talent pool: TeamTailor candidate sync, manual add, PDF/text CV, AI score, directions and open-position matches.
 - [ ] Verify Talent pool sync/AI through signed-in UI (blocked: no app-owned session; company server needs migration 0041 and TEAMTAILOR_API_KEY).
 - [x] Generate editable role requirements from the current Job Description; replace placeholder assessment with evidence-based fit results. Six new input/scope checks and both synthetic live AI calls passed.

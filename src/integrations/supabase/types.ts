@@ -1489,6 +1489,7 @@ export type Database = {
           phone: string | null
           source: string
           tags: string[]
+          teamtailor_applied_jobs: string[]
           teamtailor_candidate_id: string | null
           updated_at: string
         }
@@ -1515,6 +1516,7 @@ export type Database = {
           phone?: string | null
           source?: string
           tags?: string[]
+          teamtailor_applied_jobs?: string[]
           teamtailor_candidate_id?: string | null
           updated_at?: string
         }
@@ -1541,6 +1543,7 @@ export type Database = {
           phone?: string | null
           source?: string
           tags?: string[]
+          teamtailor_applied_jobs?: string[]
           teamtailor_candidate_id?: string | null
           updated_at?: string
         }

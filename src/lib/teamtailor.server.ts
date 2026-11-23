@@ -183,18 +183,28 @@ export type TeamTailorCandidate = {
   profileUrl: string | null;
   pitch: string | null;
   tags: string[];
+  appliedJobs: string[];
 };
 
 /** All candidates in the TeamTailor account (talent pool), page-capped. */
 export async function fetchTeamTailorCandidates(apiKey: string, region: string) {
   const base = BASE_URLS[region] ?? "https://api.teamtailor.com/v1";
-  const result = await listAll(base, apiKey, "/candidates?page%5Bsize%5D=30");
+  const result = await listAll(base, apiKey, "/candidates?include=job-applications.job&page%5Bsize%5D=30");
+  const jobs = new Map(result.included.filter((r) => r.type === "jobs").map((r) => [r.id, str(r.attributes?.["title"])]));
+  const applications = new Map(result.included.filter((r) => r.type === "job-applications").map((r) => [r.id, r]));
   const out: TeamTailorCandidate[] = [];
   for (const c of result.data) {
     if (c.type !== "candidates") continue;
     const a = c.attributes ?? {};
     const name = `${str(a["first-name"]) ?? ""} ${str(a["last-name"]) ?? ""}`.trim();
     if (!name) continue;
+    // Use each candidate's own application relationships, never global jobs or AI matches.
+    const links = c.relationships?.["job-applications"]?.data as unknown;
+    const appliedJobs = Array.isArray(links) ? [...new Set(links.flatMap((link: { id: string }) => {
+      const jobId = applications.get(link.id)?.relationships?.["job"]?.data?.id;
+      const title = jobId ? jobs.get(jobId) : null;
+      return title ? [title] : [];
+    }))] : [];
     out.push({
       id: c.id,
       name,
@@ -205,6 +215,7 @@ export async function fetchTeamTailorCandidates(apiKey: string, region: string) 
       profileUrl: str(a["profile-url"]),
       pitch: str(a["pitch"]),
       tags: Array.isArray(a["tags"]) ? (a["tags"] as unknown[]).filter((t): t is string => typeof t === "string") : [],
+      appliedJobs,
     });
   }
   return { candidates: out, capped: result.capped };

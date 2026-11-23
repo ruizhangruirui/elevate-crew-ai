@@ -1,0 +1,2 @@
+ALTER TABLE public.talent_pool ADD COLUMN IF NOT EXISTS teamtailor_applied_jobs text[] NOT NULL DEFAULT '{}';
+COMMENT ON COLUMN public.talent_pool.teamtailor_applied_jobs IS 'Actual TeamTailor application job titles; distinct from AI role recommendations.';
