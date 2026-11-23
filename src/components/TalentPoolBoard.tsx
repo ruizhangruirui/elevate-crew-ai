@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Archive, Check, ChevronDown, ExternalLink, FileUp, FolderCog, GraduationCap, Linkedin, Pencil, Plus, RefreshCw, Search, Sparkles, Square, Tag, Trash2, X } from "lucide-react";
+import { Archive, Check, ChevronDown, ExternalLink, FileUp, FolderCog, GraduationCap, Linkedin, MapPin, Pencil, Plus, RefreshCw, Search, Sparkles, Square, Tag, Trash2, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { formatDate } from "@/lib/dates";
 import { Button } from "@/components/ui/button";
@@ -207,8 +207,11 @@ export function TalentPoolBoard() {
                   {highlights.length > 0 && <span className="my-1 flex flex-wrap gap-1.5">
                     {highlights.map((h) => <span key={`${h.kind}-${h.institution ?? ""}`} title={`${h.source === "ai" ? l("AI 摘要，待核实", "AI summary, unverified") : l("资料提及，待核实", "Profile mention, unverified")}: ${h.evidence}`} className={`inline-flex max-w-full items-center gap-1 rounded-md border px-2 py-1 text-xs font-semibold ${h.kind === "qs" ? "border-warn/30 bg-warn/10 text-warn" : "border-brand/30 bg-brand/10 text-brand"}`}><GraduationCap className="h-3.5 w-3.5 shrink-0" /><span className="break-words">{highlightLabel(h)}{h.source === "ai" ? " · AI" : ""}</span></span>)}
                   </span>}
-                   <span className="block truncate text-xs text-muted-foreground">
-                    {[t.headline, t.location].filter(Boolean).join(" · ") || t.email || "—"}
+                  <span className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                    <span className="min-w-0 truncate"><span className="font-medium text-foreground">{t.current_company || "—"}</span>{(t.previous_companies ?? []).length > 0 && <span> · {l("曾任", "Prev.")}: {t.previous_companies.join(", ")}</span>}</span>
+                    {t.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{t.location}</span>}
+                    {t.linkedin_url && <a onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-brand hover:underline" href={t.linkedin_url} target="_blank" rel="noreferrer"><Linkedin className="h-3 w-3" />LinkedIn</a>}
+                    <span className={`rounded px-1.5 py-0.5 text-[10px] ${t.contracted ? "bg-ok/10 text-ok" : "bg-muted text-muted-foreground"}`}>{t.contracted ? l("已联系", "Contacted") : l("未联系", "Not contacted")}</span>
                   </span>
                 </span>
                 <span className="hidden max-w-[40%] flex-wrap justify-end gap-1 md:flex">
@@ -223,9 +226,6 @@ export function TalentPoolBoard() {
                 <div className="grid gap-4 border-t border-border/60 p-4 md:grid-cols-[1fr_1.3fr]">
                   <div className="space-y-2 text-sm">
                     <div className="flex flex-wrap gap-2 text-xs">
-                      {t.email && <a className="text-brand hover:underline" href={`mailto:${t.email}`}>{t.email}</a>}
-                      {t.phone && <span>{t.phone}</span>}
-                      {t.linkedin_url && <a className="inline-flex items-center gap-1 text-brand hover:underline" href={t.linkedin_url} target="_blank" rel="noreferrer"><Linkedin className="h-3 w-3" />LinkedIn</a>}
                       {t.cv_url && <a className="inline-flex items-center gap-1 text-brand hover:underline" href={t.cv_url} target="_blank" rel="noreferrer"><ExternalLink className="h-3 w-3" />CV</a>}
                     </div>
                     <div className="space-y-1">
@@ -417,8 +417,9 @@ function TalentDialog({ talent, onClose, onSaved }: { talent: TalentRow | null; 
   const [f, setF] = useState({
     name: talent?.name ?? "", email: talent?.email ?? "", phone: talent?.phone ?? "", location: talent?.location ?? "",
     linkedin_url: talent?.linkedin_url ?? "", cv_url: talent?.cv_url ?? "", headline: talent?.headline ?? "",
-    notes: talent?.notes ?? "", category: talent?.category ?? "", tags: (talent?.tags ?? []).join(", "), cv_text: "",
+    current_company: talent?.current_company ?? "", notes: talent?.notes ?? "", category: talent?.category ?? "", tags: (talent?.tags ?? []).join(", "), cv_text: "",
   });
+  const [contracted, setContracted] = useState<boolean>(talent?.contracted ?? false);
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setF({ ...f, [k]: e.target.value });
@@ -429,7 +430,7 @@ function TalentDialog({ talent, onClose, onSaved }: { talent: TalentRow | null; 
     setSaving(true);
     try {
       const { cv_text, tags, ...rest } = f;
-      const { id } = await save({ data: { ...(talent ? { id: talent.id } : {}), ...rest, tags: tags.split(",").map((s) => s.trim()).filter(Boolean), ...(cv_text.trim() ? { cv_text } : {}) } });
+      const { id } = await save({ data: { ...(talent ? { id: talent.id } : {}), ...rest, contracted, tags: tags.split(",").map((s) => s.trim()).filter(Boolean), ...(cv_text.trim() ? { cv_text } : {}) } });
       if (file) {
         const buf = new Uint8Array(await file.arrayBuffer());
         let bin = "";
@@ -449,8 +450,8 @@ function TalentDialog({ talent, onClose, onSaved }: { talent: TalentRow | null; 
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="sm:col-span-2"><Label>{l("姓名", "Name")} *</Label><Input value={f.name} onChange={set("name")} /></div>
           <div className="sm:col-span-2"><Label>{l("一句话简介", "Headline")}</Label><Input value={f.headline} onChange={set("headline")} placeholder={l("例如：PhD 计算机视觉，5 年工业经验", "e.g. PhD in computer vision, 5 years in industry")} /></div>
-          <div><Label>Email</Label><Input value={f.email} onChange={set("email")} /></div>
-          <div><Label>{l("电话", "Phone")}</Label><Input value={f.phone} onChange={set("phone")} /></div>
+          <div><Label>{l("当前公司", "Current company")}</Label><Input value={f.current_company} onChange={set("current_company")} /></div>
+          <label className="flex items-center gap-2 self-end pb-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-[var(--color-brand)]" checked={contracted} onChange={(e) => setContracted(e.target.checked)} />{l("已联系", "Contacted")}</label>
           <div><Label>{l("地点", "Location")}</Label><Input value={f.location} onChange={set("location")} /></div>
           <div><Label>LinkedIn</Label><Input value={f.linkedin_url} onChange={set("linkedin_url")} /></div>
           <div className="sm:col-span-2"><Label>{l("CV 链接", "CV link")}</Label><Input value={f.cv_url} onChange={set("cv_url")} /></div>

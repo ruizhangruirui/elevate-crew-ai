@@ -1475,8 +1475,10 @@ export type Database = {
           ai_summary: string | null
           archived: boolean
           category: string | null
+          contracted: boolean | null
           created_at: string
           created_by: string | null
+          current_company: string | null
           cv_text: string | null
           cv_url: string | null
           email: string | null
@@ -1487,6 +1489,7 @@ export type Database = {
           name: string
           notes: string | null
           phone: string | null
+          previous_companies: string[]
           source: string
           tags: string[]
           teamtailor_applied_jobs: string[]
@@ -1502,8 +1505,10 @@ export type Database = {
           ai_summary?: string | null
           archived?: boolean
           category?: string | null
+          contracted?: boolean | null
           created_at?: string
           created_by?: string | null
+          current_company?: string | null
           cv_text?: string | null
           cv_url?: string | null
           email?: string | null
@@ -1514,6 +1519,7 @@ export type Database = {
           name: string
           notes?: string | null
           phone?: string | null
+          previous_companies?: string[]
           source?: string
           tags?: string[]
           teamtailor_applied_jobs?: string[]
@@ -1529,8 +1535,10 @@ export type Database = {
           ai_summary?: string | null
           archived?: boolean
           category?: string | null
+          contracted?: boolean | null
           created_at?: string
           created_by?: string | null
+          current_company?: string | null
           cv_text?: string | null
           cv_url?: string | null
           email?: string | null
@@ -1541,6 +1549,7 @@ export type Database = {
           name?: string
           notes?: string | null
           phone?: string | null
+          previous_companies?: string[]
           source?: string
           tags?: string[]
           teamtailor_applied_jobs?: string[]

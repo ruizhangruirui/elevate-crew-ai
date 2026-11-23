@@ -18,6 +18,9 @@ export type TalentRow = {
   source: string;
   teamtailor_candidate_id: string | null;
   teamtailor_applied_jobs: string[];
+  current_company: string | null;
+  previous_companies: string[];
+  contracted: boolean | null;
   ai_score: number | null;
   ai_summary: string | null;
   ai_directions: TalentDirection[];

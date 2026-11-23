@@ -4,7 +4,7 @@ import { admin, requireUser, type AppUser } from "./auth.server";
 import { sanitizeMatches, clampScore, type TalentRow, type TalentRoleMatch, type TalentDirection, type TalentBreakdown } from "./talent-pool";
 
 const POOL_ROLES = ["owner", "hr", "recruiter"] as const;
-const COLS = "id,name,email,phone,location,linkedin_url,cv_url,cv_text,headline,notes,category,tags,source,teamtailor_candidate_id,teamtailor_applied_jobs,ai_score,ai_summary,ai_directions,ai_breakdown,ai_role_matches,ai_analyzed_at,archived,created_at";
+const COLS = "id,name,email,phone,location,linkedin_url,cv_url,cv_text,headline,notes,category,tags,source,teamtailor_candidate_id,teamtailor_applied_jobs,current_company,previous_companies,contracted,ai_score,ai_summary,ai_directions,ai_breakdown,ai_role_matches,ai_analyzed_at,archived,created_at";
 
 type Db = Awaited<ReturnType<typeof admin>>;
 
@@ -87,6 +87,8 @@ const talentInput = z.object({
   cv_text: z.string().max(40000).nullable().optional(),
   tags: z.array(z.string().trim().min(1).max(50)).max(30).optional(),
   archived: z.boolean().optional(),
+  contracted: z.boolean().nullable().optional(),
+  current_company: z.string().trim().max(200).nullable().optional(),
 });
 
 export const saveTalent = createServerFn({ method: "POST" })
@@ -203,8 +205,10 @@ const strArr = { type: "array", items: { type: "string" } };
 const SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["score", "summary", "breakdown", "directions", "role_matches"],
+  required: ["score", "summary", "breakdown", "directions", "role_matches", "current_company", "previous_companies"],
   properties: {
+    current_company: { type: "string" },
+    previous_companies: strArr,
     score: { type: "integer" },
     summary: { type: "string" },
     breakdown: {
@@ -248,11 +252,12 @@ export const analyzeTalent = createServerFn({ method: "POST" })
     const roles = await openRoles(db, user);
     const { generateStructured } = await import("./ai-gateway.server");
     const lang = data.lang === "zh" ? "使用中文输出，技术名词保留英文。" : "Write all output in concise professional English.";
-    const out = await generateStructured<{ score: number; summary: string; breakdown: TalentBreakdown; directions: TalentDirection[]; role_matches: TalentRoleMatch[] }>({
+    const out = await generateStructured<{ score: number; summary: string; breakdown: TalentBreakdown; directions: TalentDirection[]; role_matches: TalentRoleMatch[]; current_company?: string; previous_companies?: string[] }>({
       schemaName: "talent_analysis",
       system:
         "You are a recruiting analyst for a research institute. Evaluate a candidate ONLY from the CV/profile evidence given. " +
         "Score 0-100 overall and per dimension (education, experience = work history, projects, skills). Missing evidence lowers confidence; never invent degrees, employers or projects. " +
+        "Extract current_company (the employer of the current/most recent ongoing role; empty string if none or unclear) and previous_companies (earlier employers, most recent first, max 6, no duplicates) strictly from the CV. " +
         "Suggest 1-4 research/work directions the candidate fits, each with a short evidence-based reason. " +
         "For role_matches use ONLY role_id values from the provided open positions list; include at most 5 with fit_score >= 40, otherwise return an empty array. " +
         "Do not consider age, gender, nationality, religion, marital status, photos or other protected characteristics. " + lang,
@@ -276,6 +281,8 @@ export const analyzeTalent = createServerFn({ method: "POST" })
       ai_directions: (out.directions ?? []).slice(0, 4),
       ai_role_matches: sanitizeMatches(out.role_matches ?? [], roles),
       ai_analyzed_at: new Date().toISOString(),
+      current_company: out.current_company?.trim().slice(0, 200) || null,
+      previous_companies: [...new Set((out.previous_companies ?? []).map((c) => c.trim()).filter(Boolean))].slice(0, 6),
     };
     const { error: e } = await db.from("talent_pool").update(result as never).eq("id", data.id);
     if (e) throw new Error(e.message);

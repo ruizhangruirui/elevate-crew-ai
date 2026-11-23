@@ -61,3 +61,4 @@
 - [x] Fix TeamTailor zero applications by fetching applications per matched job; 11 tests passed, and live API readback recovered 8 applicants for a job absent from the first 1,200 global applications.
 - [x] Show green To onboard on Recruiting roles with awaiting candidates and refresh due onboarding every minute; show Filled once actual headcount is covered.
 - [ ] Verify signed-in To onboard → People → Filled on the company server (blocked: app-owned login and company server unavailable).
+- [x] Talent pool collapsed card: companies, LinkedIn, contacted, location; hide phone/email
