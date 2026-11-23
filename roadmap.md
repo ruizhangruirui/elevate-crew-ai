@@ -1,3 +1,5 @@
+- [x] Highlight PhD and pinned QS 2026 top-20 educational signals on talent cards without changing AI scores or data permissions; seven targeted tests passed.
+- [ ] Verify talent educational highlights with a real signed-in user (blocked: app-owned session unavailable; browser redirects to /auth without runtime errors).
 - [x] Show and search actual TeamTailor applied positions in Talent pool, separate from AI recommendations.
 - [x] Recruiting → Talent pool: TeamTailor candidate sync, manual add, PDF/text CV, AI score, directions and open-position matches.
 - [ ] Verify Talent pool sync/AI through signed-in UI (blocked: no app-owned session; company server needs migration 0041 and TEAMTAILOR_API_KEY).

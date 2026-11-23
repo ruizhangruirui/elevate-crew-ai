@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Archive, Check, ChevronDown, ExternalLink, FileUp, FolderCog, Linkedin, Pencil, Plus, RefreshCw, Search, Sparkles, Square, Tag, Trash2, X } from "lucide-react";
+import { Archive, Check, ChevronDown, ExternalLink, FileUp, FolderCog, GraduationCap, Linkedin, Pencil, Plus, RefreshCw, Search, Sparkles, Square, Tag, Trash2, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { formatDate } from "@/lib/dates";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { analyzeTalent, deleteTalent, renameTalentCategory, saveTalentCategoryCatalog, setTalentCategory, listTalentPool, saveTalent, syncTalentFromTeamTailor, uploadTalentCv } from "@/lib/talent-pool.functions";
 import type { TalentRow } from "@/lib/talent-pool";
+import { QS_EDITION, talentHighlights } from "@/lib/talent-highlights";
 
 const PAGE = 20;
 const scoreTone = (s: number | null) =>
@@ -193,6 +194,8 @@ export function TalentPoolBoard() {
       <div className="space-y-2">
         {pageRows.map((t) => {
           const isOpen = open === t.id;
+          const highlights = talentHighlights(t);
+          const highlightLabel = (h: (typeof highlights)[number]) => h.kind === "qs" ? `QS ${QS_EDITION} Top 20 · ${h.institution}` : h.kind === "phd_candidate" ? l("博士在读", "PhD candidate") : l("博士 · PhD", "PhD");
           return (
             <article key={t.id} className="card-glass overflow-hidden">
               <div className="flex items-center pl-3">
@@ -201,6 +204,9 @@ export function TalentPoolBoard() {
                 <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${scoreTone(t.ai_score)}`}>{t.ai_score ?? "—"}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">{t.name}</span>
+                  {highlights.length > 0 && <span className="my-1 flex flex-wrap gap-1.5">
+                    {highlights.map((h) => <span key={`${h.kind}-${h.institution ?? ""}`} title={`${h.source === "ai" ? l("AI 摘要，待核实", "AI summary, unverified") : l("资料提及，待核实", "Profile mention, unverified")}: ${h.evidence}`} className={`inline-flex max-w-full items-center gap-1 rounded-md border px-2 py-1 text-xs font-semibold ${h.kind === "qs" ? "border-warn/30 bg-warn/10 text-warn" : "border-brand/30 bg-brand/10 text-brand"}`}><GraduationCap className="h-3.5 w-3.5 shrink-0" /><span className="break-words">{highlightLabel(h)}{h.source === "ai" ? " · AI" : ""}</span></span>)}
+                  </span>}
                   <span className="block truncate text-xs text-muted-foreground">
                     {[t.headline, t.location].filter(Boolean).join(" · ") || t.email || "—"}
                   </span>
@@ -229,6 +235,9 @@ export function TalentPoolBoard() {
                       {t.teamtailor_applied_jobs.length > 0 ? <ul className="space-y-1">{t.teamtailor_applied_jobs.map((title) => <li key={title} className="break-words text-xs text-brand">{title}</li>)}</ul> : <p className="text-xs text-muted-foreground">{l("暂无同步的投递岗位记录", "No synced application records")}</p>}
                     </div>}
                     <p className="text-xs text-muted-foreground">{t.has_cv_text ? l("已有简历文字，可用于 AI 分析", "CV text available for AI") : l("暂无简历文字", "No CV text yet")}</p>
+                    {highlights.length > 0 && <div className="space-y-1 border-l-2 border-brand/40 pl-2">
+                      {highlights.map((h) => <p key={`${h.kind}-${h.institution ?? ""}`} className="break-words text-xs"><span className="font-semibold text-brand">{highlightLabel(h)}</span><span className="text-muted-foreground"> · {h.source === "ai" ? l("AI 摘要，待核实", "AI summary, unverified") : l("资料提及，待核实", "Profile mention, unverified")}</span><span className="mt-0.5 block text-muted-foreground">{h.evidence}</span></p>)}
+                    </div>}
                     {t.tags.length > 0 && <div className="flex flex-wrap gap-1">{t.tags.map((g) => <span key={g} className="rounded bg-muted px-1.5 py-0.5 text-xs">{g}</span>)}</div>}
                     {t.notes && <p className="whitespace-pre-line text-xs">{t.notes}</p>}
                     <div className="flex flex-wrap gap-2 pt-2">
