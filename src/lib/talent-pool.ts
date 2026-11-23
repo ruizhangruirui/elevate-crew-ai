@@ -13,6 +13,7 @@ export type TalentRow = {
   cv_url: string | null;
   headline: string | null;
   notes: string | null;
+  category: string | null;
   tags: string[];
   source: string;
   teamtailor_candidate_id: string | null;

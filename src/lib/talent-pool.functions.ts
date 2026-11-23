@@ -4,7 +4,7 @@ import { admin, requireUser, type AppUser } from "./auth.server";
 import { sanitizeMatches, clampScore, type TalentRow, type TalentRoleMatch, type TalentDirection, type TalentBreakdown } from "./talent-pool";
 
 const POOL_ROLES = ["owner", "hr", "recruiter"] as const;
-const COLS = "id,name,email,phone,location,linkedin_url,cv_url,cv_text,headline,notes,tags,source,teamtailor_candidate_id,ai_score,ai_summary,ai_directions,ai_breakdown,ai_role_matches,ai_analyzed_at,archived,created_at";
+const COLS = "id,name,email,phone,location,linkedin_url,cv_url,cv_text,headline,notes,category,tags,source,teamtailor_candidate_id,ai_score,ai_summary,ai_directions,ai_breakdown,ai_role_matches,ai_analyzed_at,archived,created_at";
 
 type Db = Awaited<ReturnType<typeof admin>>;
 
@@ -55,6 +55,7 @@ const talentInput = z.object({
   cv_url: z.string().trim().max(1000).nullable().optional(),
   headline: z.string().trim().max(300).nullable().optional(),
   notes: z.string().max(5000).nullable().optional(),
+  category: z.string().trim().max(80).nullable().optional(),
   cv_text: z.string().max(40000).nullable().optional(),
   tags: z.array(z.string().trim().min(1).max(50)).max(30).optional(),
   archived: z.boolean().optional(),
@@ -96,6 +97,18 @@ export const uploadTalentCv = createServerFn({ method: "POST" })
     const { error } = await db.from("talent_pool").update({ cv_text: text, updated_at: new Date().toISOString() } as never).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { chars: text.length };
+  });
+
+/** Assign one category to many talents at once (empty = clear). */
+export const setTalentCategory = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ ids: z.array(z.string().uuid()).min(1).max(1000), category: z.string().trim().max(80).nullable() }).parse(d))
+  .handler(async ({ data }) => {
+    const user = await requireUser([...POOL_ROLES]);
+    const db = await admin();
+    const { error } = await db.from("talent_pool").update({ category: data.category || null, updated_at: new Date().toISOString() } as never).in("id", data.ids);
+    if (error) throw new Error(error.message);
+    await db.from("audit_log").insert({ actor: user.name, action: "talent_category", entity: "talent_pool", detail: `${data.ids.length} → ${data.category ?? "(none)"}` } as never);
+    return { ok: true };
   });
 
 export const deleteTalent = createServerFn({ method: "POST" })

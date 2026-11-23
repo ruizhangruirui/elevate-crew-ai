@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Archive, ChevronDown, ExternalLink, FileUp, Linkedin, Plus, RefreshCw, Search, Sparkles, Trash2 } from "lucide-react";
+import { Archive, ChevronDown, ExternalLink, FileUp, Linkedin, Plus, RefreshCw, Search, Sparkles, Square, Tag, Trash2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { formatDate } from "@/lib/dates";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ConfirmAction } from "@/components/ConfirmAction";
-import { analyzeTalent, deleteTalent, listTalentPool, saveTalent, syncTalentFromTeamTailor, uploadTalentCv } from "@/lib/talent-pool.functions";
+import { analyzeTalent, deleteTalent, setTalentCategory, listTalentPool, saveTalent, syncTalentFromTeamTailor, uploadTalentCv } from "@/lib/talent-pool.functions";
 import type { TalentRow } from "@/lib/talent-pool";
 
 const PAGE = 20;
@@ -28,6 +28,12 @@ export function TalentPoolBoard() {
   const analyze = useServerFn(analyzeTalent);
   const save = useServerFn(saveTalent);
   const del = useServerFn(deleteTalent);
+  const setCat = useServerFn(setTalentCategory);
+  const [category, setCategory] = useState("all");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkCat, setBulkCat] = useState("");
+  const [bulk, setBulk] = useState<{ done: number; total: number; failed: number } | null>(null);
+  const stopRef = useRef(false);
   const { data, isLoading, error } = useQuery({ queryKey: ["talent-pool"], queryFn: () => list() });
   const [q, setQ] = useState("");
   const [source, setSource] = useState("all");
@@ -59,12 +65,42 @@ export function TalentPoolBoard() {
     const s = q.trim().toLowerCase();
     return (data?.talents ?? [])
       .filter((t) => t.archived === showArchived)
+      .filter((t) => category === "all" || (category === "__none" ? !t.category : t.category === category))
       .filter((t) => source === "all" || t.source === source)
       .filter((t) => (t.ai_score ?? 0) >= Number(minScore))
       .filter((t) => roleFilter === "all" || t.ai_role_matches.some((m) => m.role_id === roleFilter))
       .filter((t) => !s || [t.name, t.email, t.headline, t.location, ...t.tags, ...t.ai_directions.map((d) => d.direction)].some((v) => v?.toLowerCase().includes(s)))
       .sort((a, b) => (b.ai_score ?? -1) - (a.ai_score ?? -1));
-  }, [data, q, source, minScore, roleFilter, showArchived]);
+  }, [data, q, source, minScore, roleFilter, showArchived, category]);
+  const categories = useMemo(() => [...new Set((data?.talents ?? []).map((t) => t.category).filter((c): c is string => !!c))].sort(), [data]);
+
+  /** Sequential bulk analysis (one call at a time, shared AI rate limit); stops on credit/permission errors. */
+  const runBulk = async (onlyNew: boolean) => {
+    const targets = rows.filter((t) => (selected.size ? selected.has(t.id) : true) && (!onlyNew || !t.ai_analyzed_at));
+    if (!targets.length) { toast.info(l("没有需要分析的人", "Nobody to analyze")); return; }
+    stopRef.current = false;
+    let failed = 0;
+    setBulk({ done: 0, total: targets.length, failed: 0 });
+    for (let i = 0; i < targets.length; i++) {
+      if (stopRef.current) break;
+      try { await analyze({ data: { id: targets[i]!.id, lang } }); }
+      catch (e) {
+        failed++;
+        const msg = (e as Error).message;
+        if (/额度|credit|402|403|未配置|configured/i.test(msg)) { toast.error(msg); break; }
+      }
+      setBulk({ done: i + 1, total: targets.length, failed });
+      if ((i + 1) % 5 === 0) refresh();
+    }
+    refresh();
+    toast.success(l(`批量分析结束，失败 ${failed} 人（多为缺少简历）`, `Bulk analysis finished, ${failed} failed (usually no CV)`));
+    setBulk(null);
+  };
+  const applyCategory = async (ids: string[], cat: string | null) => {
+    try { await setCat({ data: { ids, category: cat } }); toast.success(l("分类已更新", "Category updated")); setSelected(new Set()); refresh(); }
+    catch (e) { toast.error((e as Error).message); }
+  };
+  const toggle = (id: string) => setSelected((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const pageRows = rows.slice(page * PAGE, page * PAGE + PAGE);
   const pages = Math.max(1, Math.ceil(rows.length / PAGE));
 
@@ -83,6 +119,14 @@ export function TalentPoolBoard() {
             <SelectItem value="all">{l("全部来源", "All sources")}</SelectItem>
             <SelectItem value="TeamTailor">TeamTailor</SelectItem>
             <SelectItem value="Manual">{l("手工添加", "Manual")}</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={category} onValueChange={(v) => { setCategory(v); setPage(0); }}>
+          <SelectTrigger className="h-9 w-40 text-sm"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{l("全部分类", "All categories")}</SelectItem>
+            <SelectItem value="__none">{l("未分类", "Uncategorized")}</SelectItem>
+            {categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setPage(0); }}>
@@ -109,6 +153,33 @@ export function TalentPoolBoard() {
         </div>
       </div>
 
+      <div className="card-glass flex flex-wrap items-center gap-2 p-3">
+        <Sparkles className="h-4 w-4 text-brand" />
+        <span className="text-sm font-medium">{l("批量 AI 分析", "Bulk AI analysis")}</span>
+        <span className="text-xs text-muted-foreground">{selected.size ? l(`已选 ${selected.size} 人`, `${selected.size} selected`) : l(`当前筛选 ${rows.length} 人`, `${rows.length} in current filter`)}</span>
+        {bulk ? (
+          <>
+            <div className="h-2 w-40 overflow-hidden rounded-full bg-muted"><div className="h-full bg-brand transition-all" style={{ width: `${(bulk.done / bulk.total) * 100}%` }} /></div>
+            <span className="text-xs">{bulk.done} / {bulk.total}{bulk.failed ? l(` · 失败 ${bulk.failed}`, ` · ${bulk.failed} failed`) : ""}</span>
+            <Button size="sm" variant="outline" onClick={() => { stopRef.current = true; }}><Square className="mr-1 h-3 w-3" />{l("停止", "Stop")}</Button>
+          </>
+        ) : (
+          <>
+            <Button size="sm" onClick={() => runBulk(true)}>{l("分析未分析的", "Analyze new only")}</Button>
+            <ConfirmAction title={l("全部重新分析？", "Re-analyze all?")} description={l(`将逐个重新分析 ${selected.size || rows.length} 人，会消耗 AI 额度。`, `Re-analyzes ${selected.size || rows.length} people one by one and uses AI credits.`)} onConfirm={() => runBulk(false)}>
+              <Button size="sm" variant="outline">{l("全部重新分析", "Re-analyze all")}</Button>
+            </ConfirmAction>
+          </>
+        )}
+        <div className="ml-auto flex items-center gap-2">
+          <Tag className="h-4 w-4 text-muted-foreground" />
+          <Input list="talent-cats" value={bulkCat} onChange={(e) => setBulkCat(e.target.value)} placeholder={l("分类名称", "Category name")} className="h-8 w-40 text-xs" />
+          <Button size="sm" variant="outline" disabled={!selected.size} onClick={() => applyCategory([...selected], bulkCat.trim() || null)}>{l("设为所选分类", "Set for selected")}</Button>
+          <Button size="sm" variant="ghost" onClick={() => setSelected(selected.size ? new Set() : new Set(pageRows.map((t) => t.id)))}>{selected.size ? l("取消选择", "Clear") : l("全选本页", "Select page")}</Button>
+        </div>
+        <datalist id="talent-cats">{categories.map((c) => <option key={c} value={c} />)}</datalist>
+      </div>
+
       <p className="text-xs text-muted-foreground">{l(`共 ${rows.length} 人`, `${rows.length} people`)}</p>
       {isLoading && <p className="text-sm text-muted-foreground">{l("加载中…", "Loading…")}</p>}
 
@@ -117,7 +188,9 @@ export function TalentPoolBoard() {
           const isOpen = open === t.id;
           return (
             <article key={t.id} className="card-glass overflow-hidden">
-              <button type="button" className="flex w-full items-center gap-3 p-3 text-left" onClick={() => setOpen(isOpen ? null : t.id)} aria-expanded={isOpen}>
+              <div className="flex items-center pl-3">
+              <input type="checkbox" aria-label={t.name} className="h-4 w-4 accent-[var(--color-brand)]" checked={selected.has(t.id)} onChange={() => toggle(t.id)} />
+              <button type="button" className="flex min-w-0 flex-1 items-center gap-3 p-3 text-left" onClick={() => setOpen(isOpen ? null : t.id)} aria-expanded={isOpen}>
                 <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${scoreTone(t.ai_score)}`}>{t.ai_score ?? "—"}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">{t.name}</span>
@@ -129,9 +202,11 @@ export function TalentPoolBoard() {
                   {t.ai_directions.slice(0, 2).map((d) => <span key={d.direction} className="rounded-full bg-brand/10 px-2 py-0.5 text-xs text-brand">{d.direction}</span>)}
                   {t.ai_role_matches[0] && <span className="rounded-full bg-ok/10 px-2 py-0.5 text-xs text-ok">→ {t.ai_role_matches[0].role_title}</span>}
                 </span>
+                {t.category && <span className="rounded bg-accent px-1.5 py-0.5 text-[10px] text-accent-foreground">{t.category}</span>}
                 <span className="rounded border border-border/60 px-1.5 py-0.5 text-[10px] text-muted-foreground">{t.source === "Manual" ? l("手工", "Manual") : t.source}</span>
                 <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
               </button>
+              </div>
               {isOpen && (
                 <div className="grid gap-4 border-t border-border/60 p-4 md:grid-cols-[1fr_1.3fr]">
                   <div className="space-y-2 text-sm">
@@ -224,7 +299,7 @@ function TalentDialog({ talent, onClose, onSaved }: { talent: TalentRow | null; 
   const [f, setF] = useState({
     name: talent?.name ?? "", email: talent?.email ?? "", phone: talent?.phone ?? "", location: talent?.location ?? "",
     linkedin_url: talent?.linkedin_url ?? "", cv_url: talent?.cv_url ?? "", headline: talent?.headline ?? "",
-    notes: talent?.notes ?? "", tags: (talent?.tags ?? []).join(", "), cv_text: "",
+    notes: talent?.notes ?? "", category: talent?.category ?? "", tags: (talent?.tags ?? []).join(", "), cv_text: "",
   });
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
@@ -261,6 +336,7 @@ function TalentDialog({ talent, onClose, onSaved }: { talent: TalentRow | null; 
           <div><Label>{l("地点", "Location")}</Label><Input value={f.location} onChange={set("location")} /></div>
           <div><Label>LinkedIn</Label><Input value={f.linkedin_url} onChange={set("linkedin_url")} /></div>
           <div className="sm:col-span-2"><Label>{l("CV 链接", "CV link")}</Label><Input value={f.cv_url} onChange={set("cv_url")} /></div>
+          <div className="sm:col-span-2"><Label>{l("分类", "Category")}</Label><Input list="talent-cats" value={f.category} onChange={set("category")} placeholder={l("例如：博士候选、资深工程师", "e.g. PhD pipeline, Senior engineers")} /></div>
           <div className="sm:col-span-2"><Label>{l("标签（逗号分隔）", "Tags (comma separated)")}</Label><Input value={f.tags} onChange={set("tags")} /></div>
           <div className="sm:col-span-2"><Label>{l("备注", "Notes")}</Label><Textarea rows={3} value={f.notes} onChange={set("notes")} /></div>
           <div className="sm:col-span-2">

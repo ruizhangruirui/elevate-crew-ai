@@ -1,0 +1,1 @@
+ALTER TABLE public.talent_pool ADD COLUMN IF NOT EXISTS category text;

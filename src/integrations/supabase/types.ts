@@ -1474,6 +1474,7 @@ export type Database = {
           ai_score: number | null
           ai_summary: string | null
           archived: boolean
+          category: string | null
           created_at: string
           created_by: string | null
           cv_text: string | null
@@ -1499,6 +1500,7 @@ export type Database = {
           ai_score?: number | null
           ai_summary?: string | null
           archived?: boolean
+          category?: string | null
           created_at?: string
           created_by?: string | null
           cv_text?: string | null
@@ -1524,6 +1526,7 @@ export type Database = {
           ai_score?: number | null
           ai_summary?: string | null
           archived?: boolean
+          category?: string | null
           created_at?: string
           created_by?: string | null
           cv_text?: string | null
