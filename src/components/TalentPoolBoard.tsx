@@ -207,14 +207,12 @@ export function TalentPoolBoard() {
                   {highlights.length > 0 && <span className="my-1 flex flex-wrap gap-1.5">
                     {highlights.map((h) => <span key={`${h.kind}-${h.institution ?? ""}`} title={`${h.source === "ai" ? l("AI 摘要，待核实", "AI summary, unverified") : l("资料提及，待核实", "Profile mention, unverified")}: ${h.evidence}`} className={`inline-flex max-w-full items-center gap-1 rounded-md border px-2 py-1 text-xs font-semibold ${h.kind === "qs" ? "border-warn/30 bg-warn/10 text-warn" : "border-brand/30 bg-brand/10 text-brand"}`}><GraduationCap className="h-3.5 w-3.5 shrink-0" /><span className="break-words">{highlightLabel(h)}{h.source === "ai" ? " · AI" : ""}</span></span>)}
                   </span>}
-                  <span className="block truncate text-xs text-muted-foreground">
+                   <span className="block truncate text-xs text-muted-foreground">
                     {[t.headline, t.location].filter(Boolean).join(" · ") || t.email || "—"}
                   </span>
-                  {t.teamtailor_applied_jobs.length > 0 && <span className="mt-1 block whitespace-normal break-words text-xs text-brand">{l("TeamTailor 投递：", "TeamTailor applied: ")}{t.teamtailor_applied_jobs.join(" · ")}</span>}
                 </span>
                 <span className="hidden max-w-[40%] flex-wrap justify-end gap-1 md:flex">
-                  {t.ai_directions.slice(0, 2).map((d) => <span key={d.direction} className="rounded-full bg-brand/10 px-2 py-0.5 text-xs text-brand">{d.direction}</span>)}
-                  {t.ai_role_matches[0] && <span className="rounded-full bg-ok/10 px-2 py-0.5 text-xs text-ok">→ {t.ai_role_matches[0].role_title}</span>}
+                  {t.ai_role_matches.slice(0, 2).map((m) => <span key={m.role_id} className="rounded-full bg-ok/10 px-2 py-0.5 text-xs text-ok">→ {m.role_title}</span>)}
                 </span>
                 {t.category && <span className="rounded bg-accent px-1.5 py-0.5 text-[10px] text-accent-foreground">{t.category}</span>}
                 <span className="rounded border border-border/60 px-1.5 py-0.5 text-[10px] text-muted-foreground">{t.source === "Manual" ? l("手工", "Manual") : t.source}</span>
@@ -230,10 +228,10 @@ export function TalentPoolBoard() {
                       {t.linkedin_url && <a className="inline-flex items-center gap-1 text-brand hover:underline" href={t.linkedin_url} target="_blank" rel="noreferrer"><Linkedin className="h-3 w-3" />LinkedIn</a>}
                       {t.cv_url && <a className="inline-flex items-center gap-1 text-brand hover:underline" href={t.cv_url} target="_blank" rel="noreferrer"><ExternalLink className="h-3 w-3" />CV</a>}
                     </div>
-                    {t.teamtailor_candidate_id && <div className="space-y-1">
+                    <div className="space-y-1">
                       <h4 className="text-xs font-semibold">{l("TeamTailor 实际投递岗位", "TeamTailor applied positions")}</h4>
                       {t.teamtailor_applied_jobs.length > 0 ? <ul className="space-y-1">{t.teamtailor_applied_jobs.map((title) => <li key={title} className="break-words text-xs text-brand">{title}</li>)}</ul> : <p className="text-xs text-muted-foreground">{l("暂无同步的投递岗位记录", "No synced application records")}</p>}
-                    </div>}
+                    </div>
                     <p className="text-xs text-muted-foreground">{t.has_cv_text ? l("已有简历文字，可用于 AI 分析", "CV text available for AI") : l("暂无简历文字", "No CV text yet")}</p>
                     {highlights.length > 0 && <div className="space-y-1 border-l-2 border-brand/40 pl-2">
                       {highlights.map((h) => <p key={`${h.kind}-${h.institution ?? ""}`} className="break-words text-xs"><span className="font-semibold text-brand">{highlightLabel(h)}</span><span className="text-muted-foreground"> · {h.source === "ai" ? l("AI 摘要，待核实", "AI summary, unverified") : l("资料提及，待核实", "Profile mention, unverified")}</span><span className="mt-0.5 block text-muted-foreground">{h.evidence}</span></p>)}
