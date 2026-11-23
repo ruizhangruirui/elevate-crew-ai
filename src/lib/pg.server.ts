@@ -15,7 +15,13 @@ pgTypes.setTypeParser(1700, (v: string) => v); // numeric
 const IDENT = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
 
 /** Columns whose value is a JSON array/object (jsonb), not a Postgres array. */
-const JSONB_COLS = new Set(["people.assessed_skills", "roles.skills"]);
+const JSONB_COLS = new Set([
+  "people.assessed_skills",
+  "roles.skills",
+  "talent_pool.ai_directions",
+  "talent_pool.ai_role_matches",
+  "talent_pool.ai_breakdown",
+]);
 
 export type PgResult = {
   data: any;
