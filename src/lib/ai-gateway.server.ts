@@ -2,18 +2,24 @@ type JsonSchema = Record<string, unknown>;
 
 /**
  * AI 调用配置（全部可在服务器环境变量中覆盖，方便内网部署切换到公司模型）：
- * - AI_BASE_URL：OpenAI 兼容接口地址，默认 Lovable AI 网关
- * - AI_API_KEY：接口密钥，默认 LOVABLE_API_KEY
- * - AI_MODEL：模型 ID，默认 openai/gpt-6-astra
+ * - AI_BASE_URL：OpenAI 兼容接口地址；设置 AI_API_KEY/OPENAI_API_KEY 时默认 OpenAI 官方接口，否则默认 Lovable AI 网关
+ * - AI_API_KEY / OPENAI_API_KEY：接口密钥，默认 LOVABLE_API_KEY
+ * - AI_MODEL：模型 ID；OpenAI 直连默认 gpt-5，Lovable 网关默认 openai/gpt-6-astra
  */
-const DEFAULT_BASE_URL = "https://ai.gateway.lovable.dev/v1";
-const DEFAULT_MODEL = "openai/gpt-6-astra";
+const LOVABLE_BASE_URL = "https://ai.gateway.lovable.dev/v1";
+const OPENAI_BASE_URL = "https://api.openai.com/v1";
+const LOVABLE_DEFAULT_MODEL = "openai/gpt-6-astra";
+const OPENAI_DEFAULT_MODEL = "gpt-5";
 
 export function aiConfig() {
-  const baseURL = (process.env["AI_BASE_URL"] || DEFAULT_BASE_URL).replace(/\/+$/, "");
-  const apiKey = process.env["AI_API_KEY"] || process.env["LOVABLE_API_KEY"];
+  const ownKey = process.env["AI_API_KEY"] || process.env["OPENAI_API_KEY"];
+  const apiKey = ownKey || process.env["LOVABLE_API_KEY"];
   if (!apiKey) throw new Error("AI 服务未配置：请在服务器环境变量中设置 AI_API_KEY");
-  return { baseURL, apiKey, model: process.env["AI_MODEL"] || DEFAULT_MODEL };
+  const defaultBase = ownKey ? OPENAI_BASE_URL : LOVABLE_BASE_URL;
+  const baseURL = (process.env["AI_BASE_URL"] || defaultBase).replace(/\/+$/, "");
+  const isLovableGateway = baseURL.startsWith(LOVABLE_BASE_URL);
+  const defaultModel = isLovableGateway ? LOVABLE_DEFAULT_MODEL : OPENAI_DEFAULT_MODEL;
+  return { baseURL, apiKey, model: process.env["AI_MODEL"] || defaultModel, isLovableGateway };
 }
 
 /**
@@ -36,14 +42,18 @@ export async function generateStructured<T>({
   const config = aiConfig();
   const usedModel = model || config.model;
 
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${config.apiKey}`,
+  };
+  if (config.isLovableGateway) {
+    headers["Lovable-API-Key"] = config.apiKey;
+    headers["X-Lovable-AIG-SDK"] = "fetch";
+  }
+
   const res = await fetch(`${config.baseURL}/responses`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${config.apiKey}`,
-      "Lovable-API-Key": config.apiKey,
-      "X-Lovable-AIG-SDK": "fetch",
-    },
+    headers,
     body: JSON.stringify({
       model: usedModel,
       instructions: system,
