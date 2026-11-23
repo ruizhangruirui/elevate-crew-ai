@@ -13,6 +13,9 @@ import {
   Building2,
   Pencil,
   MoreHorizontal,
+  CheckCircle2,
+  AlertTriangle,
+  CircleDashed,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/lib/i18n";
@@ -210,32 +213,37 @@ function StrategyBoard() {
             return (
               <div
                 key={d.id}
-                className={`panel group relative h-full transition-all duration-200 hover:-translate-y-0.5 ${
+                className={`panel group relative h-full overflow-hidden transition-all duration-200 hover:-translate-y-0.5 ${
                   selected ? "border-brand/70 shadow-[var(--glow-brand)]" : "hover:border-brand/40"
                 }`}
               >
+                <span
+                  className={`absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-brand to-brand-soft transition-opacity ${
+                    selected ? "opacity-100" : "opacity-0 group-hover:opacity-40"
+                  }`}
+                />
                 <Button
                   variant="ghost"
                   onClick={() => setActiveId(d.id)}
                   aria-pressed={selected}
-                  className="block h-full w-full whitespace-normal rounded-[inherit] p-2.5 text-left"
+                  className="block h-full w-full whitespace-normal rounded-[inherit] p-3 pl-4 text-left"
                 >
-                  <div className="flex items-center gap-1.5 text-[10px]">
-                    <span className="rounded bg-surface-raised px-1.5 py-0.5 text-muted-foreground">
+                  <h3 className="break-words font-display text-sm font-semibold leading-snug">{d.title}</h3>
+                  <p className="mt-1 line-clamp-2 min-h-8 text-xs font-normal leading-snug text-muted-foreground">
+                    {d.description}
+                  </p>
+                  <div className="mt-2 flex items-center gap-1.5 text-[10px]">
+                    <span className="rounded-full bg-surface-raised px-2 py-0.5 text-muted-foreground tabular-nums">
                       {t("idx.roleTypesCount").replace("{count}", String(s.count))}
                     </span>
                     <span
-                      className={`rounded px-1.5 py-0.5 font-medium ${
+                      className={`rounded-full px-2 py-0.5 font-medium tabular-nums ${
                         s.gap ? "bg-danger/12 text-danger" : "bg-ok/12 text-ok"
                       }`}
                     >
                       {s.gap ? t("idx.criticalGapCount").replace("{count}", String(s.gap)) : t("idx.fullCoverage")}
                     </span>
                   </div>
-                  <h3 className="mt-1.5 break-words font-display text-sm font-semibold leading-snug">{d.title}</h3>
-                  <p className="mt-1 line-clamp-1 text-xs font-normal leading-snug text-muted-foreground">
-                    {d.description}
-                  </p>
                 </Button>
               </div>
             );
@@ -263,10 +271,12 @@ function StrategyBoard() {
             const group = activeRoles.filter((r) => roleContractOf(r) === ct);
             return (
           <div key={ct}>
-            <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
-              {t(`idx.ct.${ct}`)}
-              <span className="rounded bg-surface-raised px-1.5 py-0.5 text-[10px] font-normal text-muted-foreground">{group.length}</span>
-            </h3>
+            <div className="mb-2 flex items-center gap-2">
+              <span className={`size-2 shrink-0 rounded-full ${CONTRACT_DOT[ct] ?? "bg-muted-foreground/50"}`} />
+              <h3 className="text-sm font-semibold tracking-wide">{t(`idx.ct.${ct}`)}</h3>
+              <span className="rounded-full bg-surface-raised px-2 py-0.5 text-[10px] font-medium text-muted-foreground tabular-nums">{group.length}</span>
+              <span className="h-px flex-1 bg-border/70" />
+            </div>
             {group.length === 0 ? <p className="text-xs text-muted-foreground">{t("idx.ct.none")}</p> : (
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {group.map((role) => (
@@ -395,6 +405,18 @@ function EditOrgDialog({ org, onDone }: { org: Org; onDone: () => void }) {
   );
 }
 
+const CONTRACT_DOT: Record<string, string> = {
+  employee: "bg-brand",
+  leased: "bg-warn",
+  intern: "bg-ok",
+};
+
+const CRITICALITY_DOT: Record<string, string> = {
+  strategic_critical: "bg-danger",
+  critical: "bg-warn",
+  important: "bg-brand",
+};
+
 function RoleCard({
   role,
   orgNodes,
@@ -428,61 +450,81 @@ function RoleCard({
         : "bg-danger/12 text-danger";
   const stateLabel =
     state === "full" ? t("idx.stateFull") : state === "partial" ? t("idx.statePartial") : t("idx.stateNone");
+  const StateIcon = state === "full" ? CheckCircle2 : state === "partial" ? AlertTriangle : CircleDashed;
+  const barColor = state === "full" ? "bg-ok" : state === "partial" ? "bg-warn" : "bg-danger";
+  const coveragePct = Math.min(100, Math.round((filled / Math.max(1, role.target_count)) * 100));
 
   return (
-    <article className="panel group relative flex h-full min-w-0 flex-col p-2.5">
+    <article className="panel group relative flex h-full min-w-0 flex-col p-3">
       <RoleMenu role={role} orgNodes={orgNodes} onArchive={onArchive} onSaved={onSaved} />
       <div className="flex items-start justify-between gap-2">
-        <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${stateStyle}`}>
+        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${stateStyle}`}>
+          <StateIcon className="size-3" />
           {stateLabel}
         </span>
-        <span className="pr-6 text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
+        <span className="flex items-center gap-1.5 pr-6 text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+          <span className={`size-1.5 rounded-full ${CRITICALITY_DOT[role.criticality] ?? "bg-muted-foreground/50"}`} />
           {criticalityLabel[role.criticality] ?? role.criticality}
         </span>
       </div>
 
-      <h3 className="mt-2 break-words font-display text-sm font-semibold leading-snug">{role.title}</h3>
+      <h3 className="mt-2 break-words font-display text-[15px] font-semibold leading-snug">{role.title}</h3>
       {role.approval_status === "pending" && <PendingApproval role={role} onDone={onSaved} />}
       <p className="mt-1 line-clamp-2 whitespace-pre-line text-xs leading-snug text-muted-foreground">
         {role.description}
       </p>
 
-      <div className="mt-2 flex flex-wrap gap-x-2 gap-y-1 text-[11px] text-muted-foreground tabular-nums">
-        <span>
+      <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground tabular-nums">
+        <span className="rounded bg-surface-raised px-1.5 py-0.5">
           {t("idx.targetLevel")} L{role.level_min}–{role.level_max}
         </span>
         {role.employment_mode && <span>{employmentModeLabel(t, role.employment_mode)}</span>}
         {role.location && <span>{role.location}</span>}
       </div>
 
-      {teams.length > 0 && (
-        <p className="mt-1.5 flex items-center gap-1 truncate text-[11px] text-muted-foreground">
-          <Building2 className="size-3 shrink-0" />
-          <span className="truncate">
-            {t("idx.teamsLabel")}
-            {teams.join("、")}
+      <div className="mt-2.5">
+        <div className="flex items-baseline justify-between text-[10px] text-muted-foreground">
+          <span className="uppercase tracking-[0.1em]">{t("idx.coverageLabel")}</span>
+          <span className="font-semibold tabular-nums text-foreground">
+            {filled}<span className="font-normal text-muted-foreground">/{role.target_count}</span>
           </span>
-        </p>
-      )}
+        </div>
+        <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-raised">
+          <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${coveragePct}%` }} />
+        </div>
+      </div>
 
-      {members.length > 0 && (
-        <p className="mt-1 flex items-center gap-1 truncate text-[11px] text-muted-foreground">
-          <Users className="size-3 shrink-0" />
-          <span className="truncate">{members.join("、")}</span>
-        </p>
+      {(teams.length > 0 || members.length > 0) && (
+        <div className="mt-2.5 space-y-1 rounded-lg bg-surface-raised/60 px-2 py-1.5">
+          {teams.length > 0 && (
+            <p className="flex items-center gap-1 truncate text-[11px] text-muted-foreground">
+              <Building2 className="size-3 shrink-0" />
+              <span className="truncate">
+                {t("idx.teamsLabel")}
+                {teams.join("、")}
+              </span>
+            </p>
+          )}
+          {members.length > 0 && (
+            <p className="flex items-center gap-1 truncate text-[11px] text-muted-foreground">
+              <Users className="size-3 shrink-0" />
+              <span className="truncate">{members.join("、")}</span>
+            </p>
+          )}
+        </div>
       )}
 
       {toOnboard.length > 0 && (
-        <p className="mt-1.5 flex flex-wrap items-center gap-1 text-[11px]">
-          <span className="rounded bg-primary/12 px-1.5 py-0.5 font-medium text-primary">{t("idx.toOnboard")}</span>
+        <p className="mt-2 flex flex-wrap items-center gap-1 text-[11px]">
+          <span className="rounded-full bg-primary/12 px-2 py-0.5 font-medium text-primary">{t("idx.toOnboard")}</span>
           <span className="text-muted-foreground">
             {toOnboard.map((c) => (c.onboarding_on ? `${c.name} (${formatDate(c.onboarding_on)})` : c.name)).join("、")}
           </span>
         </p>
       )}
 
-      <div className="mt-auto pt-2">
-        <Button size="sm" variant="outline" className="h-7 gap-1 px-2 text-xs" onClick={onOpen}>
+      <div className="mt-auto pt-2.5">
+        <Button size="sm" variant="outline" className="h-7 w-full gap-1 px-2 text-xs" onClick={onOpen}>
           {t("idx.viewRoleProfile")} <ArrowUpRight className="size-3" />
         </Button>
       </div>
