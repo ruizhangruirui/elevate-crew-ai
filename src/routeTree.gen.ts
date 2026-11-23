@@ -21,6 +21,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as PeopleIndexRouteImport } from './routes/people.index'
 import { Route as PeoplePersonIdRouteImport } from './routes/people.$personId'
 import { Route as RecruitingOffersRouteImport } from './routes/recruiting_.offers'
+import { Route as RecruitingTalentRouteImport } from './routes/recruiting_.talent'
 import { Route as ApiIntegrationsPresenceChangesRouteImport } from './routes/api/integrations/presence/changes'
 import { Route as ApiIntegrationsPresenceEmployeesRouteImport } from './routes/api/integrations/presence/employees'
 import { Route as ApiIntegrationsPresenceManagersRouteImport } from './routes/api/integrations/presence/managers'
@@ -86,6 +87,11 @@ const RecruitingOffersRoute = RecruitingOffersRouteImport.update({
   path: '/recruiting/offers',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RecruitingTalentRoute = RecruitingTalentRouteImport.update({
+  id: '/recruiting_/talent',
+  path: '/recruiting/talent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiIntegrationsPresenceChangesRoute =
   ApiIntegrationsPresenceChangesRouteImport.update({
     id: '/api/integrations/presence/changes',
@@ -123,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/people/$personId': typeof PeoplePersonIdRoute
   '/recruiting/offers': typeof RecruitingOffersRoute
+  '/recruiting/talent': typeof RecruitingTalentRoute
   '/people/': typeof PeopleIndexRoute
   '/api/integrations/presence/changes': typeof ApiIntegrationsPresenceChangesRoute
   '/api/integrations/presence/employees': typeof ApiIntegrationsPresenceEmployeesRoute
@@ -141,6 +148,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/people/$personId': typeof PeoplePersonIdRoute
   '/recruiting/offers': typeof RecruitingOffersRoute
+  '/recruiting/talent': typeof RecruitingTalentRoute
   '/people': typeof PeopleIndexRoute
   '/api/integrations/presence/changes': typeof ApiIntegrationsPresenceChangesRoute
   '/api/integrations/presence/employees': typeof ApiIntegrationsPresenceEmployeesRoute
@@ -160,6 +168,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/people/$personId': typeof PeoplePersonIdRoute
   '/recruiting_/offers': typeof RecruitingOffersRoute
+  '/recruiting_/talent': typeof RecruitingTalentRoute
   '/people/': typeof PeopleIndexRoute
   '/api/integrations/presence/changes': typeof ApiIntegrationsPresenceChangesRoute
   '/api/integrations/presence/employees': typeof ApiIntegrationsPresenceEmployeesRoute
@@ -180,6 +189,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/people/$personId'
     | '/recruiting/offers'
+    | '/recruiting/talent'
     | '/people/'
     | '/api/integrations/presence/changes'
     | '/api/integrations/presence/employees'
@@ -198,6 +208,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/people/$personId'
     | '/recruiting/offers'
+    | '/recruiting/talent'
     | '/people'
     | '/api/integrations/presence/changes'
     | '/api/integrations/presence/employees'
@@ -216,6 +227,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/people/$personId'
     | '/recruiting_/offers'
+    | '/recruiting_/talent'
     | '/people/'
     | '/api/integrations/presence/changes'
     | '/api/integrations/presence/employees'
@@ -235,6 +247,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   PeoplePersonIdRoute: typeof PeoplePersonIdRoute
   RecruitingOffersRoute: typeof RecruitingOffersRoute
+  RecruitingTalentRoute: typeof RecruitingTalentRoute
   PeopleIndexRoute: typeof PeopleIndexRoute
   ApiIntegrationsPresenceChangesRoute: typeof ApiIntegrationsPresenceChangesRoute
   ApiIntegrationsPresenceEmployeesRoute: typeof ApiIntegrationsPresenceEmployeesRoute
@@ -328,6 +341,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RecruitingOffersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/recruiting_/talent': {
+      id: '/recruiting_/talent'
+      path: '/recruiting/talent'
+      fullPath: '/recruiting/talent'
+      preLoaderRoute: typeof RecruitingTalentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/integrations/presence/changes': {
       id: '/api/integrations/presence/changes'
       path: '/api/integrations/presence/changes'
@@ -371,6 +391,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   PeoplePersonIdRoute: PeoplePersonIdRoute,
   RecruitingOffersRoute: RecruitingOffersRoute,
+  RecruitingTalentRoute: RecruitingTalentRoute,
   PeopleIndexRoute: PeopleIndexRoute,
   ApiIntegrationsPresenceChangesRoute: ApiIntegrationsPresenceChangesRoute,
   ApiIntegrationsPresenceEmployeesRoute: ApiIntegrationsPresenceEmployeesRoute,

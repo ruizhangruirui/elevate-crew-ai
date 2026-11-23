@@ -1465,6 +1465,84 @@ export type Database = {
           },
         ]
       }
+      talent_pool: {
+        Row: {
+          ai_analyzed_at: string | null
+          ai_breakdown: Json
+          ai_directions: Json
+          ai_role_matches: Json
+          ai_score: number | null
+          ai_summary: string | null
+          archived: boolean
+          created_at: string
+          created_by: string | null
+          cv_text: string | null
+          cv_url: string | null
+          email: string | null
+          headline: string | null
+          id: string
+          linkedin_url: string | null
+          location: string | null
+          name: string
+          notes: string | null
+          phone: string | null
+          source: string
+          tags: string[]
+          teamtailor_candidate_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_analyzed_at?: string | null
+          ai_breakdown?: Json
+          ai_directions?: Json
+          ai_role_matches?: Json
+          ai_score?: number | null
+          ai_summary?: string | null
+          archived?: boolean
+          created_at?: string
+          created_by?: string | null
+          cv_text?: string | null
+          cv_url?: string | null
+          email?: string | null
+          headline?: string | null
+          id?: string
+          linkedin_url?: string | null
+          location?: string | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          source?: string
+          tags?: string[]
+          teamtailor_candidate_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_analyzed_at?: string | null
+          ai_breakdown?: Json
+          ai_directions?: Json
+          ai_role_matches?: Json
+          ai_score?: number | null
+          ai_summary?: string | null
+          archived?: boolean
+          created_at?: string
+          created_by?: string | null
+          cv_text?: string | null
+          cv_url?: string | null
+          email?: string | null
+          headline?: string | null
+          id?: string
+          linkedin_url?: string | null
+          location?: string | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          source?: string
+          tags?: string[]
+          teamtailor_candidate_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       team_achievement_contributors: {
         Row: {
           achievement_id: string

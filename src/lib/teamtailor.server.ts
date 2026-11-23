@@ -172,3 +172,53 @@ export async function fetchTeamTailorData(apiKey: string, region: string, matche
   }
   return { jobs: [...jobById.values()], applications: out, capped: applications.capped };
 }
+
+export type TeamTailorCandidate = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  location: string | null;
+  linkedin: string | null;
+  profileUrl: string | null;
+  pitch: string | null;
+  tags: string[];
+};
+
+/** All candidates in the TeamTailor account (talent pool), page-capped. */
+export async function fetchTeamTailorCandidates(apiKey: string, region: string) {
+  const base = BASE_URLS[region] ?? "https://api.teamtailor.com/v1";
+  const result = await listAll(base, apiKey, "/candidates?page%5Bsize%5D=30");
+  const out: TeamTailorCandidate[] = [];
+  for (const c of result.data) {
+    if (c.type !== "candidates") continue;
+    const a = c.attributes ?? {};
+    const name = `${str(a["first-name"]) ?? ""} ${str(a["last-name"]) ?? ""}`.trim();
+    if (!name) continue;
+    out.push({
+      id: c.id,
+      name,
+      email: str(a["email"]),
+      phone: str(a["phone"]),
+      location: [str(a["city"]), str(a["country"])].filter(Boolean).join(", ") || null,
+      linkedin: str(a["linkedin-url"]),
+      profileUrl: str(a["profile-url"]),
+      pitch: str(a["pitch"]),
+      tags: Array.isArray(a["tags"]) ? (a["tags"] as unknown[]).filter((t): t is string => typeof t === "string") : [],
+    });
+  }
+  return { candidates: out, capped: result.capped };
+}
+
+/** Fresh (short-lived) resume link → PDF text. Returns null when no PDF CV is available. */
+export async function fetchTeamTailorResumeText(apiKey: string, region: string, candidateId: string): Promise<string | null> {
+  const base = BASE_URLS[region] ?? "https://api.teamtailor.com/v1";
+  const res = await ttGet(base, apiKey, `/candidates/${encodeURIComponent(candidateId)}`);
+  const one = res.data as unknown as JsonApiResource | undefined;
+  const url = str(one?.attributes?.["resume"]);
+  if (!url) return null;
+  const file = await fetch(url);
+  if (!file.ok) return null;
+  const { pdfToText } = await import("./pdf-text.server");
+  return pdfToText(new Uint8Array(await file.arrayBuffer()));
+}

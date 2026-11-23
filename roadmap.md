@@ -1,3 +1,5 @@
+- [x] Recruiting → Talent pool: TeamTailor candidate sync, manual add, PDF/text CV, AI score, directions and open-position matches.
+- [ ] Verify Talent pool sync/AI through signed-in UI (blocked: no app-owned session; company server needs migration 0041 and TEAMTAILOR_API_KEY).
 - [x] Generate editable role requirements from the current Job Description; replace placeholder assessment with evidence-based fit results. Six new input/scope checks and both synthetic live AI calls passed.
 - [ ] Verify AI generation and fit through the signed-in UI (blocked: app-owned session unavailable).
 - [x] Add Recruiting Offer approval/sent/accepted stages and a filterable, paginated, collapsible Offer form.

@@ -288,6 +288,13 @@
       "when": 1795100327542,
       "tag": "0040_relax_offer_candidate_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1795429248247,
+      "tag": "0041_talent_pool",
+      "breakpoints": true
     }
   ]
 }

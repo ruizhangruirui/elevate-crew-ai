@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useI18n } from "@/lib/i18n";
 
 /** Sub-navigation shared by Recruiting and its Offer approval sub-page. */
-export function RecruitingTabs({ active }: { active: "candidates" | "offers" }) {
+export function RecruitingTabs({ active }: { active: "candidates" | "offers" | "talent" }) {
   const { lang } = useI18n();
   const l = (zh: string, en: string) => (lang === "zh" ? zh : en);
   const tab = (on: boolean) =>
@@ -11,6 +11,7 @@ export function RecruitingTabs({ active }: { active: "candidates" | "offers" }) 
     <nav className="mb-4 flex gap-1 border-b border-border/60" aria-label="Recruiting">
       <Link to="/recruiting" className={tab(active === "candidates")}>{l("岗位与候选人", "Positions & candidates")}</Link>
       <Link to="/recruiting/offers" search={{}} className={tab(active === "offers")}>Offer approval</Link>
+      <Link to="/recruiting/talent" className={tab(active === "talent")}>{l("人才库", "Talent pool")}</Link>
     </nav>
   );
 }
