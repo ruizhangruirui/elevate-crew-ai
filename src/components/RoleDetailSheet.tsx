@@ -8,7 +8,8 @@ import { toast } from "sonner";
 import { UserPlus, UserMinus, Pencil, Sparkles, Loader2, Search, Layers3, BookOpen, Compass, BriefcaseBusiness, type LucideIcon } from "lucide-react";
 import { db as supabase } from "@/lib/db-client";
 import { coverageOf, criticalityLabel, type Person, type Role, type Skill } from "@/lib/talent";
-import { analyzeRoleFit, generateRoleProfile, type FitResult, type RoleProfileDraft } from "@/lib/ai.functions";
+import { analyzeRoleFit, generateRoleProfile, type AiProvider, type FitResult, type RoleProfileDraft } from "@/lib/ai.functions";
+import { AiProviderSelect } from "@/components/AiProviderSelect";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -108,6 +109,7 @@ function RoleDetailContent({
   const [assignSeat, setAssignSeat] = useState<number | null>(null);
   const [fits, setFits] = useState<FitResult[]>([]);
   const [profileDraft, setProfileDraft] = useState<RoleProfileDraft | null>(null);
+  const [aiProvider, setAiProvider] = useState<AiProvider | undefined>(undefined);
   const runProfile = useServerFn(generateRoleProfile);
   const runFit = useServerFn(analyzeRoleFit);
   const navigate = useNavigate();
@@ -147,7 +149,7 @@ function RoleDetailContent({
   const aiProfile = useMutation({
     mutationFn: async () => {
       if (!role) throw new Error(t("sheet.role.noDescription"));
-      return runProfile({ data: { roleId: role.id, lang } });
+      return runProfile({ data: { roleId: role.id, lang, provider: aiProvider } });
     },
     onSuccess: (draft) => {
       setProfileDraft(draft);
@@ -160,7 +162,7 @@ function RoleDetailContent({
   const aiFit = useMutation({
     mutationFn: () => {
       if (!role) throw new Error(t("sheet.role.noDescription"));
-      return runFit({ data: { roleId: role.id, lang } });
+      return runFit({ data: { roleId: role.id, lang, provider: aiProvider } });
     },
     onSuccess: (rows) => {
       setFits(rows);
@@ -258,6 +260,7 @@ function RoleDetailContent({
                     {t("sheet.role.aiGenerateProfile")}
                   </Button>
                 </ConfirmAction>
+                <AiProviderSelect value={aiProvider} onChange={setAiProvider} className="h-7 w-auto gap-1 px-2 text-xs" />
                 <Button variant="outline" size="sm" className="h-7 gap-1.5 px-2 text-xs" onClick={() => { setProfileDraft(null); setEditing((v) => !v); }}>
                   <Pencil className="size-3.5" /> {editing ? t("sheet.cancel") : t("sheet.role.editProfile")}
                 </Button>
@@ -444,14 +447,17 @@ function RoleDetailContent({
               <p className="text-xs text-muted-foreground">
                 {t("sheet.role.aiAssistDesc")}
               </p>
-              <Button size="sm" className="gap-1.5" disabled={aiFit.isPending || editing} onClick={() => aiFit.mutate()}>
-                {aiFit.isPending ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <Sparkles className="size-3.5" />
-                )}
-                {aiFit.isPending ? t("sheet.role.analyzing") : t("sheet.role.aiFitAnalysis")}
-              </Button>
+              <div className="flex items-center gap-2">
+                <AiProviderSelect value={aiProvider} onChange={setAiProvider} />
+                <Button size="sm" className="gap-1.5" disabled={aiFit.isPending || editing} onClick={() => aiFit.mutate()}>
+                  {aiFit.isPending ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="size-3.5" />
+                  )}
+                  {aiFit.isPending ? t("sheet.role.analyzing") : t("sheet.role.aiFitAnalysis")}
+                </Button>
+              </div>
             </div>
 
             {fits.length > 0 && (
@@ -541,6 +547,7 @@ const fromLines = (v: string) =>
 function EditRoleForm({ role, initialDraft, onDone }: { role: Role; initialDraft: RoleProfileDraft | null; onDone: () => void }) {
   const { t, lang } = useI18n();
   const runProfile = useServerFn(generateRoleProfile);
+  const [aiProvider, setAiProvider] = useState<AiProvider | undefined>(undefined);
   const [form, setForm] = useState({
     title: role.title,
     job_title: role.job_title ?? "",
@@ -560,7 +567,7 @@ function EditRoleForm({ role, initialDraft, onDone }: { role: Role; initialDraft
 
   const generate = useMutation({
     mutationFn: () => runProfile({ data: {
-      roleId: role.id, lang,
+      roleId: role.id, lang, provider: aiProvider,
       draft: { title: form.title, description: form.description, level_min: Number(form.level_min), level_max: Number(form.level_max) },
     } }),
     onSuccess: (draft) => {
@@ -633,6 +640,7 @@ function EditRoleForm({ role, initialDraft, onDone }: { role: Role; initialDraft
             {generate.isPending ? t("sheet.role.analyzing") : t("sheet.role.generateFromDescription")}
           </Button>
         </ConfirmAction>
+        <AiProviderSelect value={aiProvider} onChange={setAiProvider} />
       </div>
       <div className="grid grid-cols-3 gap-3">
         <div className="space-y-2">

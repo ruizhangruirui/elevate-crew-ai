@@ -13,6 +13,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { analyzeTalent, deleteTalent, renameTalentCategory, saveTalentCategoryCatalog, setTalentCategory, listTalentPool, saveTalent, syncTalentFromTeamTailor, uploadTalentCv } from "@/lib/talent-pool.functions";
+import type { AiProvider } from "@/lib/ai.functions";
+import { AiProviderSelect } from "@/components/AiProviderSelect";
 import type { TalentRow } from "@/lib/talent-pool";
 import { QS_EDITION, talentHighlights } from "@/lib/talent-highlights";
 
@@ -46,6 +48,7 @@ export function TalentPoolBoard() {
   const [manageCats, setManageCats] = useState(false);
   const [page, setPage] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
+  const [aiProvider, setAiProvider] = useState<AiProvider | undefined>(undefined);
   const refresh = () => qc.invalidateQueries({ queryKey: ["talent-pool"] });
 
   const syncM = useMutation({
@@ -57,7 +60,7 @@ export function TalentPoolBoard() {
   const runAnalyze = async (id: string) => {
     setBusy(id);
     try {
-      const r = await analyze({ data: { id, lang } });
+      const r = await analyze({ data: { id, lang, provider: aiProvider } });
       toast.success(l(`AI 分析完成：${r.ai_score} 分`, `AI analysis done: ${r.ai_score}`) + (r.usedCv ? "" : l("（无简历，仅依据资料）", " (no CV, profile only)")));
       refresh();
     } catch (e) { toast.error((e as Error).message); } finally { setBusy(null); }
@@ -88,7 +91,7 @@ export function TalentPoolBoard() {
     setBulk({ done: 0, total: targets.length, failed: 0 });
     for (let i = 0; i < targets.length; i++) {
       if (stopRef.current) break;
-      try { await analyze({ data: { id: targets[i]!.id, lang } }); }
+      try { await analyze({ data: { id: targets[i]!.id, lang, provider: aiProvider } }); }
       catch (e) {
         failed++;
         const msg = (e as Error).message;
@@ -164,6 +167,7 @@ export function TalentPoolBoard() {
       <div className="card-glass flex flex-wrap items-center gap-2 p-3">
         <Sparkles className="h-4 w-4 text-brand" />
         <span className="text-sm font-medium">{l("批量 AI 分析", "Bulk AI analysis")}</span>
+        <AiProviderSelect value={aiProvider} onChange={setAiProvider} />
         <span className="text-xs text-muted-foreground">{selected.size ? l(`已选 ${selected.size} 人`, `${selected.size} selected`) : l(`当前筛选 ${rows.length} 人`, `${rows.length} in current filter`)}</span>
         {bulk ? (
           <>

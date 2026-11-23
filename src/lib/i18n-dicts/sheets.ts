@@ -40,6 +40,8 @@ export const sheetsDict: Dict = {
   "sheet.role.aiAssist": { zh: "AI 辅助判断", en: "AI-Assisted Assessment" },
   "sheet.role.aiAssistDesc": { zh: "岗位描述 × 已记录技能与经验", en: "Job Description × Recorded Skills & Experience" },
   "sheet.role.analyzing": { zh: "分析中…", en: "Analyzing…" },
+  "ai.provider.openai": { zh: "使用 OpenAI 运行", en: "Run with OpenAI" },
+  "ai.provider.huawei": { zh: "使用华为内部 AI 运行", en: "Run with Huawei Internal AI" },
   "sheet.role.aiFitAnalysis": { zh: "AI 人岗匹配分析", en: "AI Person-Role Fit Analysis" },
   "sheet.role.fitScore": { zh: "匹配度 {n}%", en: "Fit {n}%" },
   "sheet.role.strengths": { zh: "优势", en: "Strengths" },

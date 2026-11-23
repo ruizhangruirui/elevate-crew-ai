@@ -235,7 +235,7 @@ const SCHEMA = {
 void strArr;
 
 export const analyzeTalent = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({ id: z.string().uuid(), lang: z.enum(["zh", "en"]).optional() }).parse(d))
+  .inputValidator((d) => z.object({ id: z.string().uuid(), lang: z.enum(["zh", "en"]).optional(), provider: z.enum(["openai", "huawei"]).optional() }).parse(d))
   .handler(async ({ data }) => {
     const user = await requireUser([...POOL_ROLES]);
     const db = await admin();
@@ -253,6 +253,7 @@ export const analyzeTalent = createServerFn({ method: "POST" })
     const { generateStructured } = await import("./ai-gateway.server");
     const lang = data.lang === "zh" ? "使用中文输出，技术名词保留英文。" : "Write all output in concise professional English.";
     const out = await generateStructured<{ score: number; summary: string; breakdown: TalentBreakdown; directions: TalentDirection[]; role_matches: TalentRoleMatch[]; current_company?: string; previous_companies?: string[] }>({
+      provider: data.provider,
       schemaName: "talent_analysis",
       system:
         "You are a recruiting analyst for a research institute. Evaluate a candidate ONLY from the CV/profile evidence given. " +

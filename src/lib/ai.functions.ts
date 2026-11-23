@@ -2,6 +2,16 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireAppAuth } from "./app-auth-middleware";
 import { roleAiInput, roleProfileSystem, roleFitSystem, fitCandidates } from "./role-ai";
 
+export type AiProvider = "openai" | "huawei";
+
+/** Which AI providers are configured on the server (drives the "Run with …" picker). */
+export const listAiProviders = createServerFn({ method: "GET" })
+  .middleware([requireAppAuth])
+  .handler(async (): Promise<AiProvider[]> => {
+    const { configuredAiProviders } = await import("./ai-gateway.server");
+    return configuredAiProviders();
+  });
+
 export type RoleProfileDraft = {
   domains: string[];
   knowledge: string[];
@@ -58,6 +68,7 @@ export const generateRoleProfile = createServerFn({ method: "POST" })
       .single();
 
     return generateStructured<RoleProfileDraft>({
+      provider: data.provider,
       schemaName: "role_profile",
       system:
         roleProfileSystem +
@@ -109,7 +120,7 @@ export const generateRoleProfile = createServerFn({ method: "POST" })
 
 export const analyzeRoleFit = createServerFn({ method: "POST" })
   .middleware([requireAppAuth])
-  .inputValidator((input: { roleId: string; lang?: AiLang }) => {
+  .inputValidator((input: { roleId: string; lang?: AiLang; provider?: AiProvider | undefined }) => {
     if (!input?.roleId) throw new Error("缺少岗位");
     return input;
   })
@@ -144,6 +155,7 @@ export const analyzeRoleFit = createServerFn({ method: "POST" })
     if (!candidates.length) throw new Error("暂无可分析的人员数据");
 
     const result = await generateStructured<{ results: FitResult[] }>({
+      provider: data.provider,
       schemaName: "role_fit",
       system:
         roleFitSystem +
@@ -192,6 +204,7 @@ export const analyzeRoleFit = createServerFn({ method: "POST" })
     });
 
     if (valid.length) {
+      const usedModel = (await import("./ai-gateway.server")).aiConfig(data.provider).model;
       const { error: upsertError } = await context.supabase.from("person_role_fit").upsert(
         valid.map((r) => ({
           person_id: r.person_id,
@@ -202,7 +215,7 @@ export const analyzeRoleFit = createServerFn({ method: "POST" })
           gaps: r.gaps,
           recommendation: r.recommendation,
           source: "ai",
-          model: process.env["AI_MODEL"] || "openai/gpt-6-astra",
+          model: usedModel,
           updated_at: new Date().toISOString(),
         })),
         { onConflict: "person_id,role_id" },
@@ -224,7 +237,7 @@ export type TeamDiagnosis = {
 
 export const diagnoseTeam = createServerFn({ method: "POST" })
   .middleware([requireAppAuth])
-  .inputValidator((input: { nodeId: string; lang?: AiLang }) => {
+  .inputValidator((input: { nodeId: string; lang?: AiLang; provider?: AiProvider | undefined }) => {
     if (!input?.nodeId) throw new Error("缺少组织节点");
     return input;
   })
@@ -278,6 +291,7 @@ export const diagnoseTeam = createServerFn({ method: "POST" })
       .limit(20);
 
     return generateStructured<TeamDiagnosis>({
+      provider: data.provider,
       schemaName: "team_diagnosis",
       system:
         "你是技术研究组织的组织能力顾问。关注点不是个人绩效，而是「为达成战略方向，这个团队还缺什么岗位、什么能力，应该先招人还是先培养」。所有人员数据由 HR / 主管录入。具体、可执行，不要空话套话。" +

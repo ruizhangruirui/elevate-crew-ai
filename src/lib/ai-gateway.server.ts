@@ -11,8 +11,24 @@ const OPENAI_BASE_URL = "https://api.openai.com/v1";
 const LOVABLE_DEFAULT_MODEL = "openai/gpt-6-astra";
 const OPENAI_DEFAULT_MODEL = "gpt-5";
 
-export function aiConfig() {
+export type AiProvider = "openai" | "huawei";
+
+/**
+ * provider 省略时自动选择：自有 key（AI_API_KEY/OPENAI_API_KEY）→ OpenAI 直连，否则 Lovable 网关。
+ * provider = "openai"：强制使用自有 OpenAI key（AI_API_KEY/OPENAI_API_KEY，可选 AI_BASE_URL/AI_MODEL）。
+ * provider = "huawei"：华为内部 AI 网关，需 HUAWEI_AI_BASE_URL / HUAWEI_AI_API_KEY / HUAWEI_AI_MODEL。
+ */
+export function aiConfig(provider?: AiProvider) {
+  if (provider === "huawei") {
+    const apiKey = process.env["HUAWEI_AI_API_KEY"];
+    const baseURL = (process.env["HUAWEI_AI_BASE_URL"] || "").replace(/\/+$/, "");
+    const model = process.env["HUAWEI_AI_MODEL"];
+    if (!apiKey || !baseURL) throw new Error("华为内部 AI 未配置：请在服务器环境变量中设置 HUAWEI_AI_BASE_URL 和 HUAWEI_AI_API_KEY");
+    if (!model) throw new Error("华为内部 AI 未配置：请在服务器环境变量中设置 HUAWEI_AI_MODEL（模型 ID）");
+    return { baseURL, apiKey, model, isLovableGateway: false };
+  }
   const ownKey = process.env["AI_API_KEY"] || process.env["OPENAI_API_KEY"];
+  if (provider === "openai" && !ownKey) throw new Error("OpenAI 未配置：请在服务器环境变量中设置 OPENAI_API_KEY");
   const apiKey = ownKey || process.env["LOVABLE_API_KEY"];
   if (!apiKey) throw new Error("AI 服务未配置：请在服务器环境变量中设置 AI_API_KEY");
   const defaultBase = ownKey ? OPENAI_BASE_URL : LOVABLE_BASE_URL;
@@ -20,6 +36,14 @@ export function aiConfig() {
   const isLovableGateway = baseURL.startsWith(LOVABLE_BASE_URL);
   const defaultModel = isLovableGateway ? LOVABLE_DEFAULT_MODEL : OPENAI_DEFAULT_MODEL;
   return { baseURL, apiKey, model: process.env["AI_MODEL"] || defaultModel, isLovableGateway };
+}
+
+/** Providers with enough server config to be offered in the UI. */
+export function configuredAiProviders(): AiProvider[] {
+  const out: AiProvider[] = [];
+  if (process.env["AI_API_KEY"] || process.env["OPENAI_API_KEY"]) out.push("openai");
+  if (process.env["HUAWEI_AI_API_KEY"] && process.env["HUAWEI_AI_BASE_URL"] && process.env["HUAWEI_AI_MODEL"]) out.push("huawei");
+  return out;
 }
 
 /**
@@ -32,14 +56,16 @@ export async function generateStructured<T>({
   schemaName,
   schema,
   model,
+  provider,
 }: {
   system: string;
   input: string;
   schemaName: string;
   schema: JsonSchema;
   model?: string;
+  provider?: AiProvider | undefined;
 }): Promise<T> {
-  const config = aiConfig();
+  const config = aiConfig(provider);
   const usedModel = model || config.model;
 
   const headers: Record<string, string> = {

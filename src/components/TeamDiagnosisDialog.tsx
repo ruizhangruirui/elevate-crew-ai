@@ -1,9 +1,11 @@
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
 import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { diagnoseTeam, type TeamDiagnosis } from "@/lib/ai.functions";
+import { diagnoseTeam, type AiProvider, type TeamDiagnosis } from "@/lib/ai.functions";
 import { AddActionButton } from "@/components/AddActionButton";
+import { AiProviderSelect } from "@/components/AiProviderSelect";
 import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,8 +29,9 @@ export function TeamDiagnosisDialog({
 }) {
   const { t, lang } = useI18n();
   const run = useServerFn(diagnoseTeam);
+  const [provider, setProvider] = useState<AiProvider | undefined>(undefined);
   const m = useMutation({
-    mutationFn: async () => (await run({ data: { nodeId: nodeId!, lang } })) as TeamDiagnosis,
+    mutationFn: async () => (await run({ data: { nodeId: nodeId!, lang, provider } })) as TeamDiagnosis,
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -45,10 +48,13 @@ export function TeamDiagnosisDialog({
         </DialogHeader>
 
         {!r && (
-          <Button onClick={() => m.mutate()} disabled={m.isPending || !nodeId} className="gap-2">
-            {m.isPending ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-            {m.isPending ? t("sheet.role.analyzing") : t("sheet.team.startDiagnosis")}
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button onClick={() => m.mutate()} disabled={m.isPending || !nodeId} className="gap-2">
+              {m.isPending ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+              {m.isPending ? t("sheet.role.analyzing") : t("sheet.team.startDiagnosis")}
+            </Button>
+            <AiProviderSelect value={provider} onChange={setProvider} />
+          </div>
         )}
 
         {r && (

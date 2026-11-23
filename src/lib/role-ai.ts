@@ -3,6 +3,7 @@ import { z } from "zod";
 export const roleAiInput = z.object({
   roleId: z.string().uuid(),
   lang: z.enum(["zh", "en"]).optional(),
+  provider: z.enum(["openai", "huawei"]).optional(),
   draft: z.object({
     title: z.string().trim().min(1).max(500),
     description: z.string().trim().min(1, "请先填写 Job Description").max(30000),
