@@ -408,12 +408,6 @@ const CONTRACT_DOT: Record<string, string> = {
   intern: "bg-ok",
 };
 
-const CRITICALITY_DOT: Record<string, string> = {
-  strategic_critical: "bg-danger",
-  critical: "bg-warn",
-  important: "bg-brand",
-};
-
 function RoleCard({
   role,
   orgNodes,
@@ -455,8 +449,7 @@ function RoleCard({
         <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${stateStyle}`}>
           {stateLabel}
         </span>
-        <span className="flex items-center gap-1.5 pr-6 text-[10px] font-medium text-muted-foreground">
-          <span className={`size-1.5 rounded-full ${CRITICALITY_DOT[role.criticality] ?? "bg-muted-foreground/50"}`} />
+        <span className="pr-6 text-[10px] font-medium text-muted-foreground">
           {criticalityLabel[role.criticality] ?? role.criticality}
         </span>
       </div>
@@ -486,8 +479,8 @@ function RoleCard({
       )}
 
       {members.length > 0 && (
-        <p className="mt-1 flex items-center gap-1 truncate text-[11px] text-muted-foreground">
-          <Users className="size-3 shrink-0" />
+        <p className="mt-1.5 flex items-center gap-1 truncate text-xs font-medium text-foreground">
+          <Users className="size-3.5 shrink-0 text-brand" />
           <span className="truncate">{members.join("、")}</span>
         </p>
       )}
