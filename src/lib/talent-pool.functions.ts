@@ -32,18 +32,46 @@ async function openRoles(db: Db, user: AppUser) {
   return roles;
 }
 
+const CATEGORY_CATALOG_KEY = "talent_categories";
+
+function parseCatalog(raw: string | null | undefined): string[] {
+  try {
+    const v = JSON.parse(raw ?? "[]") as unknown;
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && x.trim().length > 0).slice(0, 100) : [];
+  } catch { return []; }
+}
+
 export const listTalentPool = createServerFn({ method: "POST" }).handler(async () => {
   const user = await requireUser([...POOL_ROLES]);
   const db = await admin();
   const { data, error } = await db.from("talent_pool").select(COLS).order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
+  const { data: catRow } = await db.from("config_items").select("name").eq("category", CATEGORY_CATALOG_KEY).limit(1);
   const roles = await openRoles(db, user);
   return {
     talents: (data ?? []).map((r) => toRow(r as Record<string, unknown>)),
     openRoles: roles.map((r) => ({ id: r.id, title: r.title })),
     canDelete: user.role === "owner" || user.role === "hr_director",
+    categoryCatalog: parseCatalog((catRow?.[0] as { name?: string } | undefined)?.name),
   };
 });
+
+/** Persist the category catalog (names may exist before anyone is assigned). */
+export const saveTalentCategoryCatalog = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ categories: z.array(z.string().trim().min(1).max(80)).max(100) }).parse(d))
+  .handler(async ({ data }) => {
+    const user = await requireUser([...POOL_ROLES]);
+    const db = await admin();
+    const names = [...new Set(data.categories.map((c) => c.trim()))];
+    const { data: existing } = await db.from("config_items").select("id").eq("category", CATEGORY_CATALOG_KEY).limit(1);
+    const row = { category: CATEGORY_CATALOG_KEY, name: JSON.stringify(names), updated_at: new Date().toISOString() };
+    const { error } = existing?.[0]
+      ? await db.from("config_items").update(row as never).eq("id", (existing[0] as { id: string }).id)
+      : await db.from("config_items").insert(row as never);
+    if (error) throw new Error(error.message);
+    await db.from("audit_log").insert({ actor: user.name, action: "talent_category_catalog", entity: "config_items", detail: names.join(", ") } as never);
+    return { ok: true };
+  });
 
 const talentInput = z.object({
   id: z.string().uuid().optional(),
@@ -108,6 +136,18 @@ export const setTalentCategory = createServerFn({ method: "POST" })
     const { error } = await db.from("talent_pool").update({ category: data.category || null, updated_at: new Date().toISOString() } as never).in("id", data.ids);
     if (error) throw new Error(error.message);
     await db.from("audit_log").insert({ actor: user.name, action: "talent_category", entity: "talent_pool", detail: `${data.ids.length} → ${data.category ?? "(none)"}` } as never);
+    return { ok: true };
+  });
+
+/** Rename a category for everyone in it, or clear it (to=null) to remove the category. */
+export const renameTalentCategory = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ from: z.string().trim().min(1).max(80), to: z.string().trim().max(80).nullable() }).parse(d))
+  .handler(async ({ data }) => {
+    const user = await requireUser([...POOL_ROLES]);
+    const db = await admin();
+    const { error } = await db.from("talent_pool").update({ category: data.to?.trim() || null, updated_at: new Date().toISOString() } as never).eq("category", data.from);
+    if (error) throw new Error(error.message);
+    await db.from("audit_log").insert({ actor: user.name, action: "talent_category_rename", entity: "talent_pool", detail: `${data.from} → ${data.to ?? "(none)"}` } as never);
     return { ok: true };
   });
 

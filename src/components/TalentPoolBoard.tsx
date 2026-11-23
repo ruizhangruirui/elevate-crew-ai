@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Archive, ChevronDown, ExternalLink, FileUp, Linkedin, Plus, RefreshCw, Search, Sparkles, Square, Tag, Trash2 } from "lucide-react";
+import { Archive, Check, ChevronDown, ExternalLink, FileUp, FolderCog, Linkedin, Pencil, Plus, RefreshCw, Search, Sparkles, Square, Tag, Trash2, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { formatDate } from "@/lib/dates";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ConfirmAction } from "@/components/ConfirmAction";
-import { analyzeTalent, deleteTalent, setTalentCategory, listTalentPool, saveTalent, syncTalentFromTeamTailor, uploadTalentCv } from "@/lib/talent-pool.functions";
+import { analyzeTalent, deleteTalent, renameTalentCategory, saveTalentCategoryCatalog, setTalentCategory, listTalentPool, saveTalent, syncTalentFromTeamTailor, uploadTalentCv } from "@/lib/talent-pool.functions";
 import type { TalentRow } from "@/lib/talent-pool";
 
 const PAGE = 20;
@@ -42,6 +42,7 @@ export function TalentPoolBoard() {
   const [showArchived, setShowArchived] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const [editing, setEditing] = useState<TalentRow | "new" | null>(null);
+  const [manageCats, setManageCats] = useState(false);
   const [page, setPage] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
   const refresh = () => qc.invalidateQueries({ queryKey: ["talent-pool"] });
@@ -72,7 +73,10 @@ export function TalentPoolBoard() {
       .filter((t) => !s || [t.name, t.email, t.headline, t.location, ...t.tags, ...t.ai_directions.map((d) => d.direction)].some((v) => v?.toLowerCase().includes(s)))
       .sort((a, b) => (b.ai_score ?? -1) - (a.ai_score ?? -1));
   }, [data, q, source, minScore, roleFilter, showArchived, category]);
-  const categories = useMemo(() => [...new Set((data?.talents ?? []).map((t) => t.category).filter((c): c is string => !!c))].sort(), [data]);
+  const categories = useMemo(() => {
+    const used = (data?.talents ?? []).map((t) => t.category).filter((c): c is string => !!c);
+    return [...new Set([...(data?.categoryCatalog ?? []), ...used])].sort();
+  }, [data]);
 
   /** Sequential bulk analysis (one call at a time, shared AI rate limit); stops on credit/permission errors. */
   const runBulk = async (onlyNew: boolean) => {
@@ -129,6 +133,9 @@ export function TalentPoolBoard() {
             {categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Button variant="outline" size="sm" onClick={() => setManageCats(true)}>
+          <FolderCog className="mr-1 h-4 w-4" />{l("管理分类", "Manage categories")}
+        </Button>
         <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setPage(0); }}>
           <SelectTrigger className="h-9 w-48 text-sm"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -287,7 +294,106 @@ export function TalentPoolBoard() {
       )}
 
       {editing && <TalentDialog talent={editing === "new" ? null : editing} onClose={() => setEditing(null)} onSaved={refresh} />}
+      {manageCats && (
+        <ManageCategoriesDialog
+          categories={categories}
+          counts={(data?.talents ?? []).reduce<Record<string, number>>((m, t) => { if (t.category) m[t.category] = (m[t.category] ?? 0) + 1; return m; }, {})}
+          onClose={() => setManageCats(false)}
+          onChanged={refresh}
+        />
+      )}
     </section>
+  );
+}
+
+function ManageCategoriesDialog({ categories, counts, onClose, onChanged }: { categories: string[]; counts: Record<string, number>; onClose: () => void; onChanged: () => void }) {
+  const { lang } = useI18n();
+  const l = (zh: string, en: string) => (lang === "zh" ? zh : en);
+  const rename = useServerFn(renameTalentCategory);
+  const saveCatalog = useServerFn(saveTalentCategoryCatalog);
+  const [newCat, setNewCat] = useState("");
+  const [editingCat, setEditingCat] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const persistCatalog = async (next: string[]) => {
+    await saveCatalog({ data: { categories: next } });
+  };
+  const add = async () => {
+    const name = newCat.trim();
+    if (!name) return;
+    if (categories.includes(name)) { toast.info(l("分类已存在", "Category already exists")); return; }
+    setBusy(true);
+    try { await persistCatalog([...categories, name]); setNewCat(""); toast.success(l("分类已添加", "Category added")); onChanged(); }
+    catch (e) { toast.error((e as Error).message); } finally { setBusy(false); }
+  };
+  const doRename = async (from: string) => {
+    const to = editValue.trim();
+    setEditingCat(null);
+    if (!to || to === from) return;
+    if (categories.includes(to)) { toast.error(l("目标分类已存在", "Target category already exists")); return; }
+    setBusy(true);
+    try {
+      await rename({ data: { from, to } });
+      await persistCatalog(categories.map((c) => (c === from ? to : c)));
+      toast.success(l("分类已重命名", "Category renamed"));
+      onChanged();
+    } catch (e) { toast.error((e as Error).message); } finally { setBusy(false); }
+  };
+  const remove = async (name: string) => {
+    setBusy(true);
+    try {
+      await rename({ data: { from: name, to: null } });
+      await persistCatalog(categories.filter((c) => c !== name));
+      toast.success(l("分类已删除，相关人员已移出该分类", "Category deleted; its people are now uncategorized"));
+      onChanged();
+    } catch (e) { toast.error((e as Error).message); } finally { setBusy(false); }
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
+        <DialogHeader><DialogTitle>{l("管理分类", "Manage categories")}</DialogTitle></DialogHeader>
+        <div className="flex gap-2">
+          <Input value={newCat} onChange={(e) => setNewCat(e.target.value)} placeholder={l("新分类名称", "New category name")} className="h-9 text-sm" onKeyDown={(e) => e.key === "Enter" && add()} />
+          <Button size="sm" disabled={busy || !newCat.trim()} onClick={add}><Plus className="mr-1 h-4 w-4" />{l("添加", "Add")}</Button>
+        </div>
+        {categories.length === 0 ? (
+          <p className="py-4 text-center text-sm text-muted-foreground">{l("还没有分类，先在上方添加一个。", "No categories yet — add one above.")}</p>
+        ) : (
+          <ul className="divide-y divide-border/60">
+            {categories.map((c) => (
+              <li key={c} className="flex items-center gap-2 py-2">
+                {editingCat === c ? (
+                  <>
+                    <Input autoFocus value={editValue} onChange={(e) => setEditValue(e.target.value)} className="h-8 flex-1 text-sm" onKeyDown={(e) => { if (e.key === "Enter") doRename(c); if (e.key === "Escape") setEditingCat(null); }} />
+                    <Button size="sm" variant="ghost" disabled={busy} onClick={() => doRename(c)} aria-label={l("确认", "Confirm")}><Check className="h-4 w-4 text-ok" /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => setEditingCat(null)} aria-label={l("取消", "Cancel")}><X className="h-4 w-4" /></Button>
+                  </>
+                ) : (
+                  <>
+                    <span className="flex-1 truncate text-sm font-medium">{c}</span>
+                    <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">{l(`${counts[c] ?? 0} 人`, `${counts[c] ?? 0}`)}</span>
+                    <Button size="sm" variant="ghost" disabled={busy} onClick={() => { setEditingCat(c); setEditValue(c); }} aria-label={l("重命名", "Rename")}><Pencil className="h-4 w-4" /></Button>
+                    <ConfirmAction
+                      title={l(`删除分类「${c}」？`, `Delete category "${c}"?`)}
+                      description={l(`该分类下的 ${counts[c] ?? 0} 人会变为未分类，人员资料不会被删除。`, `${counts[c] ?? 0} people in it become uncategorized; their profiles are kept.`)}
+                      confirmLabel={l("删除", "Delete")}
+                      onConfirm={() => remove(c)}
+                    >
+                      <Button size="sm" variant="ghost" className="text-destructive" aria-label={l("删除", "Delete")}><Trash2 className="h-4 w-4" /></Button>
+                    </ConfirmAction>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>{l("关闭", "Close")}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
