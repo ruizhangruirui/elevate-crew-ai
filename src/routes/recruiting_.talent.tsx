@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { RecruitingTabs } from "@/components/RecruitingTabs";
 import { TalentPoolBoard } from "@/components/TalentPoolBoard";
+import { useAuth } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/recruiting_/talent")({
   head: () => ({
@@ -14,10 +15,14 @@ export const Route = createFileRoute("/recruiting_/talent")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: () => (
-    <AppShell title="Recruiting">
-      <RecruitingTabs active="talent" />
-      <TalentPoolBoard />
-    </AppShell>
-  ),
+  component: () => {
+    const { user } = useAuth();
+    const isManager = user?.role === "manager";
+    return (
+      <AppShell title="Recruiting">
+        <RecruitingTabs active="talent" />
+        <TalentPoolBoard readOnly={isManager} />
+      </AppShell>
+    );
+  },
 });

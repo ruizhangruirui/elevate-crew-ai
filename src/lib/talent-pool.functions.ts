@@ -22,7 +22,7 @@ async function openRoles(db: Db, user: AppUser) {
     .eq("recruiting_archived", false);
   if (error) throw new Error(error.message);
   let roles = (data ?? []).filter((r) => r.approval_status !== "pending" && (r.recruiting_only || r.recruiter_person_id));
-  if ((user.role === "hr" || user.role === "recruiter") && user.scope_node_ids.length) {
+  if ((user.role === "hr" || user.role === "recruiter" || user.role === "manager") && user.scope_node_ids.length) {
     const { managerScope } = await import("./auth.server");
     const { scopedRoleIds, sharedRoleIds } = await import("./role-scope.server");
     const scope = await managerScope(user);
@@ -52,6 +52,22 @@ export const listTalentPool = createServerFn({ method: "POST" }).handler(async (
     talents: (data ?? []).map((r) => toRow(r as Record<string, unknown>)),
     openRoles: roles.map((r) => ({ id: r.id, title: r.title })),
     canDelete: user.role === "owner" || user.role === "hr_director",
+    categoryCatalog: parseCatalog((catRow?.[0] as { name?: string } | undefined)?.name),
+  };
+});
+
+/** Read-only view for managers: same pool, position matches scoped to their Labs, no edit rights. */
+export const listTalentPoolManager = createServerFn({ method: "POST" }).handler(async () => {
+  const user = await requireUser(["manager"]);
+  const db = await admin();
+  const { data, error } = await db.from("talent_pool").select(COLS).order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  const { data: catRow } = await db.from("config_items").select("name").eq("category", CATEGORY_CATALOG_KEY).limit(1);
+  const roles = await openRoles(db, user);
+  return {
+    talents: (data ?? []).map((r) => toRow(r as Record<string, unknown>)),
+    openRoles: roles.map((r) => ({ id: r.id, title: r.title })),
+    canDelete: false,
     categoryCatalog: parseCatalog((catRow?.[0] as { name?: string } | undefined)?.name),
   };
 });

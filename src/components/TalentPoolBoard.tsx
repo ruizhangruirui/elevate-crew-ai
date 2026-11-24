@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ConfirmAction } from "@/components/ConfirmAction";
-import { analyzeTalent, deleteTalent, renameTalentCategory, saveTalentCategoryCatalog, setTalentCategory, listTalentPool, saveTalent, syncTalentFromTeamTailor, uploadTalentCv } from "@/lib/talent-pool.functions";
+import { analyzeTalent, deleteTalent, renameTalentCategory, saveTalentCategoryCatalog, setTalentCategory, listTalentPool, listTalentPoolManager, saveTalent, syncTalentFromTeamTailor, uploadTalentCv } from "@/lib/talent-pool.functions";
 import type { AiProvider } from "@/lib/ai.functions";
 import { AiProviderSelect } from "@/components/AiProviderSelect";
 import type { TalentRow } from "@/lib/talent-pool";
@@ -22,11 +22,11 @@ const PAGE = 20;
 const scoreTone = (s: number | null) =>
   s == null ? "bg-muted text-muted-foreground" : s >= 75 ? "bg-ok/15 text-ok" : s >= 50 ? "bg-brand/15 text-brand" : "bg-warn/15 text-warn";
 
-export function TalentPoolBoard() {
+export function TalentPoolBoard({ readOnly = false }: { readOnly?: boolean }) {
   const { lang } = useI18n();
   const l = (zh: string, en: string) => (lang === "zh" ? zh : en);
   const qc = useQueryClient();
-  const list = useServerFn(listTalentPool);
+  const list = useServerFn(readOnly ? listTalentPoolManager : listTalentPool);
   const sync = useServerFn(syncTalentFromTeamTailor);
   const analyze = useServerFn(analyzeTalent);
   const save = useServerFn(saveTalent);
@@ -37,7 +37,7 @@ export function TalentPoolBoard() {
   const [bulkCat, setBulkCat] = useState("");
   const [bulk, setBulk] = useState<{ done: number; total: number; failed: number } | null>(null);
   const stopRef = useRef(false);
-  const { data, isLoading, error } = useQuery({ queryKey: ["talent-pool"], queryFn: () => list() });
+  const { data, isLoading, error } = useQuery({ queryKey: ["talent-pool", readOnly ? "manager" : "full"], queryFn: () => list() });
   const [q, setQ] = useState("");
   const [source, setSource] = useState("all");
   const [roleFilter, setRoleFilter] = useState("all");
@@ -140,9 +140,11 @@ export function TalentPoolBoard() {
             {categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Button variant="outline" size="sm" onClick={() => setManageCats(true)}>
-          <FolderCog className="mr-1 h-4 w-4" />{l("管理分类", "Manage categories")}
-        </Button>
+        {!readOnly && (
+          <Button variant="outline" size="sm" onClick={() => setManageCats(true)}>
+            <FolderCog className="mr-1 h-4 w-4" />{l("管理分类", "Manage categories")}
+          </Button>
+        )}
         <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setPage(0); }}>
           <SelectTrigger className="h-9 w-48 text-sm"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -159,22 +161,27 @@ export function TalentPoolBoard() {
         <Button variant={linkedinOnly ? "default" : "outline"} size="sm" onClick={() => { setLinkedinOnly(!linkedinOnly); setPage(0); }}>
           <Linkedin className="mr-1 h-4 w-4" />{l("有 LinkedIn", "Has LinkedIn")}
         </Button>
-        <Button variant="outline" size="sm" onClick={() => {
-          const ids = rows.filter((t) => t.linkedin_url?.trim()).map((t) => t.id);
-          if (!ids.length) { toast.info(l("当前筛选中没有附领英链接的人", "No one with LinkedIn in current filter")); return; }
-          setQueue({ ids, i: 0 });
-        }}>{l("逐个补领英资料", "LinkedIn review queue")}</Button>
+        {!readOnly && (
+          <Button variant="outline" size="sm" onClick={() => {
+            const ids = rows.filter((t) => t.linkedin_url?.trim()).map((t) => t.id);
+            if (!ids.length) { toast.info(l("当前筛选中没有附领英链接的人", "No one with LinkedIn in current filter")); return; }
+            setQueue({ ids, i: 0 });
+          }}>{l("逐个补领英资料", "LinkedIn review queue")}</Button>
+        )}
         <Button variant="ghost" size="sm" onClick={() => { setShowArchived(!showArchived); setPage(0); }}>
           <Archive className="mr-1 h-4 w-4" />{showArchived ? l("查看在库", "Show active") : l("查看已归档", "Show archived")}
         </Button>
-        <div className="ml-auto flex gap-2">
-          <Button variant="outline" size="sm" disabled={syncM.isPending} onClick={() => syncM.mutate()}>
-            <RefreshCw className={`mr-1 h-4 w-4 ${syncM.isPending ? "animate-spin" : ""}`} />{l("从 TeamTailor 同步", "Sync from TeamTailor")}
-          </Button>
-          <Button size="sm" onClick={() => setEditing("new")}><Plus className="mr-1 h-4 w-4" />{l("添加人才", "Add talent")}</Button>
-        </div>
+        {!readOnly && (
+          <div className="ml-auto flex gap-2">
+            <Button variant="outline" size="sm" disabled={syncM.isPending} onClick={() => syncM.mutate()}>
+              <RefreshCw className={`mr-1 h-4 w-4 ${syncM.isPending ? "animate-spin" : ""}`} />{l("从 TeamTailor 同步", "Sync from TeamTailor")}
+            </Button>
+            <Button size="sm" onClick={() => setEditing("new")}><Plus className="mr-1 h-4 w-4" />{l("添加人才", "Add talent")}</Button>
+          </div>
+        )}
       </div>
 
+      {!readOnly && (
       <div className="card-glass flex flex-wrap items-center gap-2 p-3">
         <Sparkles className="h-4 w-4 text-brand" />
         <span className="text-sm font-medium">{l("批量 AI 分析", "Bulk AI analysis")}</span>
@@ -202,6 +209,7 @@ export function TalentPoolBoard() {
         </div>
         <datalist id="talent-cats">{categories.map((c) => <option key={c} value={c} />)}</datalist>
       </div>
+      )}
 
       {queue && (() => {
         const cur = data?.talents.find((x) => x.id === queue.ids[queue.i]);
@@ -233,7 +241,7 @@ export function TalentPoolBoard() {
           return (
             <article key={t.id} className="card-glass overflow-hidden">
               <div className="flex items-center pl-3">
-              <input type="checkbox" aria-label={t.name} className="h-4 w-4 accent-[var(--color-brand)]" checked={selected.has(t.id)} onChange={() => toggle(t.id)} />
+              {!readOnly && <input type="checkbox" aria-label={t.name} className="h-4 w-4 accent-[var(--color-brand)]" checked={selected.has(t.id)} onChange={() => toggle(t.id)} />}
               <button type="button" className="flex min-w-0 flex-1 items-center gap-3 p-3 text-left" onClick={() => setOpen(isOpen ? null : t.id)} aria-expanded={isOpen}>
                 <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${scoreTone(t.ai_score)}`}>{t.ai_score ?? "—"}</span>
                 <span className="min-w-0 flex-1">
@@ -281,6 +289,7 @@ export function TalentPoolBoard() {
                     </div>}
                     {t.tags.length > 0 && <div className="flex flex-wrap gap-1">{t.tags.map((g) => <span key={g} className="rounded bg-muted px-1.5 py-0.5 text-xs">{g}</span>)}</div>}
                     {t.notes && <p className="whitespace-pre-line text-xs">{t.notes}</p>}
+                    {!readOnly && (
                     <div className="flex flex-wrap gap-2 pt-2">
                       <Button size="sm" disabled={busy === t.id} onClick={() => runAnalyze(t.id)}>
                         <Sparkles className={`mr-1 h-4 w-4 ${busy === t.id ? "animate-pulse" : ""}`} />{busy === t.id ? l("分析中…", "Analyzing…") : t.ai_analyzed_at ? l("重新 AI 分析", "Re-run AI") : l("AI 分析", "AI analyze")}
@@ -304,6 +313,7 @@ export function TalentPoolBoard() {
                         </ConfirmAction>
                       )}
                     </div>
+                    )}
                   </div>
                   <div className="space-y-3 text-sm">
                     {!t.ai_analyzed_at ? (
