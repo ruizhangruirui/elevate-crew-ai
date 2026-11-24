@@ -43,6 +43,8 @@ export function TalentPoolBoard() {
   const [roleFilter, setRoleFilter] = useState("all");
   const [minScore, setMinScore] = useState("0");
   const [showArchived, setShowArchived] = useState(false);
+  const [linkedinOnly, setLinkedinOnly] = useState(false);
+  const [queue, setQueue] = useState<{ ids: string[]; i: number } | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [editing, setEditing] = useState<TalentRow | "new" | null>(null);
   const [manageCats, setManageCats] = useState(false);
@@ -72,11 +74,12 @@ export function TalentPoolBoard() {
       .filter((t) => t.archived === showArchived)
       .filter((t) => category === "all" || (category === "__none" ? !t.category : t.category === category))
       .filter((t) => source === "all" || t.source === source)
+      .filter((t) => !linkedinOnly || !!t.linkedin_url?.trim())
       .filter((t) => (t.ai_score ?? 0) >= Number(minScore))
       .filter((t) => roleFilter === "all" || t.ai_role_matches.some((m) => m.role_id === roleFilter))
       .filter((t) => !s || [t.name, t.email, t.headline, t.location, t.current_title, t.current_company, ...(t.previous_companies ?? []), ...(t.education ?? []), ...(t.previous_roles ?? []), ...t.tags, ...t.teamtailor_applied_jobs, ...t.ai_directions.map((d) => d.direction)].some((v) => v?.toLowerCase().includes(s)))
       .sort((a, b) => (b.ai_score ?? -1) - (a.ai_score ?? -1));
-  }, [data, q, source, minScore, roleFilter, showArchived, category]);
+  }, [data, q, source, minScore, roleFilter, showArchived, category, linkedinOnly]);
   const categories = useMemo(() => {
     const used = (data?.talents ?? []).map((t) => t.category).filter((c): c is string => !!c);
     return [...new Set([...(data?.categoryCatalog ?? []), ...used])].sort();
@@ -153,6 +156,14 @@ export function TalentPoolBoard() {
             {["0", "50", "65", "75", "85"].map((s) => <SelectItem key={s} value={s}>{s === "0" ? l("任意分数", "Any score") : `≥ ${s}`}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Button variant={linkedinOnly ? "default" : "outline"} size="sm" onClick={() => { setLinkedinOnly(!linkedinOnly); setPage(0); }}>
+          <Linkedin className="mr-1 h-4 w-4" />{l("有 LinkedIn", "Has LinkedIn")}
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => {
+          const ids = rows.filter((t) => t.linkedin_url?.trim()).map((t) => t.id);
+          if (!ids.length) { toast.info(l("当前筛选中没有附领英链接的人", "No one with LinkedIn in current filter")); return; }
+          setQueue({ ids, i: 0 });
+        }}>{l("逐个补领英资料", "LinkedIn review queue")}</Button>
         <Button variant="ghost" size="sm" onClick={() => { setShowArchived(!showArchived); setPage(0); }}>
           <Archive className="mr-1 h-4 w-4" />{showArchived ? l("查看在库", "Show active") : l("查看已归档", "Show archived")}
         </Button>
@@ -191,6 +202,25 @@ export function TalentPoolBoard() {
         </div>
         <datalist id="talent-cats">{categories.map((c) => <option key={c} value={c} />)}</datalist>
       </div>
+
+      {queue && (() => {
+        const cur = data?.talents.find((x) => x.id === queue.ids[queue.i]);
+        const next = () => queue.i + 1 < queue.ids.length ? setQueue({ ...queue, i: queue.i + 1 }) : (setQueue(null), toast.success(l("领英资料补充完成", "LinkedIn queue finished")));
+        return (
+          <div className="card-glass flex flex-wrap items-center gap-2 border-brand/40 p-3">
+            <Linkedin className="h-4 w-4 text-brand" />
+            <span className="text-sm font-medium">{queue.i + 1} / {queue.ids.length} · {cur?.name ?? "—"}</span>
+            <span className="text-xs text-muted-foreground">{l("在领英点「更多 → 存为 PDF」，再上传到资料里", "On LinkedIn use More → Save to PDF, then upload it")}</span>
+            <div className="ml-auto flex gap-2">
+              <Button size="sm" variant="outline" disabled={!cur?.linkedin_url} onClick={() => cur?.linkedin_url && window.open(cur.linkedin_url, "_blank", "noopener")}>{l("打开领英", "Open LinkedIn")}</Button>
+              <Button size="sm" variant="outline" disabled={!cur} onClick={() => cur && setEditing(cur)}>{l("上传资料", "Upload profile")}</Button>
+              <Button size="sm" disabled={!cur || busy === cur.id} onClick={() => cur && runAnalyze(cur.id)}>{l("AI 分析", "Analyze")}</Button>
+              <Button size="sm" variant="outline" onClick={next}>{l("下一个", "Next")}</Button>
+              <Button size="sm" variant="ghost" onClick={() => setQueue(null)}>{l("结束", "End")}</Button>
+            </div>
+          </div>
+        );
+      })()}
 
       <p className="text-xs text-muted-foreground">{l(`共 ${rows.length} 人`, `${rows.length} people`)}</p>
       {isLoading && <p className="text-sm text-muted-foreground">{l("加载中…", "Loading…")}</p>}
