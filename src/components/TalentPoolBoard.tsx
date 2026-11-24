@@ -473,7 +473,7 @@ function TalentDialog({ talent, onClose, onSaved }: { talent: TalentRow | null; 
           <div className="sm:col-span-2"><Label>{l("备注", "Notes")}</Label><Textarea rows={3} value={f.notes} onChange={set("notes")} /></div>
           <div className="sm:col-span-2">
             <Label className="flex items-center gap-1"><FileUp className="h-4 w-4" />{l("上传 PDF 简历（用于 AI 分析）", "Upload PDF CV (for AI analysis)")}</Label>
-            <Input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+            <Input type="file" accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
           </div>
           <div className="sm:col-span-2">
             <Label>{l("或粘贴简历文字", "Or paste CV text")}</Label>

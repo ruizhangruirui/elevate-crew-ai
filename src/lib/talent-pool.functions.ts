@@ -119,10 +119,11 @@ export const uploadTalentCv = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid(), base64: z.string().min(10).max(14_000_000) }).parse(d))
   .handler(async ({ data }) => {
     await requireUser([...POOL_ROLES]);
-    const { pdfToText } = await import("./pdf-text.server");
+    const { cvToText } = await import("./pdf-text.server");
     const bin = Uint8Array.from(atob(data.base64), (c) => c.charCodeAt(0));
-    const text = await pdfToText(bin);
-    if (!text) throw new Error("Could not read text from this PDF (scanned image PDFs are not supported).");
+    const read = await cvToText(bin);
+    if (read.text === null) throw new Error(read.reason === "unsupported_format" ? "Unsupported file: upload a PDF or Word (.docx) CV." : "No readable text in this CV (likely a scanned image). Paste the CV text instead.");
+    const text = read.text;
     const db = await admin();
     const { error } = await db.from("talent_pool").update({ cv_text: text, updated_at: new Date().toISOString() } as never).eq("id", data.id);
     if (error) throw new Error(error.message);
@@ -244,14 +245,28 @@ export const analyzeTalent = createServerFn({ method: "POST" })
     const db = await admin();
     const { data: t, error } = await db.from("talent_pool").select(COLS).eq("id", data.id).single();
     if (error || !t) throw new Error("Talent not found");
-    let cv = (t.cv_text as string | null) ?? null;
+    const zh = data.lang === "zh";
+    let cv = (t.cv_text as string | null)?.trim() || null;
+    let reason: string = "no_file";
     if (!cv && t.teamtailor_candidate_id && process.env["TEAMTAILOR_API_KEY"]) {
       const { fetchTeamTailorResumeText } = await import("./teamtailor.server");
-      cv = await fetchTeamTailorResumeText(process.env["TEAMTAILOR_API_KEY"], (process.env["TEAMTAILOR_REGION"] ?? "eu").trim().toLowerCase(), t.teamtailor_candidate_id as string).catch(() => null);
-      if (cv) await db.from("talent_pool").update({ cv_text: cv } as never).eq("id", data.id);
+      const read = await fetchTeamTailorResumeText(process.env["TEAMTAILOR_API_KEY"], (process.env["TEAMTAILOR_REGION"] ?? "eu").trim().toLowerCase(), t.teamtailor_candidate_id as string)
+        .catch(() => ({ text: null, reason: "download_failed" as const }));
+      if (read.text) { cv = read.text; await db.from("talent_pool").update({ cv_text: cv } as never).eq("id", data.id); }
+      else if (read.text === null) reason = read.reason;
     }
-    const profile = [t.headline, t.notes, (t.tags as string[] | null)?.join(", ")].filter(Boolean).join("\n");
-    if (!cv && !profile.trim()) throw new Error(data.lang === "zh" ? "缺少简历：请上传 PDF 简历或粘贴简历文字后再分析。" : "No CV available: upload a PDF CV or paste CV text first.");
+    // Never analyze without a real CV: profile-only input makes the model guess schools and employers.
+    if (!cv) {
+      const msg: Record<string, [string, string]> = {
+        no_file: ["未找到简历：请上传 PDF / Word 简历或粘贴简历文字后再分析。", "No CV found: upload a PDF/Word CV or paste CV text first."],
+        download_failed: ["TeamTailor 简历下载失败，请稍后重试或手动上传简历。", "TeamTailor CV download failed; retry later or upload the CV."],
+        unsupported_format: ["简历格式无法读取（仅支持 PDF / Word .docx），请粘贴简历文字。", "Unsupported CV format (PDF/.docx only); paste the CV text."],
+        no_text: ["简历是扫描件或图片，读不出文字，请粘贴简历文字。", "CV is a scanned image with no readable text; paste the CV text."],
+      };
+      const m = msg[reason] ?? msg["no_file"]!;
+      throw new Error(zh ? m[0] : m[1]);
+    }
+    const profile = [t.notes, (t.tags as string[] | null)?.join(", ")].filter(Boolean).join("\n");
     const roles = await openRoles(db, user);
     const { generateStructured } = await import("./ai-gateway.server");
     const lang = data.lang === "zh" ? "使用中文输出，技术名词保留英文。" : "Write all output in concise professional English.";
@@ -261,6 +276,8 @@ export const analyzeTalent = createServerFn({ method: "POST" })
       system:
         "You are a recruiting analyst for a research institute. Evaluate a candidate ONLY from the CV/profile evidence given. " +
         "Score 0-100 overall and per dimension (education, experience = work history, projects, skills). Missing evidence lowers confidence; never invent degrees, employers or projects. " +
+        "STRICT EVIDENCE RULE: every school, degree, employer and job title you output must appear verbatim (or as an obvious translation/abbreviation) in the CV text. If you cannot point to it in the CV, leave it out (empty string or empty array). Do not infer schools from cities, or employers from skills. Profile notes are recruiter notes, not CV evidence. " +
+        "Read the whole CV, including multi-column layouts where sections may be interleaved; dates near a line belong to that entry. " +
         "Extract current_company (the employer of the current/most recent ongoing role; empty string if none or unclear) and previous_companies (earlier employers, most recent first, max 6, no duplicates) strictly from the CV. Also extract current_title (job title of the current/most recent role, original language, empty if unclear) and education (each degree as \"Degree · School\", e.g. \"PhD · ETH Zurich\", highest first, max 4), and previous_roles (earlier positions as \"Job title · Company\", most recent first, max 4). " +
         "Keep everything brief: summary at most 2 short sentences (under 40 words); each direction reason and each role match reason at most 12 words. " +
         "Suggest 1-4 research/work directions the candidate fits, each with a short evidence-based reason. " +
@@ -269,11 +286,13 @@ export const analyzeTalent = createServerFn({ method: "POST" })
       input: [
         `Candidate: ${t.name}${t.location ? ` (${t.location})` : ""}`,
         profile ? `Profile notes:\n${profile}` : "",
-        cv ? `CV text:\n${cv.slice(0, 30000)}` : "CV text: not available",
+        `CV text (authoritative source):\n<<<CV\n${cv.slice(0, 30000)}\nCV>>>`,
         `Open positions (JSON):\n${JSON.stringify(roles.map((r) => ({ role_id: r.id, title: r.title, job_title: r.job_title, level: `${r.level_min}-${r.level_max}`, description: (r.description ?? "").slice(0, 1500) })))}`,
       ].filter(Boolean).join("\n\n"),
       schema: SCHEMA,
     });
+    const { verifyNames, verifyPaired, appearsInCv } = await import("./cv-evidence");
+    const curCo = out.current_company?.trim().slice(0, 200) || null;
     const result = {
       ai_score: clampScore(out.score),
       ai_summary: out.summary,
@@ -286,11 +305,11 @@ export const analyzeTalent = createServerFn({ method: "POST" })
       ai_directions: (out.directions ?? []).slice(0, 4),
       ai_role_matches: sanitizeMatches(out.role_matches ?? [], roles),
       ai_analyzed_at: new Date().toISOString(),
-      current_company: out.current_company?.trim().slice(0, 200) || null,
+      current_company: curCo && appearsInCv(curCo, cv) ? curCo : null,
       current_title: out.current_title?.trim().slice(0, 200) || null,
-      education: [...new Set((out.education ?? []).map((c) => c.trim().slice(0, 200)).filter(Boolean))].slice(0, 4),
-      previous_roles: [...new Set((out.previous_roles ?? []).map((c) => c.trim().slice(0, 200)).filter(Boolean))].slice(0, 4),
-      previous_companies: [...new Set((out.previous_companies ?? []).map((c) => c.trim()).filter(Boolean))].slice(0, 6),
+      education: verifyPaired([...new Set((out.education ?? []).map((c) => c.trim().slice(0, 200)).filter(Boolean))].slice(0, 4), cv),
+      previous_roles: verifyPaired([...new Set((out.previous_roles ?? []).map((c) => c.trim().slice(0, 200)).filter(Boolean))].slice(0, 4), cv),
+      previous_companies: verifyNames([...new Set((out.previous_companies ?? []).map((c) => c.trim()).filter(Boolean))].slice(0, 6), cv),
     };
     const { error: e } = await db.from("talent_pool").update(result as never).eq("id", data.id);
     if (e) throw new Error(e.message);

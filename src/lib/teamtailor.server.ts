@@ -221,15 +221,17 @@ export async function fetchTeamTailorCandidates(apiKey: string, region: string) 
   return { candidates: out, capped: result.capped };
 }
 
-/** Fresh (short-lived) resume link → PDF text. Returns null when no PDF CV is available. */
-export async function fetchTeamTailorResumeText(apiKey: string, region: string, candidateId: string): Promise<string | null> {
+/** Fresh (short-lived) resume link → CV text (PDF or Word), with a failure reason. Retries once with a new link. */
+export async function fetchTeamTailorResumeText(apiKey: string, region: string, candidateId: string): Promise<import("./pdf-text.server").CvReadResult> {
   const base = BASE_URLS[region] ?? "https://api.teamtailor.com/v1";
-  const res = await ttGet(base, apiKey, `/candidates/${encodeURIComponent(candidateId)}`);
-  const one = res.data as unknown as JsonApiResource | undefined;
-  const url = str(one?.attributes?.["resume"]);
-  if (!url) return null;
-  const file = await fetch(url);
-  if (!file.ok) return null;
-  const { pdfToText } = await import("./pdf-text.server");
-  return pdfToText(new Uint8Array(await file.arrayBuffer()));
+  const { cvToText } = await import("./pdf-text.server");
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const res = await ttGet(base, apiKey, `/candidates/${encodeURIComponent(candidateId)}`);
+    const one = res.data as unknown as JsonApiResource | undefined;
+    const url = str(one?.attributes?.["resume"]);
+    if (!url) return { text: null, reason: "no_file" };
+    const file = await fetch(url).catch(() => null);
+    if (file?.ok) return cvToText(new Uint8Array(await file.arrayBuffer()));
+  }
+  return { text: null, reason: "download_failed" };
 }
