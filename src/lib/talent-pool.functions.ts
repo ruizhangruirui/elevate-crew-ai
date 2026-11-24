@@ -275,7 +275,7 @@ export const analyzeTalent = createServerFn({ method: "POST" })
       schemaName: "talent_analysis",
       system:
         "You are a recruiting analyst for a research institute. Evaluate a candidate ONLY from the CV/profile evidence given. " +
-        "Score 0-100 overall and per dimension (education, experience = work history, projects, skills). Missing evidence lowers confidence; never invent degrees, employers or projects. " +
+        "Score each dimension independently 0-100 (the overall score is computed by the system as their average) (education, experience = work history, projects, skills). Missing evidence lowers confidence; never invent degrees, employers or projects. " +
         "STRICT EVIDENCE RULE: every school, degree, employer and job title you output must appear verbatim (or as an obvious translation/abbreviation) in the CV text. If you cannot point to it in the CV, leave it out (empty string or empty array). Do not infer schools from cities, or employers from skills. Profile notes are recruiter notes, not CV evidence. " +
         "Read the whole CV, including multi-column layouts where sections may be interleaved; dates near a line belong to that entry. " +
         "Extract current_company (the employer of the current/most recent ongoing role; empty string if none or unclear) and previous_companies (earlier employers, most recent first, max 6, no duplicates) strictly from the CV. Also extract current_title (job title of the current/most recent role, original language, empty if unclear) and education (each degree as \"Degree · School\", e.g. \"PhD · ETH Zurich\", highest first, max 4), and previous_roles (earlier positions as \"Job title · Company\", most recent first, max 4). " +
@@ -294,7 +294,7 @@ export const analyzeTalent = createServerFn({ method: "POST" })
     const { verifyNames, verifyPaired, appearsInCv } = await import("./cv-evidence");
     const curCo = out.current_company?.trim().slice(0, 200) || null;
     const result = {
-      ai_score: clampScore(out.score),
+      ai_score: Math.round((clampScore(out.breakdown?.education) + clampScore(out.breakdown?.experience) + clampScore(out.breakdown?.projects) + clampScore(out.breakdown?.skills)) / 4),
       ai_summary: out.summary,
       ai_breakdown: {
         education: clampScore(out.breakdown?.education),
