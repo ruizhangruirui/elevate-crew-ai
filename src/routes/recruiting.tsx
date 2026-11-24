@@ -47,14 +47,6 @@ export const Route = createFileRoute("/recruiting")({
   }),
   component: function RecruitingPage() {
     const { t } = useI18n();
-    const { user, loading } = useAuth();
-    const navigate = useNavigate();
-    // Managers only have read-only access to the Talent Pool, so send them
-    // straight there instead of showing the positions/candidates board.
-    useEffect(() => {
-      if (!loading && user?.role === "manager") navigate({ to: "/recruiting/talent", replace: true });
-    }, [loading, user, navigate]);
-    if (user?.role === "manager") return null;
     return (
       <AppShell title={t("rec.title")}>
         <RecruitingTabs active="candidates" />

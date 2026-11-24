@@ -1,10 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
 import { z } from "zod";
 import { AppShell } from "@/components/AppShell";
 import { RecruitingTabs } from "@/components/RecruitingTabs";
 import { OfferApprovalBoard } from "@/components/OfferApprovalBoard";
-import { useAuth } from "@/hooks/useAuth";
 export const Route = createFileRoute("/recruiting_/offers")({
   validateSearch: z.object({ offer: z.string().uuid().optional() }),
   head: () => ({
@@ -28,12 +26,6 @@ export const Route = createFileRoute("/recruiting_/offers")({
 function OfferPage() {
   const { offer } = Route.useSearch();
   const navigate = useNavigate({ from: "/recruiting/offers" });
-  const { user, loading } = useAuth();
-  // Managers only have read-only Talent Pool access; keep them out of offer approvals.
-  useEffect(() => {
-    if (!loading && user?.role === "manager") navigate({ to: "/recruiting/talent", replace: true });
-  }, [loading, user, navigate]);
-  if (user?.role === "manager") return null;
   return (
     <AppShell title="Recruiting">
       <RecruitingTabs active="offers" />
