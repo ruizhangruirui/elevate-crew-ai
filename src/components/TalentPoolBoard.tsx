@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Archive, Check, ChevronDown, ExternalLink, FileUp, FolderCog, GraduationCap, Linkedin, MapPin, Pencil, Plus, RefreshCw, Search, Sparkles, Square, Tag, Trash2, X } from "lucide-react";
+import { Archive, Briefcase, History, Check, ChevronDown, ExternalLink, FileUp, FolderCog, GraduationCap, Linkedin, MapPin, Pencil, Plus, RefreshCw, Search, Sparkles, Square, Tag, Trash2, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { formatDate } from "@/lib/dates";
 import { Button } from "@/components/ui/button";
@@ -74,7 +74,7 @@ export function TalentPoolBoard() {
       .filter((t) => source === "all" || t.source === source)
       .filter((t) => (t.ai_score ?? 0) >= Number(minScore))
       .filter((t) => roleFilter === "all" || t.ai_role_matches.some((m) => m.role_id === roleFilter))
-      .filter((t) => !s || [t.name, t.email, t.headline, t.location, t.current_title, t.current_company, ...(t.previous_companies ?? []), ...(t.education ?? []), ...t.tags, ...t.teamtailor_applied_jobs, ...t.ai_directions.map((d) => d.direction)].some((v) => v?.toLowerCase().includes(s)))
+      .filter((t) => !s || [t.name, t.email, t.headline, t.location, t.current_title, t.current_company, ...(t.previous_companies ?? []), ...(t.education ?? []), ...(t.previous_roles ?? []), ...t.tags, ...t.teamtailor_applied_jobs, ...t.ai_directions.map((d) => d.direction)].some((v) => v?.toLowerCase().includes(s)))
       .sort((a, b) => (b.ai_score ?? -1) - (a.ai_score ?? -1));
   }, [data, q, source, minScore, roleFilter, showArchived, category]);
   const categories = useMemo(() => {
@@ -208,12 +208,16 @@ export function TalentPoolBoard() {
                 <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${scoreTone(t.ai_score)}`}>{t.ai_score ?? "—"}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">{t.name}</span>
-                  {(t.current_title || t.headline) && <span className="block truncate text-xs text-muted-foreground">{t.current_title || t.headline}</span>}
-                  {((t.education ?? []).length > 0 || t.current_company || (t.previous_companies ?? []).length > 0) && <span className="my-1 flex flex-wrap gap-1">
-                    {(t.education ?? []).map((e) => <span key={`edu-${e}`} className="rounded-md bg-brand/10 px-1.5 py-0.5 text-[11px] text-brand">{e}</span>)}
-                    {t.current_company && <span className="rounded-md bg-ok/10 px-1.5 py-0.5 text-[11px] text-ok">{t.current_company}</span>}
-                    {(t.previous_companies ?? []).map((c) => <span key={`co-${c}`} className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">{c}</span>)}
-                  </span>}
+                  {(() => {
+                    const edu = t.education ?? [];
+                    const now = [t.current_title || t.headline, t.current_company].filter(Boolean).join(" · ");
+                    const prev = (t.previous_roles ?? []).length ? t.previous_roles! : (t.previous_companies ?? []);
+                    return <span className="mt-1 block space-y-0.5 text-xs">
+                      {edu.length > 0 && <span className="flex min-w-0 items-center gap-1.5 text-brand"><GraduationCap className="h-3.5 w-3.5 shrink-0" /><span className="truncate font-medium">{edu.join("  |  ")}</span></span>}
+                      {now && <span className="flex min-w-0 items-center gap-1.5 text-foreground"><Briefcase className="h-3.5 w-3.5 shrink-0 text-ok" /><span className="truncate font-semibold">{now}</span></span>}
+                      {prev.length > 0 && <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground"><History className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{prev.join("  |  ")}</span></span>}
+                    </span>;
+                  })()}
                   {highlights.length > 0 && <span className="my-1 flex flex-wrap gap-1.5">
                     {highlights.map((h) => <span key={`${h.kind}-${h.institution ?? ""}`} title={`${h.source === "ai" ? l("AI 摘要，待核实", "AI summary, unverified") : l("资料提及，待核实", "Profile mention, unverified")}: ${h.evidence}`} className={`inline-flex max-w-full items-center gap-1 rounded-md border px-2 py-1 text-xs font-semibold ${h.kind === "qs" ? "border-warn/30 bg-warn/10 text-warn" : "border-brand/30 bg-brand/10 text-brand"}`}><GraduationCap className="h-3.5 w-3.5 shrink-0" /><span className="break-words">{highlightLabel(h)}{h.source === "ai" ? " · AI" : ""}</span></span>)}
                   </span>}
@@ -224,7 +228,7 @@ export function TalentPoolBoard() {
                   </span>
                 </span>
                 <span className="hidden max-w-[40%] flex-wrap justify-end gap-1 md:flex">
-                  {t.ai_role_matches.slice(0, 2).map((m) => <span key={m.role_id} className="rounded-full bg-ok/10 px-2 py-0.5 text-xs text-ok">→ {m.role_title}</span>)}
+                  {t.ai_directions.slice(0, 3).map((d) => <span key={d.direction} title={d.reason} className="rounded-full bg-ok/10 px-2 py-0.5 text-xs font-medium text-ok">{d.direction}</span>)}
                 </span>
                 {t.category && <span className="rounded bg-accent px-1.5 py-0.5 text-[10px] text-accent-foreground">{t.category}</span>}
                 <span className="rounded border border-border/60 px-1.5 py-0.5 text-[10px] text-muted-foreground">{t.source === "Manual" ? l("手工", "Manual") : t.source}</span>

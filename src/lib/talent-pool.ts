@@ -22,6 +22,7 @@ export type TalentRow = {
   previous_companies: string[];
   current_title?: string | null;
   education?: string[];
+  previous_roles?: string[];
   contracted: boolean | null;
   ai_score: number | null;
   ai_summary: string | null;

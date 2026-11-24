@@ -323,6 +323,13 @@
       "when": 1795517624774,
       "tag": "0045_talent_pool_title_education",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1795518058247,
+      "tag": "0046_talent_pool_previous_roles",
+      "breakpoints": true
     }
   ]
 }

@@ -1492,6 +1492,7 @@ export type Database = {
           notes: string | null
           phone: string | null
           previous_companies: string[]
+          previous_roles: string[]
           source: string
           tags: string[]
           teamtailor_applied_jobs: string[]
@@ -1524,6 +1525,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           previous_companies?: string[]
+          previous_roles?: string[]
           source?: string
           tags?: string[]
           teamtailor_applied_jobs?: string[]
@@ -1556,6 +1558,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           previous_companies?: string[]
+          previous_roles?: string[]
           source?: string
           tags?: string[]
           teamtailor_applied_jobs?: string[]
