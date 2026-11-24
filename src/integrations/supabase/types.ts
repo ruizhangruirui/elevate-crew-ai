@@ -1479,8 +1479,10 @@ export type Database = {
           created_at: string
           created_by: string | null
           current_company: string | null
+          current_title: string | null
           cv_text: string | null
           cv_url: string | null
+          education: string[]
           email: string | null
           headline: string | null
           id: string
@@ -1509,8 +1511,10 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           current_company?: string | null
+          current_title?: string | null
           cv_text?: string | null
           cv_url?: string | null
+          education?: string[]
           email?: string | null
           headline?: string | null
           id?: string
@@ -1539,8 +1543,10 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           current_company?: string | null
+          current_title?: string | null
           cv_text?: string | null
           cv_url?: string | null
+          education?: string[]
           email?: string | null
           headline?: string | null
           id?: string

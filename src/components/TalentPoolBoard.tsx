@@ -74,7 +74,7 @@ export function TalentPoolBoard() {
       .filter((t) => source === "all" || t.source === source)
       .filter((t) => (t.ai_score ?? 0) >= Number(minScore))
       .filter((t) => roleFilter === "all" || t.ai_role_matches.some((m) => m.role_id === roleFilter))
-      .filter((t) => !s || [t.name, t.email, t.headline, t.location, ...t.tags, ...t.teamtailor_applied_jobs, ...t.ai_directions.map((d) => d.direction)].some((v) => v?.toLowerCase().includes(s)))
+      .filter((t) => !s || [t.name, t.email, t.headline, t.location, t.current_title, t.current_company, ...(t.previous_companies ?? []), ...(t.education ?? []), ...t.tags, ...t.teamtailor_applied_jobs, ...t.ai_directions.map((d) => d.direction)].some((v) => v?.toLowerCase().includes(s)))
       .sort((a, b) => (b.ai_score ?? -1) - (a.ai_score ?? -1));
   }, [data, q, source, minScore, roleFilter, showArchived, category]);
   const categories = useMemo(() => {
@@ -119,7 +119,7 @@ export function TalentPoolBoard() {
       <div className="card-glass flex flex-wrap items-center gap-2 p-3">
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} placeholder={l("搜索姓名、投递岗位、方向…", "Search name, applied job, direction…")} className="h-9 w-56 pl-8 text-sm" />
+          <Input value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} placeholder={l("搜索姓名、公司、学校、学位、职位…", "Search name, company, school, degree, title…")} className="h-9 w-56 pl-8 text-sm" />
         </div>
         <Select value={source} onValueChange={(v) => { setSource(v); setPage(0); }}>
           <SelectTrigger className="h-9 w-36 text-sm"><SelectValue /></SelectTrigger>
@@ -208,13 +208,17 @@ export function TalentPoolBoard() {
                 <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${scoreTone(t.ai_score)}`}>{t.ai_score ?? "—"}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">{t.name}</span>
-                  {t.headline && <span className="block truncate text-xs text-muted-foreground">{t.headline}</span>}
+                  {(t.current_title || t.headline) && <span className="block truncate text-xs text-muted-foreground">{t.current_title || t.headline}</span>}
+                  {((t.education ?? []).length > 0 || t.current_company || (t.previous_companies ?? []).length > 0) && <span className="my-1 flex flex-wrap gap-1">
+                    {(t.education ?? []).map((e) => <span key={`edu-${e}`} className="rounded-md bg-brand/10 px-1.5 py-0.5 text-[11px] text-brand">{e}</span>)}
+                    {t.current_company && <span className="rounded-md bg-ok/10 px-1.5 py-0.5 text-[11px] text-ok">{t.current_company}</span>}
+                    {(t.previous_companies ?? []).map((c) => <span key={`co-${c}`} className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">{c}</span>)}
+                  </span>}
                   {highlights.length > 0 && <span className="my-1 flex flex-wrap gap-1.5">
                     {highlights.map((h) => <span key={`${h.kind}-${h.institution ?? ""}`} title={`${h.source === "ai" ? l("AI 摘要，待核实", "AI summary, unverified") : l("资料提及，待核实", "Profile mention, unverified")}: ${h.evidence}`} className={`inline-flex max-w-full items-center gap-1 rounded-md border px-2 py-1 text-xs font-semibold ${h.kind === "qs" ? "border-warn/30 bg-warn/10 text-warn" : "border-brand/30 bg-brand/10 text-brand"}`}><GraduationCap className="h-3.5 w-3.5 shrink-0" /><span className="break-words">{highlightLabel(h)}{h.source === "ai" ? " · AI" : ""}</span></span>)}
                   </span>}
                   <span className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                    <span className="min-w-0 truncate"><span className="font-medium text-foreground">{t.current_company || "—"}</span>{(t.previous_companies ?? []).length > 0 && <span> · {l("曾任", "Prev.")}: {t.previous_companies.join(", ")}</span>}</span>
-                    {t.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{t.location}</span>}
+                                        {t.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{t.location}</span>}
                     {t.linkedin_url && <a onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-brand hover:underline" href={t.linkedin_url} target="_blank" rel="noreferrer"><Linkedin className="h-3 w-3" />LinkedIn</a>}
                     <span className={`rounded px-1.5 py-0.5 text-[10px] ${t.contracted ? "bg-ok/10 text-ok" : "bg-muted text-muted-foreground"}`}>{t.contracted ? l("已联系", "Contacted") : l("未联系", "Not contacted")}</span>
                   </span>

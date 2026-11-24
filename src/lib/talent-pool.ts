@@ -20,6 +20,8 @@ export type TalentRow = {
   teamtailor_applied_jobs: string[];
   current_company: string | null;
   previous_companies: string[];
+  current_title?: string | null;
+  education?: string[];
   contracted: boolean | null;
   ai_score: number | null;
   ai_summary: string | null;
