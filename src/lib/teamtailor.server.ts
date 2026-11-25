@@ -197,7 +197,7 @@ export async function fetchTeamTailorCandidates(apiKey: string, region: string) 
   for (const c of result.data) {
     if (c.type !== "candidates") continue;
     const a = c.attributes ?? {};
-    const name = `${str(a["first-name"]) ?? ""} ${str(a["last-name"]) ?? ""}`.trim();
+    const name = `${str(a["first-name"]) ?? ""} ${str(a["last-name"]) ?? ""}`.trim() || str(a["email"]) || "";
     if (!name) continue;
     // Use each candidate's own application relationships, never global jobs or AI matches.
     const links = c.relationships?.["job-applications"]?.data as unknown;
