@@ -281,6 +281,14 @@ export type Database = {
       }
       candidates: {
         Row: {
+          ai_analyzed_at: string | null
+          ai_education: number | null
+          ai_experience: number | null
+          ai_jd_fit: number | null
+          ai_publications: number | null
+          ai_score: number | null
+          ai_skills: number | null
+          ai_summary: string | null
           contract_type: string | null
           created_at: string
           current_company: string | null
@@ -311,6 +319,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_analyzed_at?: string | null
+          ai_education?: number | null
+          ai_experience?: number | null
+          ai_jd_fit?: number | null
+          ai_publications?: number | null
+          ai_score?: number | null
+          ai_skills?: number | null
+          ai_summary?: string | null
           contract_type?: string | null
           created_at?: string
           current_company?: string | null
@@ -341,6 +357,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_analyzed_at?: string | null
+          ai_education?: number | null
+          ai_experience?: number | null
+          ai_jd_fit?: number | null
+          ai_publications?: number | null
+          ai_score?: number | null
+          ai_skills?: number | null
+          ai_summary?: string | null
           contract_type?: string | null
           created_at?: string
           current_company?: string | null

@@ -236,3 +236,11 @@ export async function fetchTeamTailorResumeText(apiKey: string, region: string, 
   }
   return { text: null, reason: "download_failed" };
 }
+
+/** TeamTailor candidate ID behind a job application (Recruiting rows store only the application ID). */
+export async function fetchTeamTailorApplicationCandidateId(apiKey: string, region: string, applicationId: string): Promise<string | null> {
+  const base = BASE_URLS[region] ?? "https://api.teamtailor.com/v1";
+  const res = await ttGet(base, apiKey, `/job-applications/${encodeURIComponent(applicationId)}`);
+  const one = res.data as unknown as JsonApiResource | undefined;
+  return one?.relationships?.["candidate"]?.data?.id ?? null;
+}

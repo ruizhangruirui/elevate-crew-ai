@@ -1,10 +1,14 @@
 import { isOwnerRole } from "@/lib/app-roles";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { ChevronDown, ExternalLink, FileText, Linkedin, Plus, RefreshCw, Search, Trash2, UserCheck } from "lucide-react";
+import { ChevronDown, ExternalLink, FileText, Linkedin, Plus, RefreshCw, Search, Sparkles, Square, Trash2, UserCheck } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { analyzeCandidate } from "@/lib/candidate-ai.functions";
+import { AiProviderSelect } from "@/components/AiProviderSelect";
+import type { AiProvider } from "@/lib/ai.functions";
 import { AppShell } from "@/components/AppShell";
 import { RecruitingTabs } from "@/components/RecruitingTabs";
 import { ConfirmAction } from "@/components/ConfirmAction";
@@ -133,6 +137,13 @@ export type Candidate = {
   priority: string;
   person_id: string | null;
   updated_at: string;
+  ai_score?: number | null;
+  ai_jd_fit?: number | null;
+  ai_education?: number | null;
+  ai_experience?: number | null;
+  ai_skills?: number | null;
+  ai_publications?: number | null;
+  ai_summary?: string | null;
 };
 
 type CandidateEvent = {
@@ -185,6 +196,31 @@ function RecruitingBody() {
 
   const { data: ws } = useQuery({ queryKey: ["workspace", "recruiting"], queryFn: fetchRecruitingWorkspace });
   const { data: orgNodes = [] } = useQuery({ queryKey: ["orgNodes"], queryFn: fetchOrgNodes });
+  const analyzeFn = useServerFn(analyzeCandidate);
+  const [aiProvider, setAiProvider] = useState<AiProvider | undefined>(undefined);
+  const [aiRun, setAiRun] = useState<{ done: number; total: number; failed: number } | null>(null);
+  const aiStop = useRef(false);
+  const [sortByAi, setSortByAi] = useState(false);
+  const runAi = async (targets: Candidate[]) => {
+    if (!targets.length) return;
+    aiStop.current = false;
+    let failed = 0;
+    let lastErr = "";
+    setAiRun({ done: 0, total: targets.length, failed: 0 });
+    for (let i = 0; i < targets.length; i++) {
+      if (aiStop.current) break;
+      try { await analyzeFn({ data: { id: targets[i]!.id, lang, provider: aiProvider } }); }
+      catch (e) {
+        failed++; lastErr = (e as Error).message;
+        if (/credit|quota|forbidden|unauthor|429|402/i.test(lastErr)) break;
+      }
+      setAiRun({ done: i + 1, total: targets.length, failed });
+    }
+    setAiRun(null);
+    await qc.invalidateQueries({ queryKey: ["candidates"] });
+    if (failed) toast.error(`${lang === "zh" ? "AI 分析失败" : "AI analysis failed"} (${failed}): ${lastErr}`);
+    else toast.success(lang === "zh" ? "AI 分析完成" : "AI analysis complete");
+  };
   const syncTt = useMutation({
     mutationFn: () => syncTeamTailor(),
     onSuccess: (r) => {
@@ -309,7 +345,7 @@ function RecruitingBody() {
       const q = query.toLowerCase();
       return [c.name, c.current_company, c.current_title, c.source, c.recruiter, c.stage].some((v) => v?.toLowerCase().includes(q));
     })
-    .sort((a, b) => (PRIORITY_RANK[a.priority] ?? 1) - (PRIORITY_RANK[b.priority] ?? 1));
+    .sort((a, b) => sortByAi ? (b.ai_score ?? -1) - (a.ai_score ?? -1) : (PRIORITY_RANK[a.priority] ?? 1) - (PRIORITY_RANK[b.priority] ?? 1));
   const countFor = (k: FilterKey) => (candidates ?? []).filter((c) => c.role_id === roleId && (FILTERS[k] as readonly string[]).includes(c.outcome)).length;
 
   const quickUpdate = useMutation({
@@ -505,6 +541,27 @@ function RecruitingBody() {
                     <RefreshCw className={`size-4 ${syncTt.isPending ? "animate-spin" : ""}`} /> {syncTt.isPending ? t("rec.syncing") : t("rec.sync")}
                   </Button>
                 )}
+                {canEdit && <AiProviderSelect value={aiProvider} onChange={setAiProvider} />}
+                {canEdit && (aiRun ? (
+                  <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="tabular-nums">AI {aiRun.done} / {aiRun.total}</span>
+                    <Button size="sm" variant="ghost" className="h-8 gap-1" onClick={() => { aiStop.current = true; }}><Square className="size-3.5" />{lang === "zh" ? "停止" : "Stop"}</Button>
+                  </span>
+                ) : (() => {
+                  const ttRows = rows.filter((c) => c.source === "TeamTailor");
+                  const pending = ttRows.filter((c) => c.ai_score == null);
+                  const targets = pending.length ? pending : ttRows;
+                  return (
+                    <ConfirmAction
+                      title={lang === "zh" ? "AI 批量分析候选人" : "AI-analyse candidates"}
+                      description={lang === "zh" ? `将根据岗位 JD 和 TeamTailor 简历分析 ${targets.length} 位${pending.length ? "未分析的" : "（重新分析全部）"}候选人，会消耗 AI 额度。` : `Score ${targets.length} ${pending.length ? "unanalysed" : "(re-analyse all)"} candidates against the JD from their TeamTailor CVs. Uses AI credits.`}
+                      confirmLabel={lang === "zh" ? "开始" : "Start"}
+                      onConfirm={() => void runAi(targets)}
+                    >
+                      <Button size="sm" variant="outline" className="gap-1.5" disabled={!targets.length}><Sparkles className="size-4" />{lang === "zh" ? "AI 分析" : "AI analyse"}</Button>
+                    </ConfirmAction>
+                  );
+                })())}
                 {canEdit && (
                   <Button size="sm" className="gap-1.5" onClick={() => setEditing("new")}>
                     <Plus className="size-4" /> {t("rec.add")}
@@ -531,6 +588,7 @@ function RecruitingBody() {
                     <th className="w-8 px-3 py-2">#</th>
                     <th className="px-3 py-2">{t("rec.c.priority")}</th>
                     <th className="px-3 py-2">{t("rec.c.name")}</th>
+                    <th className="px-3 py-2"><button type="button" className={`uppercase ${sortByAi ? "text-brand" : "hover:text-foreground"}`} onClick={() => setSortByAi((v) => !v)} title={lang === "zh" ? "按 AI 分数排序" : "Sort by AI score"}>AI {sortByAi ? "↓" : "↕"}</button></th>
                     <th className="px-3 py-2">{t("rec.c.current")}</th>
                     <th className="px-3 py-2">{t("rec.c.stage")}</th>
                     <th className="px-3 py-2">{t("rec.c.outcome")}</th>
@@ -561,6 +619,16 @@ function RecruitingBody() {
                               <UserCheck className="size-3.5" />
                             </Link>
                           )}
+                        </td>
+                        <td className="px-3 py-1.5">
+                          {c.ai_score != null ? (
+                            <span
+                              className={`inline-block min-w-8 rounded px-1.5 py-0.5 text-center text-xs font-semibold tabular-nums ${c.ai_score >= 75 ? "bg-ok/15 text-ok" : c.ai_score >= 55 ? "bg-brand/12 text-brand" : "bg-muted text-muted-foreground"}`}
+                              title={`JD ${c.ai_jd_fit ?? "—"} · ${lang === "zh" ? "教育" : "Edu"} ${c.ai_education ?? "—"} · ${lang === "zh" ? "经历" : "Exp"} ${c.ai_experience ?? "—"} · Skills ${c.ai_skills ?? "—"} · ${lang === "zh" ? "论文" : "Pubs"} ${c.ai_publications ?? "—"}\n${c.ai_summary ?? ""}`}
+                            >{c.ai_score}</span>
+                          ) : canEdit && c.source === "TeamTailor" && !aiRun ? (
+                            <button type="button" className="text-muted-foreground hover:text-brand" title={lang === "zh" ? "AI 分析" : "AI analyse"} onClick={() => void runAi([c])}><Sparkles className="size-3.5" /></button>
+                          ) : <span className="text-xs text-muted-foreground">—</span>}
                         </td>
                         <td className="max-w-48 truncate px-3 py-1.5 text-xs text-muted-foreground">
                           {[c.current_company, c.current_title].filter(Boolean).join(" · ") || "—"}
@@ -626,7 +694,7 @@ function RecruitingBody() {
                   })}
                   {rows.length === 0 && (
                     <tr>
-                      <td colSpan={11} className="px-6 py-12 text-center text-sm text-muted-foreground">{t("rec.empty")}</td>
+                      <td colSpan={12} className="px-6 py-12 text-center text-sm text-muted-foreground">{t("rec.empty")}</td>
                     </tr>
                   )}
                 </tbody>
