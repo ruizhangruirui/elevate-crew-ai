@@ -1182,7 +1182,7 @@ function DatalinkLaunch({ onLaunched }: { onLaunched: (id: string) => void }) {
         {l("发起 Datalink 审批", "Start Datalink approval")}
       </Button>
       <Dialog open={open} onOpenChange={reset}>
-        <DialogContent className="max-h-[92vh] w-[95vw] overflow-y-auto sm:max-w-3xl">
+        <DialogContent className="block max-h-[92dvh] w-[calc(100vw-1rem)] space-y-4 overflow-y-auto overscroll-contain sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>Datalink Offer approval</DialogTitle>
           </DialogHeader>
