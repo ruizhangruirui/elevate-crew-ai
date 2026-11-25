@@ -85,3 +85,13 @@ export const datalinkEnabled = createServerFn({ method: "POST" }).handler(async 
   const { datalinkEnabledServer } = await import("./offer-workflow.server");
   return datalinkEnabledServer();
 });
+export const datalinkLaunchOptions = createServerFn({ method: "POST" }).handler(async () => {
+  const { datalinkLaunchOptionsServer } = await import("./offer-workflow.server");
+  return datalinkLaunchOptionsServer();
+});
+export const datalinkLaunch = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ candidate_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data }) => {
+    const { datalinkLaunchServer } = await import("./offer-workflow.server");
+    return datalinkLaunchServer(data);
+  });

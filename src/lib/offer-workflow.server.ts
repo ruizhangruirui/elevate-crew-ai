@@ -284,7 +284,7 @@ export async function startOfferServer(data: { candidate_id: string }) {
     throw new Error("Only the assigned recruiter can start an offer");
   const { data: c, error } = await ctx.db
     .from("candidates")
-    .select("id,name,role_id,contract_type")
+    .select("id,name,role_id,contract_type,onboarding_on")
     .eq("id", data.candidate_id)
     .maybeSingle();
   if (error || !c) throw new Error("Candidate unavailable");
@@ -305,6 +305,7 @@ export async function startOfferServer(data: { candidate_id: string }) {
     job_title: role.job_title ?? role.title,
     job_level: String(role.level_min),
     supervisor_id: role.supervisor_person_id ?? "",
+    start_date: c.onboarding_on ?? "",
     contract_type:
       c.contract_type ??
       (role.contract_type === "intern"
@@ -454,4 +455,86 @@ export async function datalinkEnabledServer() {
   await requireUser();
   const { datalinkConfig } = await import("./datalink.server");
   return { enabled: datalinkConfig().enabled };
+}
+
+const CLOSED_OUTCOMES = ["rejected", "declined", "offer_declined", "withdrawn", "hired", "archived"];
+function nodePath(id: string | null, nodes: Node[]) {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  let cur = id;
+  while (cur && !seen.has(cur)) {
+    seen.add(cur);
+    const n = nodes.find((x) => x.id === cur);
+    if (!n) break;
+    if (n.type !== "root") out.unshift(n.name);
+    cur = n.parent_id;
+  }
+  return out.join(" / ");
+}
+/** Hiring positions the caller may launch a Datalink approval for, with their candidates and merged info. */
+export async function datalinkLaunchOptionsServer() {
+  const ctx = await context();
+  const admin = isOfferAdmin(ctx.user);
+  if (!admin && ctx.user.role !== "recruiter") return { roles: [] };
+  const roles = ctx.roles.filter(
+    (r) =>
+      !r.archived &&
+      r.approval_status !== "pending" &&
+      (!ctx.scope || ctx.scope.nodeIds.has(r.org_node_id ?? "")) &&
+      (admin ||
+        accountForPerson(
+          ctx.people.find((p) => p.id === r.recruiter_person_id),
+          ctx.accounts,
+        )?.id === ctx.user.id),
+  );
+  if (!roles.length) return { roles: [] };
+  const ids = roles.map((r) => r.id);
+  const [cs, os] = await Promise.all([
+    ctx.db
+      .from("candidates")
+      .select("id,name,role_id,contract_type,outcome,stage,onboarding_on,current_company,current_title")
+      .in("role_id", ids),
+    ctx.db
+      .from("offer_requests")
+      .select("*")
+      .in("role_id", ids),
+  ]);
+  if (cs.error) throw new Error(cs.error.message);
+  if (os.error) throw new Error(os.error.message);
+  const offers = (os.data ?? []) as unknown as (RawOffer & { datalink_id: string | null })[];
+  const name = (id: string | null) => ctx.people.find((p) => p.id === id)?.name ?? "";
+  return {
+    roles: roles.map((r) => ({
+      id: r.id,
+      title: r.title,
+      job_title: r.job_title ?? r.title,
+      level: r.level_min,
+      contract_type: r.contract_type,
+      org: nodePath(r.org_node_id, ctx.nodes),
+      supervisor: name(r.supervisor_person_id),
+      recruiter: name(r.recruiter_person_id),
+      candidates: (cs.data ?? [])
+        .filter((c) => c.role_id === r.id && !CLOSED_OUTCOMES.includes(String(c.outcome)))
+        .map((c) => {
+          const o = offers.find((x) => x.candidate_id === c.id && x.state !== "withdrawn");
+          return {
+            id: c.id,
+            name: c.name,
+            stage: c.stage,
+            contract_type: c.contract_type,
+            onboarding_on: c.onboarding_on,
+            current: [c.current_title, c.current_company].filter(Boolean).join(" · "),
+            offer: o
+              ? { id: o.id, state: o.state, datalink_id: o.datalink_id, terms: o.terms }
+              : null,
+          };
+        }),
+    })),
+  };
+}
+/** Links the chosen candidate's offer (created from position data if missing) and submits it to Datalink. */
+export async function datalinkLaunchServer(data: { candidate_id: string }) {
+  const { id } = await startOfferServer(data);
+  await datalinkOfferServer({ id, action: "submit" });
+  return { id };
 }

@@ -24,6 +24,8 @@ import {
   deleteOffer,
   datalinkOffer,
   datalinkEnabled,
+  datalinkLaunchOptions,
+  datalinkLaunch,
 } from "@/lib/offer-workflow.functions";
 import { DATALINK_URL, datalinkPhase } from "@/lib/datalink";
 import {
@@ -118,6 +120,7 @@ export function OfferApprovalBoard({
           </Link>
         </Button>
         <div className="flex flex-wrap items-center gap-2">
+          <DatalinkLaunch onLaunched={onSelect} />
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
             <Input
@@ -1095,24 +1098,12 @@ function DatalinkPanel({ offer: o }: { offer: OfferRequest }) {
       {cfg?.enabled ? (
         <div className="flex flex-wrap gap-2">
           {!o.datalink_id && canSubmit && (
-            <ConfirmAction
-              title={l("提交到 Datalink？", "Submit to Datalink?")}
-              description={
-                <p>
-                  {l(
-                    "将当前 Offer 信息发送到 Datalink 发起审批。",
-                    "Sends the current offer details to Datalink to start its approval.",
-                  )}
-                </p>
-              }
-              confirmLabel={l("提交", "Submit")}
-              onConfirm={() => run.mutate("submit")}
-            >
-              <Button size="sm" disabled={run.isPending}>
-                <Send className="size-4" />
-                {l("申请 Datalink Offer approval", "Request Datalink Offer approval")}
-              </Button>
-            </ConfirmAction>
+            <p className="text-xs text-muted-foreground">
+              {l(
+                "请在 Offer approval 页面顶部「发起 Datalink 审批」中关联招聘岗位后提交。",
+                "Submit from “Start Datalink approval” at the top of Offer approval.",
+              )}
+            </p>
           )}
           {o.datalink_id && (
             <Button size="sm" variant="outline" disabled={run.isPending} onClick={() => run.mutate("refresh")}>
@@ -1126,5 +1117,178 @@ function DatalinkPanel({ offer: o }: { offer: OfferRequest }) {
         </p>
       )}
     </section>
+  );
+}
+
+function DatalinkLaunch({ onLaunched }: { onLaunched: (id: string) => void }) {
+  const { lang } = useI18n();
+  const l = (zh: string, en: string) => (lang === "zh" ? zh : en);
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [roleId, setRoleId] = useState("");
+  const [candId, setCandId] = useState("");
+  const { data: cfg } = useQuery({ queryKey: ["datalink-enabled"], queryFn: () => datalinkEnabled() });
+  const { data, isFetching } = useQuery({
+    queryKey: ["datalink-launch-options"],
+    queryFn: () => datalinkLaunchOptions(),
+    enabled: open,
+  });
+  const role = data?.roles.find((r) => r.id === roleId);
+  const cand = role?.candidates.find((c) => c.id === candId);
+  const run = useMutation({
+    mutationFn: () => datalinkLaunch({ data: { candidate_id: candId } }),
+    onSuccess: (r) => {
+      toast.success(l("已提交到 Datalink", "Submitted to Datalink"));
+      void qc.invalidateQueries({ queryKey: ["offers"] });
+      void qc.invalidateQueries({ queryKey: ["datalink-launch-options"] });
+      setOpen(false);
+      onLaunched(r.id);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const reset = (v: boolean) => {
+    setOpen(v);
+    if (!v) {
+      setRoleId("");
+      setCandId("");
+    }
+  };
+  const terms = cand?.offer?.terms as Partial<OfferTerms> | undefined;
+  const rows: [string, string | number | null | undefined][] = role
+    ? [
+        [l("招聘岗位", "Position"), role.title],
+        ["Job Title", terms?.job_title || role.job_title],
+        ["Lab / Team", role.org],
+        [l("职级", "Level"), terms?.job_level || role.level],
+        [l("主管", "Supervisor"), role.supervisor],
+        ["Recruiter", role.recruiter],
+        ...(cand
+          ? ([
+              [l("候选人", "Candidate"), cand.name],
+              [l("当前职位", "Current role"), cand.current],
+              [l("合同类型", "Contract type"), terms?.contract_type || cand.contract_type || role.contract_type],
+              [l("入职日期", "Start date"), terms?.start_date || cand.onboarding_on ? formatDate(String(terms?.start_date || cand.onboarding_on)) : ""],
+              [l("薪资信息", "Salary"), terms?.salary_information],
+              [l("合同期限（月）", "Duration (months)"), terms?.duration_months],
+            ] as [string, string | number | null | undefined][])
+          : []),
+      ]
+    : [];
+  const already = !!cand?.offer?.datalink_id;
+  return (
+    <>
+      <Button size="sm" className="h-9" onClick={() => reset(true)}>
+        <Send className="size-4" />
+        {l("发起 Datalink 审批", "Start Datalink approval")}
+      </Button>
+      <Dialog open={open} onOpenChange={reset}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Datalink Offer approval</DialogTitle>
+          </DialogHeader>
+          {!cfg?.enabled && (
+            <p className="text-sm text-danger">
+              {l("服务器尚未配置 Datalink API。", "Datalink API is not configured on the server.")}
+            </p>
+          )}
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label>{l("1. 关联招聘岗位", "1. Link hiring position")}</Label>
+              <Select
+                value={roleId}
+                onValueChange={(v) => {
+                  setRoleId(v);
+                  setCandId("");
+                }}
+              >
+                <SelectTrigger aria-label={l("招聘岗位", "Hiring position")}>
+                  <SelectValue placeholder={isFetching ? l("加载中…", "Loading…") : l("选择岗位", "Choose position")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {data?.roles.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.title} {r.org && `· ${r.org}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {data && !data.roles.length && (
+                <p className="text-xs text-muted-foreground">
+                  {l("没有你负责的招聘岗位。", "No hiring positions assigned to you.")}
+                </p>
+              )}
+            </div>
+            {role && (
+              <div className="space-y-1.5">
+                <Label>{l("2. 选择候选人", "2. Choose candidate")}</Label>
+                <Select value={candId} onValueChange={setCandId}>
+                  <SelectTrigger aria-label={l("候选人", "Candidate")}>
+                    <SelectValue placeholder={l("选择候选人", "Choose candidate")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {role.candidates.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name} {c.stage && `· ${c.stage}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!role.candidates.length && (
+                  <p className="text-xs text-muted-foreground">
+                    {l("该岗位暂无进行中的候选人。", "No active candidates for this position.")}
+                  </p>
+                )}
+              </div>
+            )}
+            {role && (
+              <div className="rounded-lg border border-border/60 p-3">
+                <p className="mb-2 text-xs font-semibold text-muted-foreground">
+                  {l("将提交的信息（自动整合）", "Details to submit (merged automatically)")}
+                </p>
+                <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+                  {rows
+                    .filter(([, v]) => v !== "" && v != null)
+                    .map(([k, v]) => (
+                      <div key={k} className="contents">
+                        <dt className="text-muted-foreground">{k}</dt>
+                        <dd>{String(v)}</dd>
+                      </div>
+                    ))}
+                </dl>
+                {cand && !cand.offer && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {l(
+                      "该候选人尚无 Offer 记录，将按岗位信息自动创建。",
+                      "No offer record yet; one is created from the position details.",
+                    )}
+                  </p>
+                )}
+                {already && (
+                  <p className="mt-2 text-xs text-danger">
+                    {l("该候选人已提交过 Datalink。", "Already submitted to Datalink.")}
+                  </p>
+                )}
+              </div>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button asChild variant="outline" size="sm">
+                <a href={DATALINK_URL} target="_blank" rel="noreferrer">
+                  <ExternalLink className="size-4" />
+                  {l("打开 Datalink", "Open Datalink")}
+                </a>
+              </Button>
+              <Button
+                size="sm"
+                disabled={!cand || already || !cfg?.enabled || run.isPending}
+                onClick={() => run.mutate()}
+              >
+                <Send className="size-4" />
+                {l("提交到 Datalink", "Submit to Datalink")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
