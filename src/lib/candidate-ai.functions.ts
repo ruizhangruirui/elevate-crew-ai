@@ -19,7 +19,7 @@ export const analyzeCandidate = createServerFn({ method: "POST" })
     const user = await requireUser(["owner", "hr", "recruiter"]);
     const zh = data.lang === "zh";
     const db = await admin();
-    const { data: c, error } = await db.from("candidates").select("id,name,role_id,teamtailor_application_id").eq("id", data.id).single();
+    const { data: c, error } = await db.from("candidates").select("id,name,role_id,teamtailor_application_id,cv_text").eq("id", data.id).single();
     if (error || !c) throw new Error("Candidate not found");
     const { data: role } = await db.from("roles").select("id,title,job_title,description,level_min,level_max,location").eq("id", c.role_id as string).single();
     if (!role) throw new Error("Position not found");
@@ -31,13 +31,15 @@ export const analyzeCandidate = createServerFn({ method: "POST" })
       if (!ok.has(role.id)) throw new Error("Forbidden: position outside your scope");
     }
     if (!(role.description ?? "").trim()) throw new Error(zh ? "该岗位还没有 Job Description，请先在 Positions 填写。" : "This position has no Job Description yet; add it in Positions first.");
+    let cv = (c.cv_text as string | null)?.trim() || "";
+    if (!cv) {
     const apiKey = process.env["TEAMTAILOR_API_KEY"];
-    if (!c.teamtailor_application_id || !apiKey) throw new Error(zh ? "只能分析从 TeamTailor 同步、带简历的候选人。" : "Only candidates synced from TeamTailor with a CV can be analysed.");
+    if (!c.teamtailor_application_id || !apiKey) throw new Error(zh ? "请先为该候选人上传简历（PDF / Word .docx）。" : "Upload a CV (PDF/.docx) for this candidate first.");
     const region = (process.env["TEAMTAILOR_REGION"] ?? "eu").trim().toLowerCase();
     const tt = await import("./teamtailor.server");
     const ttId = await tt.fetchTeamTailorApplicationCandidateId(apiKey, region, c.teamtailor_application_id as string).catch(() => null);
     const read = ttId ? await tt.fetchTeamTailorResumeText(apiKey, region, ttId).catch(() => ({ text: null, reason: "download_failed" as const })) : { text: null, reason: "download_failed" as const };
-    const cv = read.text?.trim();
+    cv = read.text?.trim() ?? "";
     if (!cv) {
       const msg: Record<string, [string, string]> = {
         no_file: ["TeamTailor 上没有该候选人的简历。", "No CV attached in TeamTailor."],
@@ -47,6 +49,7 @@ export const analyzeCandidate = createServerFn({ method: "POST" })
       };
       const m = msg["reason" in read ? read.reason : "no_file"] ?? msg["no_file"]!;
       throw new Error(zh ? m[0] : m[1]);
+    }
     }
     const { generateStructured } = await import("./ai-gateway.server");
     const out = await generateStructured<{ jd_fit: number; education: number; experience: number; skills: number; publications: number; summary: string }>({
@@ -76,4 +79,27 @@ export const analyzeCandidate = createServerFn({ method: "POST" })
     const { error: e } = await db.from("candidates").update(result as never).eq("id", c.id);
     if (e) throw new Error(e.message);
     return result;
+  });
+
+/** Upload a CV (PDF/.docx) for a Recruiting candidate; only extracted text is kept, for AI scoring. */
+export const uploadCandidateCv = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ id: z.string().uuid(), base64: z.string().min(10).max(14_000_000) }).parse(d))
+  .handler(async ({ data }) => {
+    const user = await requireUser(["owner", "hr", "recruiter"]);
+    const db = await admin();
+    const { data: c } = await db.from("candidates").select("id,role_id").eq("id", data.id).single();
+    if (!c) throw new Error("Candidate not found");
+    if ((user.role === "hr" || user.role === "recruiter") && user.scope_node_ids.length) {
+      const { managerScope } = await import("./auth.server");
+      const { scopedRoleIds, sharedRoleIds } = await import("./role-scope.server");
+      const scope = await managerScope(user);
+      const ok = new Set([...(await scopedRoleIds(db, scope.nodeIds)), ...(await sharedRoleIds(db, user))]);
+      if (!ok.has(c.role_id as string)) throw new Error("Forbidden: position outside your scope");
+    }
+    const { cvToText } = await import("./pdf-text.server");
+    const read = await cvToText(Uint8Array.from(atob(data.base64), (ch) => ch.charCodeAt(0)));
+    if (read.text === null) throw new Error(read.reason === "unsupported_format" ? "Unsupported file: upload a PDF or Word (.docx) CV." : "No readable text in this CV (likely a scanned image).");
+    const { error } = await db.from("candidates").update({ cv_text: read.text, ai_score: null, ai_analyzed_at: null } as never).eq("id", c.id);
+    if (error) throw new Error(error.message);
+    return { chars: read.text.length };
   });

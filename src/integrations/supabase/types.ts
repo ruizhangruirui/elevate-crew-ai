@@ -293,6 +293,7 @@ export type Database = {
           created_at: string
           current_company: string | null
           current_title: string | null
+          cv_text: string | null
           cv_url: string | null
           datalink_stage: string | null
           datalink_updated_at: string | null
@@ -331,6 +332,7 @@ export type Database = {
           created_at?: string
           current_company?: string | null
           current_title?: string | null
+          cv_text?: string | null
           cv_url?: string | null
           datalink_stage?: string | null
           datalink_updated_at?: string | null
@@ -369,6 +371,7 @@ export type Database = {
           created_at?: string
           current_company?: string | null
           current_title?: string | null
+          cv_text?: string | null
           cv_url?: string | null
           datalink_stage?: string | null
           datalink_updated_at?: string | null

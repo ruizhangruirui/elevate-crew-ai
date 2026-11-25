@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { ChevronDown, ExternalLink, FileText, Linkedin, Plus, RefreshCw, Search, Sparkles, Square, Trash2, UserCheck } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { analyzeCandidate } from "@/lib/candidate-ai.functions";
+import { analyzeCandidate, uploadCandidateCv } from "@/lib/candidate-ai.functions";
 import { AiProviderSelect } from "@/components/AiProviderSelect";
 import type { AiProvider } from "@/lib/ai.functions";
 import { AppShell } from "@/components/AppShell";
@@ -113,6 +113,7 @@ function ctLabel(t: (k: string) => string, v: string | null): string {
 }
 
 export type Candidate = {
+  cv_text?: string | null;
   id: string;
   role_id: string;
   offer_request_id?: string | null;
@@ -197,6 +198,23 @@ function RecruitingBody() {
   const { data: ws } = useQuery({ queryKey: ["workspace", "recruiting"], queryFn: fetchRecruitingWorkspace });
   const { data: orgNodes = [] } = useQuery({ queryKey: ["orgNodes"], queryFn: fetchOrgNodes });
   const analyzeFn = useServerFn(analyzeCandidate);
+  const uploadCvFn = useServerFn(uploadCandidateCv);
+  const pickCv = (c: Candidate) => {
+    const inp = document.createElement("input");
+    inp.type = "file"; inp.accept = ".pdf,.docx";
+    inp.onchange = async () => {
+      const file = inp.files?.[0]; if (!file) return;
+      if (file.size > 10 * 1024 * 1024) { toast.error(lang === "zh" ? "文件不能超过 10 MB" : "File must be 10 MB or smaller"); return; }
+      try {
+        const buf = new Uint8Array(await file.arrayBuffer()); let bin = "";
+        for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+        await uploadCvFn({ data: { id: c.id, base64: btoa(bin) } });
+        toast.success(lang === "zh" ? "简历已上传，可以 AI 分析" : "CV uploaded; ready for AI analysis");
+        await qc.invalidateQueries({ queryKey: ["candidates"] });
+      } catch (e) { toast.error((e as Error).message); }
+    };
+    inp.click();
+  };
   const [aiProvider, setAiProvider] = useState<AiProvider | undefined>(undefined);
   const [aiRun, setAiRun] = useState<{ done: number; total: number; failed: number } | null>(null);
   const aiStop = useRef(false);
@@ -548,7 +566,7 @@ function RecruitingBody() {
                     <Button size="sm" variant="ghost" className="h-8 gap-1" onClick={() => { aiStop.current = true; }}><Square className="size-3.5" />{lang === "zh" ? "停止" : "Stop"}</Button>
                   </span>
                 ) : (() => {
-                  const ttRows = rows.filter((c) => c.source === "TeamTailor");
+                  const ttRows = rows.filter((c) => c.source === "TeamTailor" || !!c.cv_text?.trim());
                   const pending = ttRows.filter((c) => c.ai_score == null);
                   const targets = pending.length ? pending : ttRows;
                   return (
@@ -626,8 +644,10 @@ function RecruitingBody() {
                               className={`inline-block min-w-8 rounded px-1.5 py-0.5 text-center text-xs font-semibold tabular-nums ${c.ai_score >= 75 ? "bg-ok/15 text-ok" : c.ai_score >= 55 ? "bg-brand/12 text-brand" : "bg-muted text-muted-foreground"}`}
                               title={`JD ${c.ai_jd_fit ?? "—"} · ${lang === "zh" ? "教育" : "Edu"} ${c.ai_education ?? "—"} · ${lang === "zh" ? "经历" : "Exp"} ${c.ai_experience ?? "—"} · Skills ${c.ai_skills ?? "—"} · ${lang === "zh" ? "论文" : "Pubs"} ${c.ai_publications ?? "—"}\n${c.ai_summary ?? ""}`}
                             >{c.ai_score}</span>
-                          ) : canEdit && c.source === "TeamTailor" && !aiRun ? (
+                          ) : canEdit && (c.source === "TeamTailor" || c.cv_text?.trim()) && !aiRun ? (
                             <button type="button" className="text-muted-foreground hover:text-brand" title={lang === "zh" ? "AI 分析" : "AI analyse"} onClick={() => void runAi([c])}><Sparkles className="size-3.5" /></button>
+                          ) : canEdit && !aiRun ? (
+                            <button type="button" className="text-xs text-muted-foreground underline-offset-2 hover:text-brand hover:underline" title={lang === "zh" ? "上传简历（PDF / .docx）以便 AI 分析" : "Upload CV (PDF/.docx) for AI analysis"} onClick={() => pickCv(c)}>{lang === "zh" ? "传简历" : "CV"}</button>
                           ) : <span className="text-xs text-muted-foreground">—</span>}
                         </td>
                         <td className="max-w-48 truncate px-3 py-1.5 text-xs text-muted-foreground">
