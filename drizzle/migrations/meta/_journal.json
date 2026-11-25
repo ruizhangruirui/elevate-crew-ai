@@ -351,6 +351,13 @@
       "when": 1795635552815,
       "tag": "0049_candidate_cv_text",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1795636582548,
+      "tag": "0050_candidate_ai_reasons",
+      "breakpoints": true
     }
   ]
 }

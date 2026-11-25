@@ -8,8 +8,15 @@ const dim = { type: "integer" };
 const SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["jd_fit", "education", "experience", "skills", "publications", "summary"],
-  properties: { jd_fit: dim, education: dim, experience: dim, skills: dim, publications: dim, summary: { type: "string" } },
+  required: ["jd_fit", "education", "experience", "skills", "publications", "summary", "reasons"],
+  properties: {
+    jd_fit: dim, education: dim, experience: dim, skills: dim, publications: dim, summary: { type: "string" },
+    reasons: {
+      type: "object", additionalProperties: false,
+      required: ["jd_fit", "education", "experience", "skills", "publications"],
+      properties: { jd_fit: { type: "string" }, education: { type: "string" }, experience: { type: "string" }, skills: { type: "string" }, publications: { type: "string" } },
+    },
+  },
 };
 
 /** AI-score one Recruiting candidate against its position's JD, using only the CV they applied with. */
@@ -52,13 +59,13 @@ export const analyzeCandidate = createServerFn({ method: "POST" })
     }
     }
     const { generateStructured } = await import("./ai-gateway.server");
-    const out = await generateStructured<{ jd_fit: number; education: number; experience: number; skills: number; publications: number; summary: string }>({
+    const out = await generateStructured<{ jd_fit: number; education: number; experience: number; skills: number; publications: number; summary: string; reasons?: Record<string, string> }>({
       provider: data.provider,
       schemaName: "candidate_jd_fit",
       system:
         "You are a recruiting analyst for a research institute. Score one applicant ONLY from their CV text against the given job description. " +
         "Score 0-100 each: jd_fit (how well the CV matches the JD's required responsibilities, knowledge and level), education (degree level, field relevance, institution), experience (relevant work history depth), skills (JD-relevant technical skills evidenced in the CV), publications (papers, patents, open-source; 0-20 if none). " +
-        "Missing evidence lowers the score; never invent facts. Summary: at most 2 short sentences (under 40 words) naming the main strength and main gap. " +
+        "Missing evidence lowers the score; never invent facts. Summary: at most 2 short sentences (under 40 words) naming the main strength and main gap. reasons: one short sentence (under 20 words) per dimension citing CV evidence for that score. " +
         "Do not consider age, gender, nationality, religion, marital status, photos or other protected characteristics. " +
         (zh ? "使用中文输出，技术名词保留英文。" : "Write in concise professional English."),
       input: [
@@ -74,6 +81,7 @@ export const analyzeCandidate = createServerFn({ method: "POST" })
       ai_score: candidateOverall(s),
       ai_jd_fit: s.jd_fit, ai_education: s.education, ai_experience: s.experience, ai_skills: s.skills, ai_publications: s.publications,
       ai_summary: (out.summary ?? "").slice(0, 500),
+      ai_reasons: JSON.stringify(Object.fromEntries(["jd_fit", "education", "experience", "skills", "publications"].map((k) => [k, String(out.reasons?.[k] ?? "").slice(0, 200)]))),
       ai_analyzed_at: new Date().toISOString(),
     };
     const { error: e } = await db.from("candidates").update(result as never).eq("id", c.id);
@@ -99,7 +107,7 @@ export const uploadCandidateCv = createServerFn({ method: "POST" })
     const { cvToText } = await import("./pdf-text.server");
     const read = await cvToText(Uint8Array.from(atob(data.base64), (ch) => ch.charCodeAt(0)));
     if (read.text === null) throw new Error(read.reason === "unsupported_format" ? "Unsupported file: upload a PDF or Word (.docx) CV." : "No readable text in this CV (likely a scanned image).");
-    const { error } = await db.from("candidates").update({ cv_text: read.text, ai_score: null, ai_analyzed_at: null } as never).eq("id", c.id);
+    const { error } = await db.from("candidates").update({ cv_text: read.text, ai_score: null, ai_reasons: null, ai_analyzed_at: null } as never).eq("id", c.id);
     if (error) throw new Error(error.message);
     return { chars: read.text.length };
   });

@@ -286,6 +286,7 @@ export type Database = {
           ai_experience: number | null
           ai_jd_fit: number | null
           ai_publications: number | null
+          ai_reasons: string | null
           ai_score: number | null
           ai_skills: number | null
           ai_summary: string | null
@@ -325,6 +326,7 @@ export type Database = {
           ai_experience?: number | null
           ai_jd_fit?: number | null
           ai_publications?: number | null
+          ai_reasons?: string | null
           ai_score?: number | null
           ai_skills?: number | null
           ai_summary?: string | null
@@ -364,6 +366,7 @@ export type Database = {
           ai_experience?: number | null
           ai_jd_fit?: number | null
           ai_publications?: number | null
+          ai_reasons?: string | null
           ai_score?: number | null
           ai_skills?: number | null
           ai_summary?: string | null

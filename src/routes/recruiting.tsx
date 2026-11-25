@@ -36,6 +36,48 @@ import { formatDate } from "@/lib/dates";
 import { normalizedCandidate, recruitingStageOptions, OFFER_STAGES } from "@/lib/offer-workflow";
 import { startOffer, getOffer, mutateOffer } from "@/lib/offer-workflow.functions";
 import { OfferApprovalDialog } from "@/components/OfferApprovalBoard";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+function AiScoreDetail({ c, lang, canRerun, onRerun }: { c: Candidate; lang: string; canRerun: boolean; onRerun: () => void }) {
+  const zh = lang === "zh";
+  let reasons: Record<string, string> = {};
+  try { reasons = c.ai_reasons ? JSON.parse(c.ai_reasons) : {}; } catch { reasons = {}; }
+  const tone = (n: number) => (n >= 75 ? "bg-ok/15 text-ok" : n >= 55 ? "bg-brand/12 text-brand" : "bg-muted text-muted-foreground");
+  const dims: [string, string, number | null | undefined, string][] = [
+    ["jd_fit", zh ? "JD 匹配度" : "JD fit", c.ai_jd_fit, "40%"],
+    ["education", zh ? "教育背景" : "Education", c.ai_education, "15%"],
+    ["experience", zh ? "工作经历" : "Experience", c.ai_experience, "15%"],
+    ["skills", zh ? "技能" : "Skills", c.ai_skills, "15%"],
+    ["publications", zh ? "论文 / 成果" : "Publications", c.ai_publications, "15%"],
+  ];
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button type="button" title={zh ? "查看评分详情" : "View score details"} className={`inline-block min-w-8 rounded px-1.5 py-0.5 text-center text-xs font-semibold tabular-nums underline-offset-2 hover:underline ${tone(c.ai_score ?? 0)}`}>{c.ai_score}</button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-80 space-y-3 text-xs">
+        <div className="flex items-baseline justify-between">
+          <p className="font-semibold">{c.name}</p>
+          <span className={`rounded px-1.5 py-0.5 font-semibold tabular-nums ${tone(c.ai_score ?? 0)}`}>{zh ? "总分" : "Overall"} {c.ai_score}</span>
+        </div>
+        {c.ai_summary && <p className="text-muted-foreground">{c.ai_summary}</p>}
+        <ul className="space-y-2">
+          {dims.map(([k, label, v, w]) => (
+            <li key={k}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-medium">{label} <span className="text-muted-foreground">· {w}</span></span>
+                <span className="tabular-nums font-semibold">{v ?? "—"}</span>
+              </div>
+              {reasons[k] && <p className="mt-0.5 text-muted-foreground">{reasons[k]}</p>}
+            </li>
+          ))}
+        </ul>
+        {!c.ai_reasons && <p className="text-muted-foreground">{zh ? "该结果是旧版分析，重新分析后可看到每项评分理由。" : "Older result — re-run to see a reason for each score."}</p>}
+        {canRerun && <Button size="sm" variant="outline" className="h-7 w-full text-xs" onClick={onRerun}><Sparkles className="mr-1 size-3.5" />{zh ? "重新分析" : "Re-analyse"}</Button>}
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 /** Leaving the Offer stages withdraws any open Offer request and clears its Offer next step. */
 async function leaveOfferStage(c: Candidate, stage: string | null | undefined) {
@@ -145,6 +187,7 @@ export type Candidate = {
   ai_skills?: number | null;
   ai_publications?: number | null;
   ai_summary?: string | null;
+  ai_reasons?: string | null;
 };
 
 type CandidateEvent = {
@@ -640,10 +683,7 @@ function RecruitingBody() {
                         </td>
                         <td className="px-3 py-1.5">
                           {c.ai_score != null ? (
-                            <span
-                              className={`inline-block min-w-8 rounded px-1.5 py-0.5 text-center text-xs font-semibold tabular-nums ${c.ai_score >= 75 ? "bg-ok/15 text-ok" : c.ai_score >= 55 ? "bg-brand/12 text-brand" : "bg-muted text-muted-foreground"}`}
-                              title={`JD ${c.ai_jd_fit ?? "—"} · ${lang === "zh" ? "教育" : "Edu"} ${c.ai_education ?? "—"} · ${lang === "zh" ? "经历" : "Exp"} ${c.ai_experience ?? "—"} · Skills ${c.ai_skills ?? "—"} · ${lang === "zh" ? "论文" : "Pubs"} ${c.ai_publications ?? "—"}\n${c.ai_summary ?? ""}`}
-                            >{c.ai_score}</span>
+                            <AiScoreDetail c={c} lang={lang} canRerun={canEdit && !aiRun} onRerun={() => void runAi([c])} />
                           ) : canEdit && (c.source === "TeamTailor" || c.cv_text?.trim()) && !aiRun ? (
                             <><button type="button" className="text-muted-foreground hover:text-brand" title={lang === "zh" ? "AI 分析" : "AI analyse"} onClick={() => void runAi([c])}><Sparkles className="size-3.5" /></button>
                               {!c.cv_text?.trim() && <button type="button" className="ml-1.5 text-xs text-muted-foreground underline-offset-2 hover:text-brand hover:underline" title={lang === "zh" ? "上传简历（PDF / .docx）" : "Upload CV (PDF/.docx)"} onClick={() => pickCv(c)}>{lang === "zh" ? "传简历" : "CV"}</button>}</>
