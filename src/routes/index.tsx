@@ -175,21 +175,21 @@ function StrategyBoard() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Org overview */}
-      <section className="panel relative overflow-hidden p-8">
+      <section className="panel relative overflow-hidden p-4">
         <div
           className="pointer-events-none absolute -right-24 -top-24 size-64 rounded-full opacity-25 blur-3xl"
           style={{ backgroundImage: "var(--gradient-brand)" }}
         />
         <div className="relative">
           <div className="flex items-center gap-2">
-            <h2 className="font-display text-4xl font-bold">
+            <h2 className="font-display text-2xl font-bold">
               <span className="brand-gradient-text">{org?.name}</span>
             </h2>
             {org && <EditOrgDialog org={org} onDone={invalidate} />}
           </div>
-          <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
+          <p className="mt-1 line-clamp-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
             {org?.description}
           </p>
         </div>
@@ -206,8 +206,7 @@ function StrategyBoard() {
         <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
           {directions.map((d) => {
             const s = dirStats(d.id);
-            const selected = d.id === active?.id;
-            return (
+            const selected = d.id === active?.id;            return (
               <div
                 key={d.id}
                 className={`panel group relative h-full overflow-hidden transition-all duration-200 hover:-translate-y-0.5 ${
@@ -223,13 +222,13 @@ function StrategyBoard() {
                   variant="ghost"
                   onClick={() => setActiveId(d.id)}
                   aria-pressed={selected}
-                  className="block h-full w-full whitespace-normal rounded-[inherit] p-3 pl-4 text-left"
+                  className="block h-full w-full whitespace-normal rounded-[inherit] p-2.5 pl-3.5 text-left"
                 >
                   <h3 className="break-words font-display text-sm font-semibold leading-snug">{d.title}</h3>
-                  <p className="mt-1 line-clamp-2 min-h-8 text-xs font-normal leading-snug text-muted-foreground">
+                  <p className="mt-1 line-clamp-1 text-xs font-normal leading-snug text-muted-foreground">
                     {d.description}
                   </p>
-                  <div className="mt-2 flex items-center gap-1.5 text-[10px]">
+                  <div className="mt-1.5 flex items-center gap-1.5 text-[10px]">
                     <span className="rounded-full bg-surface-raised px-2 py-0.5 text-muted-foreground tabular-nums">
                       {t("idx.roleTypesCount").replace("{count}", String(s.count))}
                     </span>
@@ -254,7 +253,7 @@ function StrategyBoard() {
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <h2 className="font-display text-xl font-semibold">{t("idx.rolesHeading")}</h2>
-              <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+              <p className="mt-1 line-clamp-1 max-w-3xl text-sm text-muted-foreground">
                 {active.title} · {active.description}
               </p>
             </div>
@@ -263,18 +262,19 @@ function StrategyBoard() {
             </div>
           </div>
 
-          <div className="mt-3 space-y-4">
+          <div className="mt-2 space-y-3">
           {ROLE_CONTRACT_TYPES.map((ct) => {
             const group = activeRoles.filter((r) => roleContractOf(r) === ct);
             return (
           <div key={ct}>
-            <div className="mb-2 flex items-center gap-2">
+            <div className="mb-1.5 flex items-center gap-2">
               <span className={`size-2 shrink-0 rounded-full ${CONTRACT_DOT[ct] ?? "bg-muted-foreground/50"}`} />
               <h3 className="text-sm font-semibold tracking-wide">{t(`idx.ct.${ct}`)}</h3>
               <span className="rounded-full bg-surface-raised px-2 py-0.5 text-[10px] font-medium text-muted-foreground tabular-nums">{group.length}</span>
+              {group.length === 0 && <span className="text-xs text-muted-foreground">{t("idx.ct.none")}</span>}
               <span className="h-px flex-1 bg-border/70" />
             </div>
-            {group.length === 0 ? <p className="text-xs text-muted-foreground">{t("idx.ct.none")}</p> : (
+            {group.length === 0 ? null : (
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {group.map((role) => (
               <div key={role.id} id={`position-${role.id}`} tabIndex={-1} className={linkedRoleId === role.id ? "rounded-lg ring-2 ring-brand ring-offset-2 ring-offset-background" : ""}>
@@ -454,13 +454,13 @@ function RoleCard({
         </span>
       </div>
 
-      <h3 className="mt-2 break-words font-display text-[15px] font-semibold leading-snug">{role.title}</h3>
+      <h3 className="mt-1.5 break-words font-display text-[15px] font-semibold leading-snug">{role.title}</h3>
       {role.approval_status === "pending" && <PendingApproval role={role} onDone={onSaved} />}
       <p className="mt-1 line-clamp-2 whitespace-pre-line text-xs leading-snug text-muted-foreground">
         {role.description}
       </p>
 
-      <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground tabular-nums">
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground tabular-nums">
         <span>
           {t("idx.targetLevel")} L{role.level_min}–{role.level_max}
         </span>
@@ -494,7 +494,7 @@ function RoleCard({
         </p>
       )}
 
-      <div className="mt-auto pt-2.5">
+      <div className="mt-auto pt-2">
         <Button size="sm" variant="outline" className="h-7 w-full gap-1 px-2 text-xs" onClick={onOpen}>
           {t("idx.viewRoleProfile")} <ArrowUpRight className="size-3" />
         </Button>

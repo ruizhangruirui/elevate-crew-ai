@@ -141,16 +141,16 @@ export function AppShell({
           </div>
         )}
         <ChangePasswordDialog open={pwOpen} onOpenChange={setPwOpen} />
-        <header className="border-b border-border/60 px-6 py-8 md:px-10">
-          <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl">{title}</h1>
+        <header className="border-b border-border/60 px-6 py-4 md:px-10">
+          <h1 className="font-display text-2xl font-bold tracking-tight md:text-3xl">{title}</h1>
           {subtitle && (
-            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">
+            <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-muted-foreground">
               {subtitle}
             </p>
           )}
         </header>
-        <div className="px-6 py-8 md:px-10">{children}</div>
-        <footer className="border-t border-border/60 px-6 py-5 text-xs leading-relaxed text-muted-foreground md:px-10">
+        <div className="px-6 py-4 md:px-10">{children}</div>
+        <footer className="border-t border-border/60 px-6 py-2 text-xs leading-relaxed text-muted-foreground md:px-10">
           <p>{t("shell.footer.credits")} {t("shell.footer.contact")}</p>
         </footer>
       </main>
