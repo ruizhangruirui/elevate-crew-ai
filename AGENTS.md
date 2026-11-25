@@ -39,4 +39,3 @@
 - Hiring positions are created from Positions under a direction as regular roles (HR/Recruiter allowed when recruiter + supervisor are named) and appear in Recruiting automatically; Recruiting has no separate add-role entry.
 - Non-admin position creation stores pending status and the requested next step; shared app-roles helpers enforce the delegated approver in both UI and dbQuery, normalize legacy approval task ownership on read, and block pending assignment/sourcing so administration cannot bypass approval.
 - Contract files are stored as base64 in person_contracts (HR/Owner-only in dbQuery, max 10 MB) so uploads work in both cloud and on-prem PostgreSQL modes without separate file storage.
-- Datalink offer approval is an env-configured adapter (`src/lib/datalink.server.ts`, paths/fields/auth via DATALINK_* vars) storing request id/status on offer_requests; the API contract is owned by company IT, so nothing is hard-coded.
