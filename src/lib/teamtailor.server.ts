@@ -101,7 +101,7 @@ const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? 
 /** Discover jobs first, so unrelated historical applications cannot consume the page cap. */
 export async function fetchTeamTailorJobs(apiKey: string, region: string) {
   const base = BASE_URLS[region] ?? "https://api.teamtailor.com/v1";
-  const result = await listAll(base, apiKey, "/jobs?page%5Bsize%5D=30");
+  const result = await listAll(base, apiKey, "/jobs?filter%5Bstatus%5D=all&page%5Bsize%5D=30");
   const jobs: TeamTailorJob[] = [];
   for (const job of result.data) {
     const title = str(job.attributes?.["title"]);
@@ -152,7 +152,8 @@ export async function fetchTeamTailorData(apiKey: string, region: string, matche
     const a = cand.attributes ?? {};
     const first = str(a["first-name"]) ?? "";
     const last = str(a["last-name"]) ?? "";
-    const name = `${first} ${last}`.trim();
+    // Some TeamTailor candidates (sourced/connected) have no name yet; fall back to email.
+    const name = `${first} ${last}`.trim() || str(a["email"]) || "";
     if (!name) continue;
     const location = [str(a["city"]), str(a["country"])].filter(Boolean).join(", ") || null;
     out.push({

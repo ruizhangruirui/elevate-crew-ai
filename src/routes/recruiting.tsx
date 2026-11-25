@@ -194,6 +194,9 @@ function RecruitingBody() {
       if (r.unchanged) parts.push(t("rec.syncUnchanged").replace("{n}", String(r.unchanged)));
       if (r.skippedDuplicates) parts.push(t("rec.syncSkipped").replace("{n}", String(r.skippedDuplicates)));
       if (r.unmatched) parts.push(t("rec.syncUnmatched").replace("{n}", String(r.unmatched)));
+      if (r.skippedRejected) parts.push(t("rec.syncRejected").replace("{n}", String(r.skippedRejected)));
+      if (r.matchedJobs === 0) { toast.warning(t("rec.syncNoJobs")); return; }
+      if (!r.imported && !r.updated && !r.unchanged && !r.skippedRejected) parts.push(t("rec.syncNoApps").replace("{n}", String(r.matchedJobs)));
       if (r.capped) parts.push(t("rec.syncCapped"));
       toast.success(parts.join(" · "));
     },

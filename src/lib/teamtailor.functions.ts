@@ -24,6 +24,8 @@ export type SyncResult = {
   skippedRejected: number;
   unmatched: number;
   unmatchedJobs: string[];
+  matchedJobs: number;
+  fetchedApplications: number;
   capped: boolean;
 };
 
@@ -221,6 +223,8 @@ export const syncTeamTailor = createServerFn({ method: "POST" }).handler(async (
     skippedRejected,
     unmatched,
     unmatchedJobs: [...unmatchedJobs].slice(0, 10),
+    matchedJobs: roleByJob.size,
+    fetchedApplications: tt.applications.length,
     capped: tt.capped,
   };
 });
