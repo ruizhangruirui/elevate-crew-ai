@@ -501,18 +501,15 @@ export async function datalinkLaunchOptionsServer() {
     ctx.db.from("people").select("role_id").eq("archived", false).eq("status", "onboard"),
   ]);
   for (const res of [cs, os, ts, fs]) if (res.error) throw new Error(res.error.message);
-  // Only positions actively being recruited in Recruiting: a recruiter is named (sourcing)
-  // and the position still has an open seat or live candidates.
   const target = new Map((ts.data ?? []).map((r) => [r.id, Number(r.target_count ?? 1)]));
   const filled = new Map<string, number>();
   for (const p of fs.data ?? []) if (p.role_id) filled.set(p.role_id, (filled.get(p.role_id) ?? 0) + 1);
-  const live = new Set(
-    (cs.data ?? []).filter((c) => !CLOSED_OUTCOMES.includes(String(c.outcome))).map((c) => c.role_id),
+  // Match the Recruiting page "Open" status: an uncovered seat and nobody already waiting to onboard.
+  const awaiting = new Set(
+    (cs.data ?? []).filter((c) => c.outcome === "to_onboard").map((c) => c.role_id),
   );
   const hiring = roles.filter(
-    (r) =>
-      !!r.recruiter_person_id &&
-      ((target.get(r.id) ?? 1) - (filled.get(r.id) ?? 0) > 0 || live.has(r.id)),
+    (r) => (target.get(r.id) ?? 1) - (filled.get(r.id) ?? 0) > 0 && !awaiting.has(r.id),
   );
   const offers = (os.data ?? []) as unknown as (RawOffer & { datalink_id: string | null })[];
   const name = (id: string | null) => ctx.people.find((p) => p.id === id)?.name ?? "";

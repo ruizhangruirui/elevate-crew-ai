@@ -33,6 +33,20 @@ import { normalizedCandidate, recruitingStageOptions, OFFER_STAGES } from "@/lib
 import { startOffer, getOffer, mutateOffer } from "@/lib/offer-workflow.functions";
 import { OfferApprovalDialog } from "@/components/OfferApprovalBoard";
 
+/** Leaving the Offer stages withdraws any open Offer request and clears its Offer next step. */
+async function leaveOfferStage(c: Candidate, stage: string | null | undefined) {
+  if (!stage || (OFFER_STAGES as readonly string[]).includes(stage)) return false;
+  if (c.offer_request_id) {
+    const { offer: o } = await getOffer({ data: { id: c.offer_request_id } });
+    if (o.state !== "withdrawn") {
+      await mutateOffer({ data: { id: o.id, revision: o.revision, command: "withdraw", hiring_manager_user_id: "", lab_director_user_id: "", hrd_user_id: "", note: "Stage changed to " + stage } });
+    }
+    return true;
+  }
+  return false;
+}
+const OFFER_NEXT_STEPS = ["Offer approval", "Send offer", "Await acceptance", "Revise offer"];
+
 export const Route = createFileRoute("/recruiting")({
   validateSearch: z.object({ role: z.string().optional() }),
   head: () => ({
@@ -297,6 +311,10 @@ function RecruitingBody() {
 
   const quickUpdate = useMutation({
     mutationFn: async ({ c, patch }: { c: Candidate; patch: Partial<Candidate> }) => {
+      if (patch.stage && !(OFFER_STAGES as readonly string[]).includes(patch.stage)) {
+        await leaveOfferStage(c, patch.stage);
+        if (c.next_step && OFFER_NEXT_STEPS.includes(c.next_step)) patch = { ...patch, next_step: null };
+      }
       if (patch.stage && c.offer_request_id && (OFFER_STAGES as readonly string[]).includes(patch.stage) && patch.stage !== "Offer approval") {
         const { offer: o } = await getOffer({ data: { id: c.offer_request_id } });
         await mutateOffer({ data: { id: o.id, revision: o.revision, command: "set_stage", stage: patch.stage as "Offer sent", hiring_manager_user_id: "", lab_director_user_id: "", hrd_user_id: "", note: "" } });
@@ -719,6 +737,16 @@ function CandidateDialog({
   const save = useMutation({
     mutationFn: async () => {
       const p = payload();
+      if (candidate && p.stage && !(OFFER_STAGES as readonly string[]).includes(p.stage)) {
+        const left = await leaveOfferStage(candidate, p.stage);
+        if (p.next_step && OFFER_NEXT_STEPS.includes(p.next_step)) p.next_step = null;
+        if (left) {
+          const { error } = await db.from("candidates").update(p).eq("id", candidate.id);
+          if (error) throw error;
+          await db.from("candidate_events").insert({ candidate_id: candidate.id, kind: "stage", stage: p.stage });
+          return;
+        }
+      }
       if (candidate?.offer_request_id) {
         const { name: _name, next_step: _next, ...editable } = p;
         const { error } = await db.from("candidates").update(editable).eq("id", candidate.id);
