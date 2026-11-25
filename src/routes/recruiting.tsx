@@ -645,7 +645,8 @@ function RecruitingBody() {
                               title={`JD ${c.ai_jd_fit ?? "—"} · ${lang === "zh" ? "教育" : "Edu"} ${c.ai_education ?? "—"} · ${lang === "zh" ? "经历" : "Exp"} ${c.ai_experience ?? "—"} · Skills ${c.ai_skills ?? "—"} · ${lang === "zh" ? "论文" : "Pubs"} ${c.ai_publications ?? "—"}\n${c.ai_summary ?? ""}`}
                             >{c.ai_score}</span>
                           ) : canEdit && (c.source === "TeamTailor" || c.cv_text?.trim()) && !aiRun ? (
-                            <button type="button" className="text-muted-foreground hover:text-brand" title={lang === "zh" ? "AI 分析" : "AI analyse"} onClick={() => void runAi([c])}><Sparkles className="size-3.5" /></button>
+                            <><button type="button" className="text-muted-foreground hover:text-brand" title={lang === "zh" ? "AI 分析" : "AI analyse"} onClick={() => void runAi([c])}><Sparkles className="size-3.5" /></button>
+                              {!c.cv_text?.trim() && <button type="button" className="ml-1.5 text-xs text-muted-foreground underline-offset-2 hover:text-brand hover:underline" title={lang === "zh" ? "上传简历（PDF / .docx）" : "Upload CV (PDF/.docx)"} onClick={() => pickCv(c)}>{lang === "zh" ? "传简历" : "CV"}</button>}</>
                           ) : canEdit && !aiRun ? (
                             <button type="button" className="text-xs text-muted-foreground underline-offset-2 hover:text-brand hover:underline" title={lang === "zh" ? "上传简历（PDF / .docx）以便 AI 分析" : "Upload CV (PDF/.docx) for AI analysis"} onClick={() => pickCv(c)}>{lang === "zh" ? "传简历" : "CV"}</button>
                           ) : <span className="text-xs text-muted-foreground">—</span>}
@@ -758,8 +759,30 @@ function CandidateDialog({
   onClose: () => void;
   onOffer: (c: Candidate) => void;
 }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const qc = useQueryClient();
+  const uploadCv = useServerFn(uploadCandidateCv);
+  const [cvBusy, setCvBusy] = useState(false);
+  const [hasCvText, setHasCvText] = useState(!!candidate?.cv_text?.trim());
+  const pickCvFile = () => {
+    if (!candidate) return;
+    const inp = document.createElement("input");
+    inp.type = "file"; inp.accept = ".pdf,.docx";
+    inp.onchange = async () => {
+      const file = inp.files?.[0]; if (!file) return;
+      if (file.size > 10 * 1024 * 1024) { toast.error(lang === "zh" ? "文件不能超过 10 MB" : "File must be 10 MB or smaller"); return; }
+      setCvBusy(true);
+      try {
+        const buf = new Uint8Array(await file.arrayBuffer()); let bin = "";
+        for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+        await uploadCv({ data: { id: candidate.id, base64: btoa(bin) } });
+        setHasCvText(true);
+        toast.success(lang === "zh" ? "简历已上传，可以 AI 分析" : "CV uploaded; ready for AI analysis");
+        await qc.invalidateQueries({ queryKey: ["candidates"] });
+      } catch (e) { toast.error((e as Error).message); } finally { setCvBusy(false); }
+    };
+    inp.click();
+  };
   const [f, setF] = useState({
     name: candidate?.name ?? "",
     email: candidate?.email ?? "",
@@ -1005,6 +1028,14 @@ function CandidateDialog({
           <div className="sm:col-span-3 grid gap-3 sm:grid-cols-2">
             {field("cv_url", t("rec.f.cv"))}
             {field("linkedin_url", t("rec.f.linkedin"))}
+            {candidate && canEdit && (
+              <div className="flex items-center gap-2 sm:col-span-2">
+                <Button type="button" variant="outline" size="sm" disabled={cvBusy} onClick={pickCvFile}>
+                  {cvBusy ? (lang === "zh" ? "上传中…" : "Uploading…") : hasCvText ? (lang === "zh" ? "重新上传简历文件" : "Replace CV file") : (lang === "zh" ? "上传简历文件（PDF / .docx）" : "Upload CV file (PDF / .docx)")}
+                </Button>
+                {hasCvText && <span className="text-xs text-ok">{lang === "zh" ? "已上传简历，AI 分析将优先使用" : "CV uploaded; AI uses it first"}</span>}
+              </div>
+            )}
           </div>
           <div className="space-y-1 sm:col-span-3">
             <Label className="text-xs">{t("rec.f.notes")}</Label>
