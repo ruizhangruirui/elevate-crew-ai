@@ -1182,7 +1182,7 @@ function DatalinkLaunch({ onLaunched }: { onLaunched: (id: string) => void }) {
         {l("发起 Datalink 审批", "Start Datalink approval")}
       </Button>
       <Dialog open={open} onOpenChange={reset}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="max-h-[92vh] w-[95vw] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>Datalink Offer approval</DialogTitle>
           </DialogHeader>
@@ -1245,13 +1245,13 @@ function DatalinkLaunch({ onLaunched }: { onLaunched: (id: string) => void }) {
                 <p className="mb-2 text-xs font-semibold text-muted-foreground">
                   {l("将提交的信息（自动整合）", "Details to submit (merged automatically)")}
                 </p>
-                <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+                <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm sm:grid-cols-[auto_1fr_auto_1fr]">
                   {rows
                     .filter(([, v]) => v !== "" && v != null)
                     .map(([k, v]) => (
                       <div key={k} className="contents">
                         <dt className="text-muted-foreground">{k}</dt>
-                        <dd>{String(v)}</dd>
+                        <dd className="min-w-0 break-words font-medium">{String(v)}</dd>
                       </div>
                     ))}
                 </dl>
