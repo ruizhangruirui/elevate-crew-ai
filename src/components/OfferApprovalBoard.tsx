@@ -1214,7 +1214,7 @@ function DatalinkLaunch({ onLaunched }: { onLaunched: (id: string) => void }) {
               </Select>
               {data && !data.roles.length && (
                 <p className="text-xs text-muted-foreground">
-                  {l("没有你负责的招聘岗位。", "No hiring positions assigned to you.")}
+                  {l("Recruiting 中暂无你负责的在招岗位。", "No open Recruiting positions assigned to you.")}
                 </p>
               )}
             </div>

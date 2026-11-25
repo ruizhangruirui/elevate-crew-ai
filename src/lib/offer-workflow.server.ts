@@ -488,23 +488,36 @@ export async function datalinkLaunchOptionsServer() {
         )?.id === ctx.user.id),
   );
   if (!roles.length) return { roles: [] };
-  const ids = roles.map((r) => r.id);
-  const [cs, os] = await Promise.all([
+  const [cs, os, ts, fs] = await Promise.all([
     ctx.db
       .from("candidates")
       .select("id,name,role_id,contract_type,outcome,stage,onboarding_on,current_company,current_title")
-      .in("role_id", ids),
+      .in("role_id", roles.map((r) => r.id)),
     ctx.db
       .from("offer_requests")
       .select("*")
-      .in("role_id", ids),
+      .in("role_id", roles.map((r) => r.id)),
+    ctx.db.from("roles").select("id,target_count").in("id", roles.map((r) => r.id)),
+    ctx.db.from("people").select("role_id").eq("archived", false).eq("status", "onboard"),
   ]);
-  if (cs.error) throw new Error(cs.error.message);
-  if (os.error) throw new Error(os.error.message);
+  for (const res of [cs, os, ts, fs]) if (res.error) throw new Error(res.error.message);
+  // Only positions actively being recruited in Recruiting: a recruiter is named (sourcing)
+  // and the position still has an open seat or live candidates.
+  const target = new Map((ts.data ?? []).map((r) => [r.id, Number(r.target_count ?? 1)]));
+  const filled = new Map<string, number>();
+  for (const p of fs.data ?? []) if (p.role_id) filled.set(p.role_id, (filled.get(p.role_id) ?? 0) + 1);
+  const live = new Set(
+    (cs.data ?? []).filter((c) => !CLOSED_OUTCOMES.includes(String(c.outcome))).map((c) => c.role_id),
+  );
+  const hiring = roles.filter(
+    (r) =>
+      !!r.recruiter_person_id &&
+      ((target.get(r.id) ?? 1) - (filled.get(r.id) ?? 0) > 0 || live.has(r.id)),
+  );
   const offers = (os.data ?? []) as unknown as (RawOffer & { datalink_id: string | null })[];
   const name = (id: string | null) => ctx.people.find((p) => p.id === id)?.name ?? "";
   return {
-    roles: roles.map((r) => ({
+    roles: hiring.map((r) => ({
       id: r.id,
       title: r.title,
       job_title: r.job_title ?? r.title,
