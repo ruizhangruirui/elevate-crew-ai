@@ -580,6 +580,12 @@ export type Database = {
           archived_at: string | null
           candidate_id: string
           created_at: string
+          datalink_approver: string | null
+          datalink_error: string | null
+          datalink_id: string | null
+          datalink_status: string | null
+          datalink_submitted_at: string | null
+          datalink_synced_at: string | null
           hiring_manager_user_id: string | null
           hrd_user_id: string | null
           id: string
@@ -599,6 +605,12 @@ export type Database = {
           archived_at?: string | null
           candidate_id: string
           created_at?: string
+          datalink_approver?: string | null
+          datalink_error?: string | null
+          datalink_id?: string | null
+          datalink_status?: string | null
+          datalink_submitted_at?: string | null
+          datalink_synced_at?: string | null
           hiring_manager_user_id?: string | null
           hrd_user_id?: string | null
           id?: string
@@ -618,6 +630,12 @@ export type Database = {
           archived_at?: string | null
           candidate_id?: string
           created_at?: string
+          datalink_approver?: string | null
+          datalink_error?: string | null
+          datalink_id?: string | null
+          datalink_status?: string | null
+          datalink_submitted_at?: string | null
+          datalink_synced_at?: string | null
           hiring_manager_user_id?: string | null
           hrd_user_id?: string | null
           id?: string

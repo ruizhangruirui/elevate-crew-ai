@@ -330,6 +330,13 @@
       "when": 1795518058247,
       "tag": "0046_talent_pool_previous_roles",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1795602647254,
+      "tag": "0047_offer_datalink_link",
+      "breakpoints": true
     }
   ]
 }

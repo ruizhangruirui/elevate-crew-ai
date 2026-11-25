@@ -67,6 +67,12 @@ export type OfferRequest = {
   can_archive: boolean;
   can_delete: boolean;
   recipient: { name: string; email: string } | null;
+  datalink_id?: string | null;
+  datalink_status?: string | null;
+  datalink_approver?: string | null;
+  datalink_error?: string | null;
+  datalink_submitted_at?: string | null;
+  datalink_synced_at?: string | null;
 };
 export type OfferJson =
   string | number | boolean | null | OfferJson[] | { [key: string]: OfferJson };

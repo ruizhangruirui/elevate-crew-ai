@@ -73,3 +73,15 @@ export const deleteOffer = createServerFn({ method: "POST" })
     const { deleteOfferServer } = await import("./offer-workflow.server");
     return deleteOfferServer(data);
   });
+export const datalinkOffer = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({ id: z.string().uuid(), action: z.enum(["submit", "refresh"]) }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { datalinkOfferServer } = await import("./offer-workflow.server");
+    return datalinkOfferServer(data);
+  });
+export const datalinkEnabled = createServerFn({ method: "POST" }).handler(async () => {
+  const { datalinkEnabledServer } = await import("./offer-workflow.server");
+  return datalinkEnabledServer();
+});

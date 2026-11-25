@@ -386,3 +386,72 @@ export async function mutateOfferServer(data: {
   );
   return { id };
 }
+
+export async function datalinkOfferServer(data: { id: string; action: "submit" | "refresh" }) {
+  const { datalinkConfig, submitToDatalink, fetchDatalinkStatus } = await import(
+    "./datalink.server"
+  );
+  if (!datalinkConfig().enabled) throw new Error("Datalink API is not configured on this server");
+  const ctx = await context();
+  const { data: row, error } = await ctx.db
+    .from("offer_requests")
+    .select("*")
+    .eq("id", data.id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  const o = row as unknown as (RawOffer & { datalink_id: string | null }) | null;
+  if (!o || !visible(ctx, o)) throw new Error("Offer unavailable");
+  const now = new Date().toISOString();
+  if (data.action === "submit") {
+    if (!(isOfferAdmin(ctx.user) || o.recruiter_user_id === ctx.user.id) || !full(ctx, o))
+      throw new Error("Only the recruiter or HRD can submit to Datalink");
+    if (o.datalink_id) throw new Error("Already submitted to Datalink");
+    try {
+      const r = await submitToDatalink(o.id, o.terms as unknown as Record<string, unknown>);
+      await ctx.db
+        .from("offer_requests")
+        .update({
+          datalink_id: r.id,
+          datalink_status: r.status,
+          datalink_approver: r.approver,
+          datalink_error: null,
+          datalink_submitted_at: now,
+          datalink_synced_at: now,
+        })
+        .eq("id", o.id);
+    } catch (e) {
+      await ctx.db
+        .from("offer_requests")
+        .update({ datalink_error: (e as Error).message, datalink_synced_at: now })
+        .eq("id", o.id);
+      throw e;
+    }
+  } else {
+    if (!o.datalink_id) throw new Error("Not submitted to Datalink yet");
+    try {
+      const r = await fetchDatalinkStatus(o.datalink_id);
+      await ctx.db
+        .from("offer_requests")
+        .update({
+          datalink_status: r.status,
+          datalink_approver: r.approver,
+          datalink_error: null,
+          datalink_synced_at: now,
+        })
+        .eq("id", o.id);
+    } catch (e) {
+      await ctx.db
+        .from("offer_requests")
+        .update({ datalink_error: (e as Error).message, datalink_synced_at: now })
+        .eq("id", o.id);
+      throw e;
+    }
+  }
+  return { ok: true };
+}
+
+export async function datalinkEnabledServer() {
+  await requireUser();
+  const { datalinkConfig } = await import("./datalink.server");
+  return { enabled: datalinkConfig().enabled };
+}

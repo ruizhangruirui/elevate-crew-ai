@@ -22,7 +22,10 @@ import {
   mutateOffer,
   archiveOffer,
   deleteOffer,
+  datalinkOffer,
+  datalinkEnabled,
 } from "@/lib/offer-workflow.functions";
+import { DATALINK_URL, datalinkPhase } from "@/lib/datalink";
 import {
   OFFER_STATES,
   type OfferTerms,
@@ -681,6 +684,7 @@ function OfferForm({ data }: { data: Awaited<ReturnType<typeof getOffer>> }) {
             </ConfirmAction>
           )}
         </div>
+        <DatalinkPanel offer={o} />
         {o.terms && (
           <Fold
             title={l("审批与修改日志", "Approval & change history")}
@@ -1014,5 +1018,113 @@ function OfferRowActions({ offer: o }: { offer: OfferRequest }) {
         </ConfirmAction>
       )}
     </>
+  );
+}
+
+function DatalinkPanel({ offer: o }: { offer: OfferRequest }) {
+  const { lang } = useI18n();
+  const l = (zh: string, en: string) => (lang === "zh" ? zh : en);
+  const qc = useQueryClient();
+  const { data: cfg } = useQuery({ queryKey: ["datalink-enabled"], queryFn: () => datalinkEnabled() });
+  const run = useMutation({
+    mutationFn: (action: "submit" | "refresh") => datalinkOffer({ data: { id: o.id, action } }),
+    onSuccess: (_r, action) => {
+      toast.success(
+        action === "submit" ? l("已提交到 Datalink", "Submitted to Datalink") : l("状态已更新", "Status updated"),
+      );
+      qc.invalidateQueries({ queryKey: ["offer", o.id] });
+    },
+    onError: (e: Error) => {
+      toast.error(e.message);
+      qc.invalidateQueries({ queryKey: ["offer", o.id] });
+    },
+  });
+  const phase = datalinkPhase(o.datalink_status);
+  const phaseLabel: Record<string, [string, string]> = {
+    pending: ["审批中", "In approval"],
+    approved: ["已通过", "Approved"],
+    rejected: ["已驳回", "Rejected"],
+    withdrawn: ["已撤回", "Withdrawn"],
+    unknown: ["未知", "Unknown"],
+  };
+  const tone =
+    phase === "approved"
+      ? "text-brand"
+      : phase === "rejected"
+        ? "text-destructive"
+        : "text-foreground";
+  const canSubmit = !!o.terms && o.can_archive;
+  return (
+    <section className="space-y-2 border-t border-border pt-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold">Datalink Offer approval</h3>
+        <Button asChild variant="link" size="sm">
+          <a href={DATALINK_URL} target="_blank" rel="noreferrer">
+            <ExternalLink className="size-4" />
+            {l("打开 Datalink", "Open Datalink")}
+          </a>
+        </Button>
+      </div>
+      {o.datalink_id ? (
+        <div className="space-y-1 text-sm">
+          <p>
+            {l("状态", "Status")}:{" "}
+            <span className={`font-semibold ${tone}`}>
+              {phaseLabel[phase]?.[lang === "zh" ? 0 : 1]}
+            </span>
+            {o.datalink_status && <span className="text-muted-foreground"> ({o.datalink_status})</span>}
+          </p>
+          {o.datalink_approver && (
+            <p>
+              {l("当前审批人", "Current approver")}: {o.datalink_approver}
+            </p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            {l("Datalink 编号", "Datalink ID")}: {o.datalink_id}
+            {o.datalink_synced_at && (
+              <> · {l("同步于", "Synced")} {formatDate(o.datalink_synced_at)}</>
+            )}
+          </p>
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          {l("尚未提交到 Datalink", "Not submitted to Datalink yet")}
+        </p>
+      )}
+      {o.datalink_error && <p className="text-xs text-destructive">{o.datalink_error}</p>}
+      {cfg?.enabled ? (
+        <div className="flex flex-wrap gap-2">
+          {!o.datalink_id && canSubmit && (
+            <ConfirmAction
+              title={l("提交到 Datalink？", "Submit to Datalink?")}
+              description={
+                <p>
+                  {l(
+                    "将当前 Offer 信息发送到 Datalink 发起审批。",
+                    "Sends the current offer details to Datalink to start its approval.",
+                  )}
+                </p>
+              }
+              confirmLabel={l("提交", "Submit")}
+              onConfirm={() => run.mutate("submit")}
+            >
+              <Button size="sm" disabled={run.isPending}>
+                <Send className="size-4" />
+                {l("申请 Datalink Offer approval", "Request Datalink Offer approval")}
+              </Button>
+            </ConfirmAction>
+          )}
+          {o.datalink_id && (
+            <Button size="sm" variant="outline" disabled={run.isPending} onClick={() => run.mutate("refresh")}>
+              {l("刷新状态", "Refresh status")}
+            </Button>
+          )}
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          {l("服务器尚未配置 Datalink API。", "Datalink API is not configured on the server.")}
+        </p>
+      )}
+    </section>
   );
 }
