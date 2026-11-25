@@ -42,8 +42,8 @@ async function leaveOfferStage(c: Candidate, stage: string | null | undefined) {
   if (!stage || (OFFER_STAGES as readonly string[]).includes(stage)) return false;
   if (c.offer_request_id) {
     const { offer: o } = await getOffer({ data: { id: c.offer_request_id } });
-    if (o.state !== "withdrawn") {
-      await mutateOffer({ data: { id: o.id, revision: o.revision, command: "withdraw", hiring_manager_user_id: "", lab_director_user_id: "", hrd_user_id: "", note: "Stage changed to " + stage } });
+    if (!["withdrawn", "accepted", "onboarded"].includes(o.state)) {
+      try { await mutateOffer({ data: { id: o.id, revision: o.revision, command: "withdraw", hiring_manager_user_id: "", lab_director_user_id: "", hrd_user_id: "", note: "Stage changed to " + stage } }); } catch (e) { console.warn("Offer withdraw skipped", e); }
     }
     return true;
   }

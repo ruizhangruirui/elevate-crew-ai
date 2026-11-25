@@ -354,7 +354,7 @@ export const dbQuery = createServerFn({ method: "POST" })
           else if (o && o.recruiter_user_id === user.id) mine = "request";
         } else {
           const approver = /\nApprover:\s*(.+)/.exec(r.detail ?? "")?.[1];
-          if (same(r.owner) || same(approver)) mine = "todo";
+          if (same(r.owner) || same(approver) || (r.source_kind === "position_approval" && canApprovePositions(user.role))) mine = "todo";
           else if (r.source_kind === "position_approval" && same((reqRoles ?? []).find((x: any) => x.id === r.role_id)?.requested_by)) mine = "request";
         }
         r.mine = mine;
