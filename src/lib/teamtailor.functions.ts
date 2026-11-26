@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { admin, requireUser } from "./auth.server";
-import { matchJobs, type JobMatch } from "./teamtailor-match";
+import { jobsForSync, matchJobs, type JobMatch } from "./teamtailor-match";
 import { inboxDefaultPriority } from "./teamtailor-priority";
 
 const SYNC_ROLES = ["owner", "hr", "recruiter"] as const;
@@ -31,7 +31,7 @@ export type SyncResult = {
 
 type RoleRow = { id: string; title: string; job_title: string | null };
 
-async function loadContext() {
+async function loadContext(roleId?: string) {
   const apiKey = process.env["TEAMTAILOR_API_KEY"];
   if (!apiKey) throw new Error("TeamTailor API key is not configured on the server");
   const region = (process.env["TEAMTAILOR_REGION"] ?? "eu").trim().toLowerCase();
@@ -50,8 +50,9 @@ async function loadContext() {
   const { fetchTeamTailorJobs, fetchTeamTailorData } = await import("./teamtailor.server");
   const discovered = await fetchTeamTailorJobs(apiKey, region);
   const activeRoles = (roles ?? []) as RoleRow[];
+  if (roleId && !activeRoles.some((role) => role.id === roleId)) throw new Error("Recruiting position not found or archived");
   const matches = matchJobs(activeRoles, mappings ?? [], { ...discovered, applications: [] });
-  const matchedIds = new Set(matches.filter((job) => job.roleId).map((job) => job.ttJobId));
+  const matchedIds = new Set(jobsForSync(matches, roleId).map((job) => job.ttJobId));
   const pipelines = await fetchTeamTailorData(apiKey, region, discovered.jobs.filter((job) => matchedIds.has(job.id)));
   const tt = { jobs: discovered.jobs, applications: pipelines.applications, capped: discovered.capped || pipelines.capped };
   return { db, roles: (roles ?? []) as RoleRow[], mappings: mappings ?? [], tt };
@@ -119,15 +120,24 @@ export const saveTeamTailorMapping = createServerFn({ method: "POST" })
  * are applied to existing rows), with an email/name fallback for rows imported
  * before the ID was stored.
  */
-export const syncTeamTailor = createServerFn({ method: "POST" }).handler(async (): Promise<SyncResult> => {
+export const syncTeamTailor = createServerFn({ method: "POST" })
+  .inputValidator(z.object({ roleId: z.string().uuid() }))
+  .handler(async ({ data }): Promise<SyncResult> => {
   const user = await requireUser([...SYNC_ROLES]);
-  const { db, roles, mappings, tt } = await loadContext();
+  if ((user.role === "hr" || user.role === "recruiter") && user.scope_node_ids.length) {
+    const { managerScope } = await import("./auth.server");
+    const { scopedRoleIds } = await import("./role-scope.server");
+    const allowed = await scopedRoleIds(await admin(), (await managerScope(user)).nodeIds);
+    if (!allowed.includes(data.roleId)) throw new Error("Forbidden: position outside your scope");
+  }
+  const { db, roles, mappings, tt } = await loadContext(data.roleId);
   const matches = matchJobs(roles, mappings, tt);
-  const roleByJob = new Map(matches.flatMap((m) => m.roleId ? [[m.ttJobId, m.roleId] as const] : []));
+  const roleByJob = new Map(jobsForSync(matches, data.roleId).flatMap((m) => m.roleId ? [[m.ttJobId, m.roleId] as const] : []));
 
   const { data: existing, error: existingError } = await db
     .from("candidates")
-    .select("id,role_id,email,name,stage,outcome,priority,cv_url,teamtailor_application_id,offer_request_id");
+    .select("id,role_id,email,name,stage,outcome,priority,cv_url,teamtailor_application_id,offer_request_id")
+    .eq("role_id", data.roleId);
   if (existingError) throw new Error(existingError.message);
   const byAppId = new Map((existing ?? []).filter((c) => c.teamtailor_application_id).map((c) => [c.teamtailor_application_id as string, c]));
   const byKey = new Map((existing ?? []).map((c) => [`${c.role_id}|${dedupeKey(c)}`, c]));

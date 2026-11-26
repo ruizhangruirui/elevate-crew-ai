@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import { strictEqual, notStrictEqual, deepStrictEqual } from "node:assert/strict";
 import { normTitle } from "./teamtailor.server";
-import { matchJobs } from "./teamtailor-match";
+import { jobsForSync, matchJobs } from "./teamtailor-match";
 
 const expect = (v: string) => ({
   toBe: (o: string) => strictEqual(v, o),
@@ -9,6 +9,21 @@ const expect = (v: string) => ({
 });
 
 describe("direct TeamTailor matching", () => {
+  it("per-position sync selects only that Recruiting position's matched jobs", () => {
+    const matches = matchJobs([
+      { id: "role-a", title: "Engineer", job_title: null },
+      { id: "role-b", title: "Scientist", job_title: null },
+    ], [], { jobs: [{ id: "job-a", title: "Engineer" }, { id: "job-b", title: "Scientist" }], applications: [], capped: false });
+    deepStrictEqual(jobsForSync(matches, "role-a").map((m) => m.ttJobId), ["job-a"]);
+    deepStrictEqual(jobsForSync(matches, "missing"), []);
+  });
+  it("selecting a position does not turn duplicate titles into an automatic match", () => {
+    const matches = matchJobs([
+      { id: "role-a", title: "Engineer", job_title: null },
+      { id: "role-b", title: "Engineer", job_title: null },
+    ], [], { jobs: [{ id: "job-a", title: "Engineer" }], applications: [], capped: false });
+    deepStrictEqual(jobsForSync(matches, "role-a"), []);
+  });
   const roles = [{ id: "active-role", title: "Research Engineer", job_title: "AI Engineer" }];
   it("automatically matches a maintained recruiting job title", () => {
     const matches = matchJobs(roles, [], { jobs: [{ id: "tt-active", title: "AI engineer" }], applications: [], capped: false });

@@ -13,6 +13,11 @@ export type JobMatch = {
 
 type RoleRow = { id: string; title: string; job_title: string | null };
 
+/** Filter only after matching against all roles, so duplicate titles remain ambiguous. */
+export function jobsForSync(matches: JobMatch[], roleId?: string) {
+  return matches.filter((match) => match.roleId && (!roleId || match.roleId === roleId));
+}
+
 /**
  * Match every TeamTailor job to an internal position. Priority:
  * 1. HR-confirmed mapping (stored TeamTailor job ID → role ID).

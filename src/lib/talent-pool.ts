@@ -3,6 +3,22 @@ export type TalentDirection = { direction: string; reason: string };
 export type TalentRoleMatch = { role_id: string; role_title: string; fit_score: number; reason: string };
 export type TalentBreakdown = { education: number; experience: number; projects: number; skills: number };
 
+/** Stable supplier IDs are identities; email may link an unlinked manual record once. */
+export function talentSyncLookup<T extends { teamtailor_candidate_id: string | null; email: string | null }>(rows: T[]) {
+  const byId = new Map(rows.filter((row) => row.teamtailor_candidate_id).map((row) => [row.teamtailor_candidate_id, row]));
+  const manualByEmail = new Map(rows.filter((row) => !row.teamtailor_candidate_id && row.email).map((row) => [row.email?.trim().toLowerCase(), row]));
+  return (candidateId: string, email: string | null): T | undefined => {
+    const existing = byId.get(candidateId);
+    if (existing) return existing;
+    const key = email?.trim().toLowerCase();
+    if (!key) return undefined;
+    const manual = manualByEmail.get(key);
+    manualByEmail.delete(key);
+    if (manual) byId.set(candidateId, manual);
+    return manual;
+  };
+}
+
 export type TalentRow = {
   id: string;
   name: string;

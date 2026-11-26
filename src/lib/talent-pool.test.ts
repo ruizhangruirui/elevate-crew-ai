@@ -1,6 +1,20 @@
 import { describe, it } from "node:test";
 import { strictEqual, deepStrictEqual } from "node:assert/strict";
-import { clampScore, sanitizeMatches } from "./talent-pool";
+import { talentSyncLookup, clampScore, sanitizeMatches } from "./talent-pool";
+
+it("all-candidate sync never merges different TeamTailor IDs sharing an email", () => {
+  const row = { teamtailor_candidate_id: "tt-one", email: "shared@example.test" };
+  const lookup = talentSyncLookup([row]);
+  strictEqual(lookup("tt-one", row.email), row);
+  strictEqual(lookup("tt-two", row.email), undefined);
+});
+
+it("all-candidate sync can reuse a manual record only for one supplier identity", () => {
+  const row = { teamtailor_candidate_id: null, email: "shared@example.test" };
+  const lookup = talentSyncLookup([row]);
+  strictEqual(lookup("tt-one", "SHARED@example.test"), row);
+  strictEqual(lookup("tt-two", row.email), undefined);
+});
 
 describe("talent pool AI output", () => {
   it("clamps scores to 0-100", () => {

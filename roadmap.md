@@ -1,3 +1,5 @@
+- [x] Correct TeamTailor per-position sync and account-wide Talent Pool pagination/identity; synthetic tests passed, real read-only checks returned 13 isolated applicants and 27,064 unique pool candidates.
+- [ ] Verify both sync buttons save/read back through a real app-owned session (blocked: no app-owned login available); no production records changed during read-only verification.
 - [x] Highlight PhD and pinned QS 2026 top-20 educational signals on talent cards without changing AI scores or data permissions; seven targeted tests passed.
 - [ ] Verify talent educational highlights with a real signed-in user (blocked: app-owned session unavailable; browser redirects to /auth without runtime errors).
 - [x] Show and search actual TeamTailor applied positions in Talent pool, separate from AI recommendations.

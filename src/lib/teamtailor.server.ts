@@ -64,13 +64,25 @@ export function normTitle(s: string): string {
 }
 
 async function ttGet(base: string, apiKey: string, path: string) {
-  const res = await fetch(`${base}${path}`, {
+  let res: Response | undefined;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    res = await fetch(`${base}${path}`, {
     headers: {
       Authorization: `Token token=${apiKey}`,
       "X-Api-Version": API_VERSION,
       Accept: "application/vnd.api+json",
     },
-  });
+    });
+    if (res.status !== 429 || attempt === 3) break;
+    const retryAfter = res.headers.get("Retry-After");
+    const seconds = retryAfter ? Number(retryAfter) : NaN;
+    const delay = retryAfter && !Number.isFinite(seconds)
+      ? Date.parse(retryAfter) - Date.now()
+      : Number.isFinite(seconds) ? seconds * 1000 : 2000 * (attempt + 1);
+    if (!Number.isFinite(delay) || delay > 60000) break;
+    await new Promise((resolve) => setTimeout(resolve, Math.max(0, delay)));
+  }
+  if (!res) throw new Error("TeamTailor request failed");
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new Error(`TeamTailor API error ${res.status}: ${body.slice(0, 200)}`);
@@ -79,19 +91,22 @@ async function ttGet(base: string, apiKey: string, path: string) {
 }
 
 /** Follow JSON:API pagination (links.next) up to a safety cap. */
-async function listAll(base: string, apiKey: string, path: string) {
+async function listAll(base: string, apiKey: string, path: string, maxPages = MAX_PAGES) {
   const data: JsonApiResource[] = [];
   const included: JsonApiResource[] = [];
   let next: string | null = path;
   let capped = false;
-  for (let page = 0; next && page < MAX_PAGES; page++) {
+  const seenPages = new Set<string>();
+  for (let page = 0; next && page < maxPages; page++) {
     // links.next is a full URL including the /v1 prefix; strip the base to avoid doubling it.
     const url = next.startsWith("http") ? next.replace(/^https?:\/\/[^/]+\/v1/, "") : next;
+    if (seenPages.has(url)) throw new Error("TeamTailor returned a repeated pagination link; sync stopped to avoid incomplete results");
+    seenPages.add(url);
     const res = await ttGet(base, apiKey, url);
     data.push(...(res.data ?? []));
     included.push(...(res.included ?? []));
     next = res.links?.next ?? null;
-    if (next && page === MAX_PAGES - 1) capped = true;
+    if (next && page === maxPages - 1) capped = true;
   }
   return { data, included, capped };
 }
@@ -127,11 +142,6 @@ export async function fetchTeamTailorData(apiKey: string, region: string, matche
   }
 
   const jobById = new Map<string, TeamTailorJob>(jobs.map((job) => [job.id, job]));
-  for (const j of applications.included) {
-    if (j.type !== "jobs") continue;
-    const title = str(j.attributes?.["title"]);
-    if (title && !jobById.has(j.id)) jobById.set(j.id, { id: j.id, title });
-  }
   const candidateById = new Map<string, JsonApiResource>();
   const stageNameById = new Map<string, string>();
   for (const c of applications.included) {
@@ -148,7 +158,7 @@ export async function fetchTeamTailorData(apiKey: string, region: string, matche
     const candId = app.relationships?.["candidate"]?.data?.id;
     const stageId = app.relationships?.["stage"]?.data?.id;
     const cand = candId ? candidateById.get(candId) : undefined;
-    if (!jobId || !cand) continue;
+    if (!jobId || !jobById.has(jobId) || !cand) continue;
     const a = cand.attributes ?? {};
     const first = str(a["first-name"]) ?? "";
     const last = str(a["last-name"]) ?? "";
@@ -187,18 +197,17 @@ export type TeamTailorCandidate = {
   appliedJobs: string[];
 };
 
-/** All candidates in the TeamTailor account (talent pool), page-capped. */
+/** All candidates visible to the API key, without job/status filters or a page cutoff. */
 export async function fetchTeamTailorCandidates(apiKey: string, region: string) {
   const base = BASE_URLS[region] ?? "https://api.teamtailor.com/v1";
-  const result = await listAll(base, apiKey, "/candidates?include=job-applications.job&page%5Bsize%5D=30");
+  const result = await listAll(base, apiKey, "/candidates?include=job-applications.job&page%5Bsize%5D=30", Infinity);
   const jobs = new Map(result.included.filter((r) => r.type === "jobs").map((r) => [r.id, str(r.attributes?.["title"])]));
   const applications = new Map(result.included.filter((r) => r.type === "job-applications").map((r) => [r.id, r]));
   const out: TeamTailorCandidate[] = [];
   for (const c of result.data) {
     if (c.type !== "candidates") continue;
     const a = c.attributes ?? {};
-    const name = `${str(a["first-name"]) ?? ""} ${str(a["last-name"]) ?? ""}`.trim() || str(a["email"]) || "";
-    if (!name) continue;
+    const name = `${str(a["first-name"]) ?? ""} ${str(a["last-name"]) ?? ""}`.trim() || str(a["email"]) || `TeamTailor #${c.id}`;
     // Use each candidate's own application relationships, never global jobs or AI matches.
     const links = c.relationships?.["job-applications"]?.data as unknown;
     const appliedJobs = Array.isArray(links) ? [...new Set(links.flatMap((link: { id: string }) => {

@@ -35,6 +35,7 @@
 - Recruiting role status is derived from awaiting candidates and actual personnel coverage; the open page rechecks due onboarding every minute to keep dates and status current without a deployment-specific scheduler.
 - TeamTailor sync uses the shared tested matcher against unarchived Recruiting roles; direct sync skips unmatched/ambiguous jobs and retains existing saved mappings to avoid disrupting candidate associations.
 - TeamTailor discovers and matches jobs before fetching independently paginated applications per matched job, so unrelated historical pipelines cannot exhaust the application page cap.
+- Recruiting sync requires a selected role ID; Talent Pool follows all candidate pages, so per-position imports and account-wide collection stay separate.
 - Recruiting "Visible to" (roles.visible_to_person_ids) grants read-only access to that position and its candidates in dbQuery scope filters; accounts link to people by company email (name fallback), keeping sharing server-enforced.
 - Hiring positions are created from Positions under a direction as regular roles (HR/Recruiter allowed when recruiter + supervisor are named) and appear in Recruiting automatically; Recruiting has no separate add-role entry.
 - Non-admin position creation stores pending status and the requested next step; shared app-roles helpers enforce the delegated approver in both UI and dbQuery, normalize legacy approval task ownership on read, and block pending assignment/sourcing so administration cannot bypass approval.

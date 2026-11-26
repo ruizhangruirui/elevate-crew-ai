@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { admin, requireUser, type AppUser } from "./auth.server";
-import { sanitizeMatches, clampScore, type TalentRow, type TalentRoleMatch, type TalentDirection, type TalentBreakdown } from "./talent-pool";
+import { talentSyncLookup, sanitizeMatches, clampScore, type TalentRow, type TalentRoleMatch, type TalentDirection, type TalentBreakdown } from "./talent-pool";
 
 const POOL_ROLES = ["owner", "hr", "recruiter"] as const;
 const COLS = "id,name,email,phone,location,linkedin_url,cv_url,cv_text,headline,notes,category,tags,source,teamtailor_candidate_id,teamtailor_applied_jobs,current_company,current_title,education,previous_roles,previous_companies,contracted,ai_score,ai_summary,ai_directions,ai_breakdown,ai_role_matches,ai_analyzed_at,archived,created_at";
@@ -192,14 +192,13 @@ export const syncTalentFromTeamTailor = createServerFn({ method: "POST" }).handl
   const db = await admin();
   const { data: existing, error } = await db.from("talent_pool").select("id,teamtailor_candidate_id,email,tags");
   if (error) throw new Error(error.message);
-  const byTt = new Map((existing ?? []).filter((e) => e.teamtailor_candidate_id).map((e) => [e.teamtailor_candidate_id as string, e]));
-  const byEmail = new Map((existing ?? []).filter((e) => e.email).map((e) => [(e.email as string).toLowerCase(), e]));
+  const findExisting = talentSyncLookup(existing ?? []);
   let imported = 0;
   let updated = 0;
   const inserts: Record<string, unknown>[] = [];
   for (const c of candidates) {
     const base = { name: c.name, email: c.email, phone: c.phone, location: c.location, linkedin_url: c.linkedin, cv_url: c.profileUrl, headline: c.pitch?.slice(0, 300) ?? null, teamtailor_applied_jobs: c.appliedJobs };
-    const hit = byTt.get(c.id) ?? (c.email ? byEmail.get(c.email.toLowerCase()) : undefined);
+    const hit = findExisting(c.id, c.email);
     if (hit) {
       const tags = [...new Set([...(hit.tags ?? []), ...c.tags])];
       const { error: e } = await db.from("talent_pool").update({ ...base, tags, teamtailor_candidate_id: c.id, updated_at: new Date().toISOString() } as never).eq("id", hit.id);
