@@ -684,9 +684,8 @@ function RecruitingBody() {
                         <td className="px-3 py-1.5">
                           {c.ai_score != null ? (
                             <AiScoreDetail c={c} lang={lang} canRerun={canEdit && !aiRun} onRerun={() => void runAi([c])} />
-                          ) : canEdit && (c.source === "TeamTailor" || c.cv_text?.trim()) && !aiRun ? (
-                            <><button type="button" className="text-muted-foreground hover:text-brand" title={lang === "zh" ? "AI 分析" : "AI analyse"} onClick={() => void runAi([c])}><Sparkles className="size-3.5" /></button>
-                              {!c.cv_text?.trim() && <button type="button" className="ml-1.5 text-xs text-muted-foreground underline-offset-2 hover:text-brand hover:underline" title={lang === "zh" ? "上传简历（PDF / .docx）" : "Upload CV (PDF/.docx)"} onClick={() => pickCv(c)}>{lang === "zh" ? "传简历" : "CV"}</button>}</>
+                          ) : canEdit && !aiRun && (c.source === "TeamTailor" || !!c.cv_text?.trim()) ? (
+                            <button type="button" className="text-muted-foreground hover:text-brand" title={lang === "zh" ? "AI 分析" : "AI analyse"} onClick={() => void runAi([c])}><Sparkles className="size-3.5" /></button>
                           ) : canEdit && !aiRun ? (
                             <button type="button" className="text-xs text-muted-foreground underline-offset-2 hover:text-brand hover:underline" title={lang === "zh" ? "上传简历（PDF / .docx）以便 AI 分析" : "Upload CV (PDF/.docx) for AI analysis"} onClick={() => pickCv(c)}>{lang === "zh" ? "传简历" : "CV"}</button>
                           ) : <span className="text-xs text-muted-foreground">—</span>}
